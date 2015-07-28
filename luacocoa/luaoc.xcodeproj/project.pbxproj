@@ -1,0 +1,371 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		21AE0CEF1B6711D1006FB83F /* luaoc.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0CEE1B6711D1006FB83F /* luaoc.h */; };
+		21AE0CF11B6711D1006FB83F /* luaoc.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0CF01B6711D1006FB83F /* luaoc.m */; };
+		21AE0CF71B6711D1006FB83F /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		21AE0CF81B6711D1006FB83F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21AE0CE31B6711D1006FB83F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 21AE0CEA1B6711D1006FB83F;
+			remoteInfo = luaoc;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		21AE0CE91B6711D1006FB83F /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+				21AE0CEF1B6711D1006FB83F /* luaoc.h in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		21AE0CEB1B6711D1006FB83F /* libluaoc.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libluaoc.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		21AE0CEE1B6711D1006FB83F /* luaoc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = luaoc.h; sourceTree = "<group>"; };
+		21AE0CF01B6711D1006FB83F /* luaoc.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = luaoc.m; sourceTree = "<group>"; };
+		21AE0CF61B6711D1006FB83F /* luaocTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = luaocTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		21AE0CFC1B6711D1006FB83F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		21AE0CE81B6711D1006FB83F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		21AE0CF31B6711D1006FB83F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				21AE0CF71B6711D1006FB83F /* libluaoc.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		21AE0CE21B6711D1006FB83F = {
+			isa = PBXGroup;
+			children = (
+				21AE0CED1B6711D1006FB83F /* luaoc */,
+				21AE0CFA1B6711D1006FB83F /* luaocTests */,
+				21AE0CEC1B6711D1006FB83F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		21AE0CEC1B6711D1006FB83F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				21AE0CEB1B6711D1006FB83F /* libluaoc.a */,
+				21AE0CF61B6711D1006FB83F /* luaocTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		21AE0CED1B6711D1006FB83F /* luaoc */ = {
+			isa = PBXGroup;
+			children = (
+				21AE0CEE1B6711D1006FB83F /* luaoc.h */,
+				21AE0CF01B6711D1006FB83F /* luaoc.m */,
+			);
+			path = luaoc;
+			sourceTree = "<group>";
+		};
+		21AE0CFA1B6711D1006FB83F /* luaocTests */ = {
+			isa = PBXGroup;
+			children = (
+				21AE0CFB1B6711D1006FB83F /* Supporting Files */,
+			);
+			path = luaocTests;
+			sourceTree = "<group>";
+		};
+		21AE0CFB1B6711D1006FB83F /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				21AE0CFC1B6711D1006FB83F /* Info.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		21AE0CEA1B6711D1006FB83F /* luaoc */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 21AE0CFF1B6711D1006FB83F /* Build configuration list for PBXNativeTarget "luaoc" */;
+			buildPhases = (
+				21AE0CE71B6711D1006FB83F /* Sources */,
+				21AE0CE81B6711D1006FB83F /* Frameworks */,
+				21AE0CE91B6711D1006FB83F /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = luaoc;
+			productName = luaoc;
+			productReference = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+		21AE0CF51B6711D1006FB83F /* luaocTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 21AE0D021B6711D1006FB83F /* Build configuration list for PBXNativeTarget "luaocTests" */;
+			buildPhases = (
+				21AE0CF21B6711D1006FB83F /* Sources */,
+				21AE0CF31B6711D1006FB83F /* Frameworks */,
+				21AE0CF41B6711D1006FB83F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				21AE0CF91B6711D1006FB83F /* PBXTargetDependency */,
+			);
+			name = luaocTests;
+			productName = luaocTests;
+			productReference = 21AE0CF61B6711D1006FB83F /* luaocTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		21AE0CE31B6711D1006FB83F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0620;
+				ORGANIZATIONNAME = sw;
+				TargetAttributes = {
+					21AE0CEA1B6711D1006FB83F = {
+						CreatedOnToolsVersion = 6.2;
+					};
+					21AE0CF51B6711D1006FB83F = {
+						CreatedOnToolsVersion = 6.2;
+					};
+				};
+			};
+			buildConfigurationList = 21AE0CE61B6711D1006FB83F /* Build configuration list for PBXProject "luaoc" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 21AE0CE21B6711D1006FB83F;
+			productRefGroup = 21AE0CEC1B6711D1006FB83F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				21AE0CEA1B6711D1006FB83F /* luaoc */,
+				21AE0CF51B6711D1006FB83F /* luaocTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		21AE0CF41B6711D1006FB83F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		21AE0CE71B6711D1006FB83F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				21AE0CF11B6711D1006FB83F /* luaoc.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		21AE0CF21B6711D1006FB83F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		21AE0CF91B6711D1006FB83F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 21AE0CEA1B6711D1006FB83F /* luaoc */;
+			targetProxy = 21AE0CF81B6711D1006FB83F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		21AE0CFD1B6711D1006FB83F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		21AE0CFE1B6711D1006FB83F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		21AE0D001B6711D1006FB83F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		21AE0D011B6711D1006FB83F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		21AE0D031B6711D1006FB83F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SDKROOT)/Developer/Library/Frameworks",
+					"$(inherited)",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = luaocTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		21AE0D041B6711D1006FB83F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SDKROOT)/Developer/Library/Frameworks",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = luaocTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		21AE0CE61B6711D1006FB83F /* Build configuration list for PBXProject "luaoc" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				21AE0CFD1B6711D1006FB83F /* Debug */,
+				21AE0CFE1B6711D1006FB83F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		21AE0CFF1B6711D1006FB83F /* Build configuration list for PBXNativeTarget "luaoc" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				21AE0D001B6711D1006FB83F /* Debug */,
+				21AE0D011B6711D1006FB83F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		21AE0D021B6711D1006FB83F /* Build configuration list for PBXNativeTarget "luaocTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				21AE0D031B6711D1006FB83F /* Debug */,
+				21AE0D041B6711D1006FB83F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 21AE0CE31B6711D1006FB83F /* Project object */;
+}
