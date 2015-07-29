@@ -20,6 +20,9 @@
             :(void)0,                                                 \
     lua_settop(L, __startStackIndex+(keep)))                          \
 
+int luaoc_msg_send(lua_State* L);
+
+#pragma mark - DEBUG METHOD
 /** generic print method, used for debug */
 void luaoc_print(lua_State* L, int index);
 /** print table at index, now haven't deal infinite loop */

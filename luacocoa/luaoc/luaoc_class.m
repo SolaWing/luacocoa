@@ -6,20 +6,19 @@
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
-
 #import "luaoc_class.h"
 #import "lua.h"
 #import "lauxlib.h"
 #import "luaoc_helper.h"
 
 #import <objc/runtime.h>
+#import <string.h>
 
 void luaoc_push_class(lua_State *L, Class cls) {
   PUSH_LUA_STACK(L);
   if (!luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME)) {
     // no meta table, there is some wrong , or call this method when not open
-    NSLog(@"ERROR: %s: can't get metaTable", __FUNCTION__);
+    printf("ERROR: %s: can't get metaTable\n", __FUNCTION__);
     POP_LUA_STACK(L, 1);
     return;
   }
@@ -28,7 +27,7 @@ void luaoc_push_class(lua_State *L, Class cls) {
   lua_rawget(L, -2);                                // : meta loaded
 
   if (lua_rawgetp(L, -1, cls) == LUA_TNIL){ // no obj, bind new
-    *(Class*)(lua_newuserdata(L, sizeof(void*))) = cls;
+    *(Class*)(lua_newuserdata(L, sizeof(Class))) = cls;
     lua_pushvalue(L, LUA_START_INDEX(L)+1);
     lua_setmetatable(L, -2);                        // + ud ; set ud meta
 
@@ -92,11 +91,30 @@ static const luaL_Reg ClassTableMethods[] = {
 
 #pragma mark - class lua convert
 static int __index(lua_State *L){
+  luaL_checkudata(L, 1, LUAOC_CLASS_METATABLE_NAME);
+
+  lua_getuservalue(L, 1);
+  lua_pushvalue(L, 2); // : ud key udv key
+  // is nil and key is string , return message wrapper
+  if (lua_rawget(L, -2) == LUA_TNIL && lua_type(L,2) == LUA_TSTRING) {
+    lua_pushvalue(L,2);
+    lua_pushcclosure(L, luaoc_msg_send, 1);
+  }
+
   return 1;
 }
 
 static int __newindex(lua_State *L){
-  return 1;
+  luaL_checkudata(L, 1, LUAOC_CLASS_METATABLE_NAME);
+  if (lua_type(L, 3) == LUA_TFUNCTION){
+    // TODO: override func
+  }
+
+  lua_getuservalue(L, 1);
+  lua_insert(L, 2);
+  lua_rawset(L, 2);                         // udv[key] = value
+
+  return 0;
 }
 
 static const luaL_Reg metaMethods[] = {

@@ -9,6 +9,11 @@
 #import "luaoc_helper.h"
 #import "lauxlib.h"
 
+int luaoc_msg_send(lua_State* L){
+  return 1;
+}
+
+#pragma mark - DEBUG
 void luaoc_print(lua_State* L, int index) {
   switch( lua_type(L, index) ){
     case LUA_TNIL: {

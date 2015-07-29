@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */ = {isa = PBXBuildFile; fileRef = 216B4A361B690A180060DCA5 /* luaoc_struct.m */; };
 		21AE0CEF1B6711D1006FB83F /* luaoc.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0CEE1B6711D1006FB83F /* luaoc.h */; };
 		21AE0CF11B6711D1006FB83F /* luaoc.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0CF01B6711D1006FB83F /* luaoc.m */; };
 		21AE0CF71B6711D1006FB83F /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
@@ -153,6 +154,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		216B4A351B690A180060DCA5 /* luaoc_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_struct.h; sourceTree = "<group>"; };
+		216B4A361B690A180060DCA5 /* luaoc_struct.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_struct.m; sourceTree = "<group>"; };
 		21AE0CEB1B6711D1006FB83F /* libluaoc.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libluaoc.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		21AE0CEE1B6711D1006FB83F /* luaoc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = luaoc.h; sourceTree = "<group>"; };
 		21AE0CF01B6711D1006FB83F /* luaoc.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = luaoc.m; sourceTree = "<group>"; };
@@ -298,6 +301,8 @@
 				21AE0DB11B672552006FB83F /* luaoc_class.m */,
 				21BFB3B91B67686D00D45278 /* luaoc_instance.h */,
 				21BFB3BA1B67686D00D45278 /* luaoc_instance.m */,
+				216B4A351B690A180060DCA5 /* luaoc_struct.h */,
+				216B4A361B690A180060DCA5 /* luaoc_struct.m */,
 				21AE0DB31B67271F006FB83F /* luaoc_helper.h */,
 				21AE0DB41B67271F006FB83F /* luaoc_helper.m */,
 			);
@@ -572,6 +577,7 @@
 			files = (
 				21AE0CF11B6711D1006FB83F /* luaoc.m in Sources */,
 				21AE0DB21B672552006FB83F /* luaoc_class.m in Sources */,
+				216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */,
 				21AE0DB51B67271F006FB83F /* luaoc_helper.m in Sources */,
 				21BFB3BB1B67686D00D45278 /* luaoc_instance.m in Sources */,
 			);

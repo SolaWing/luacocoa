@@ -6,10 +6,10 @@
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 
-struct lua_State;
+#import "lua.h"
 
 
 #define LUAOC_CLASS_METATABLE_NAME "oc.class"
 
-int luaopen_luaoc_class(struct lua_State *L);
-void luaoc_push_class(struct lua_State *L, Class cls);
+int luaopen_luaoc_class(lua_State *L);
+void luaoc_push_class(lua_State *L, Class cls);
