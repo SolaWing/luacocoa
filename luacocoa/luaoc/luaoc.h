@@ -7,7 +7,11 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "lua.h"
 
-@interface luaoc : NSObject
+extern lua_State *gLua_main_state;
+/** create a lua state and openLuaOC */
+lua_State* luaoc_setup();
+void luaoc_close();
 
-@end
+int luaopen_luaoc(lua_State *L);
