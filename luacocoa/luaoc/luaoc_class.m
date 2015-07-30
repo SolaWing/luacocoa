@@ -15,11 +15,11 @@
 #import <string.h>
 
 void luaoc_push_class(lua_State *L, Class cls) {
-  PUSH_LUA_STACK(L);
+  LUA_PUSH_STACK(L);
   if (!luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME)) {
     // no meta table, there is some wrong , or call this method when not open
     printf("ERROR: %s: can't get metaTable\n", __FUNCTION__);
-    POP_LUA_STACK(L, 1);
+    LUA_POP_STACK(L, 1);
     return;
   }
 
@@ -38,7 +38,7 @@ void luaoc_push_class(lua_State *L, Class cls) {
     lua_rawsetp(L, LUA_START_INDEX(L)+2, cls);      // loaded[p] = ud
   }
 
-  POP_LUA_STACK(L, 1);  // keep ud at the top
+  LUA_POP_STACK(L, 1);  // keep ud at the top
 }
 
 #pragma mark - class search table
@@ -59,17 +59,24 @@ static int newClass(lua_State *L){
 
 static int name(lua_State *L){
   if (lua_getmetatable(L, 1)) {
-    lua_pushstring(L, "type");
-    lua_rawget(L, -2);
-    const char* type = lua_tostring(L, -1);
-    if (type){
-      if (strcmp(type, "class") == 0) {
-        lua_pushstring(L, class_getName(*(Class*)(lua_touserdata(L, 1))));
-        return 1;
-      }
-      else if (strcmp(type, "id") == 0) {
-        lua_pushstring(L, object_getClassName(*(id*)(lua_touserdata(L,1))));
-        return 1;
+    lua_pushstring(L, "__type");
+    if (lua_rawget(L, -2) == LUA_TNUMBER) {
+      switch( lua_tointeger(L, -1) ){
+        case luaoc_class_type: {
+          lua_pushstring(L, class_getName(*(Class*)(lua_touserdata(L, 1))));
+          return 1;
+        }
+        case luaoc_instance_type: {
+          lua_pushstring(L, object_getClassName(*(id*)(lua_touserdata(L,1))));
+          return 1;
+        }
+        case luaoc_super_type: {
+          lua_pushstring(L, class_getName(*(((Class*)lua_touserdata(L, 1)) + 1)));
+          return 1;
+        }
+        default: {
+          break;
+        }
       }
     }
   }
@@ -132,8 +139,8 @@ int luaopen_luaoc_class(lua_State *L) {
   luaL_newmetatable(L, LUAOC_CLASS_METATABLE_NAME);
   luaL_setfuncs(L, metaMethods, 0);                 // + classMetaTable
 
-  lua_pushstring(L, "type");
-  lua_pushstring(L, "class");
+  lua_pushstring(L, "__type");
+  lua_pushinteger(L, luaoc_class_type);
   lua_rawset(L, -3);                                // classMetaTable.type = "class"
 
   // a new loaded table hold all class pointer to lua repr

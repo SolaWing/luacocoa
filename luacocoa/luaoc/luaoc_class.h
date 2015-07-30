@@ -12,4 +12,5 @@
 #define LUAOC_CLASS_METATABLE_NAME "oc.class"
 
 int luaopen_luaoc_class(lua_State *L);
+
 void luaoc_push_class(lua_State *L, Class cls);

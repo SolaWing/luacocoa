@@ -7,9 +7,24 @@
 //
 
 #import "luaoc_helper.h"
+#import "luaoc_class.h"
+#import "luaoc_instance.h"
+#import "luaoc_struct.h"
+
 #import "lauxlib.h"
 
 int luaoc_msg_send(lua_State* L){
+  int top = lua_gettop(L);
+
+  id* ud = (id*)lua_touserdata(L, 1);
+
+  if (!ud) { luaL_argerror(L, 1, "msg send must be objc object!"); }
+  if (luaL_getmetafield(L, 1, "__type") != LUA_TNUMBER) {
+    luaL_error(L, "can't found metaTable!");
+  }
+
+
+  const char* msg = lua_tostring(L, lua_upvalueindex(1));
   return 1;
 }
 

@@ -9,6 +9,7 @@
 #import "lua.h"
 
 #define LUAOC_INSTANCE_METATABLE_NAME "oc.instance"
+#define LUAOC_SUPER_METATABLE_NAME "oc.super"
 
 int luaopen_luaoc_instance(lua_State *L);
 
