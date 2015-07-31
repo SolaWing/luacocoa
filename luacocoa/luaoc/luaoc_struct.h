@@ -12,11 +12,4 @@
 
 int luaopen_luaoc_struct(lua_State *L);
 
-typedef struct _luaoc_struct_userdata {
-  void *structRef;
-  int size;
-  char* typeDescription;
-  char* name;
-} luaoc_struct_userdata;
-
-void luaoc_push_struct(lua_State *L, void* structRef, const char* typeDescription);
+void luaoc_push_struct(lua_State *L, const char* typeDescription, void* structRef);

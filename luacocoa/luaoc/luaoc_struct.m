@@ -13,6 +13,10 @@
 /// table use to find offset by name {struct_name = {name = offset, ...}, ...}
 #define NAMED_STRUCT_TABLE_NAME "named_struct"
 
+void luaoc_push_struct(lua_State *L, const char* typeDescription, void* structRef) {
+
+}
+
 static int __index(lua_State *L){
   return 1;
 }
@@ -46,8 +50,8 @@ int luaopen_luaoc_struct(lua_State *L) {
   lua_pushinteger(L, luaoc_struct_type);
   lua_rawset(L, -3);
 
-  luaL_newmetatable(L, NAMED_STRUCT_TABLE_NAME);
-  lua_pop(L, 2);                    // pop 2 metaTable
+  luaL_newmetatable(L, NAMED_STRUCT_TABLE_NAME);    // use to save named struct info
+  lua_pop(L, 2);                                    // pop 2 metaTable
 
   return 1; // :structFunctions;
 }

@@ -31,11 +31,6 @@ enum luaoc_userdata_type {
 
 #define IS_RELATIVE_INDEX(index) ((index) < 0 && (index) > LUA_REGISTRYINDEX)
 
-/** if minus relative index, convert to absolute index */
-static inline int lua_absolute_index(lua_State *L, int index) {
-  return IS_RELATIVE_INDEX(index) ? (lua_gettop(L) + index + 1) : index;
-}
-
 /** just like `lua_setfield`, but does a raw set */
 static inline void lua_rawsetfield(lua_State *L, int index, const char *k){
   lua_pushstring(L, k);
@@ -52,6 +47,11 @@ static inline int lua_rawgetfield(lua_State *L, int index, const char *k){
 #pragma mark - api method
 /** first arg is receiver, second is method args */
 int luaoc_msg_send(lua_State* L);
+/** convert given index lua value to objc value, return alloc address */
+void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, int *outSize);
+/** push any obj to lua according to typeDescription */
+void  luaoc_push_obj(lua_State *L, const char *typeDescription, void* objRef);
+int luaoc_get_typesize(const char *typeDescription);
 
 #pragma mark - DEBUG METHOD
 /** generic print method, used for debug */
@@ -60,3 +60,11 @@ void luaoc_print(lua_State* L, int index);
 void luaoc_print_table(lua_State* L, int index);
 /** print entire stack */
 void luaoc_dump_stack(lua_State* L);
+
+#ifndef DLOG
+  #if defined(DEBUG) && DEBUG > 0
+    #define DLOG(fmt, ...) printf("%s[%d]: " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+  #else
+    #define DLOG(...)
+  #endif
+#endif

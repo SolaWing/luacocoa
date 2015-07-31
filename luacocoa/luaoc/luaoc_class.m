@@ -18,7 +18,7 @@ void luaoc_push_class(lua_State *L, Class cls) {
   LUA_PUSH_STACK(L);
   if (!luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME)) {
     // no meta table, there is some wrong , or call this method when not open
-    printf("ERROR: %s: can't get metaTable\n", __FUNCTION__);
+    DLOG("ERROR: can't get metaTable\n");
     LUA_POP_STACK(L, 1);
     return;
   }
