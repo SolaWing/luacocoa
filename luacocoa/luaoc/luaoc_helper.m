@@ -101,12 +101,13 @@ int luaoc_msg_send(lua_State* L){
 void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, int *outSize) {
   void* value = NULL;
   if (outSize == NULL) outSize = (int*)alloca(sizeof(int));     // prevent NULL condition in deal
-  *outSize = 0;
 
   if (lua_isnoneornil(L, index)) { // if nil, return a pointer ref to NULL pointer, it also can treat as number 0
     *outSize = sizeof(void*); value = calloc(sizeof(void*), 1);
     return value;
   }
+
+  *outSize = 0;
 
   int i = 0;
 
@@ -139,8 +140,8 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, in
         return value;
       }
       case _C_PTR: {
-        // TODO: how to deal ref to a value, or ref to out val?
-        // now consider use userdata represent pointer, like pass by ref
+         // FIXME: when convert to ptr, pass the userdata addr, just like pass by ref
+         // for non-const ptr, change inner value may unsafe.
         *outSize = sizeof(void*); value = calloc(sizeof(void*), 1);
         switch( lua_type(L, index) ){
           case LUA_TLIGHTUSERDATA:
@@ -149,7 +150,7 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, in
             return value;
           }
           case LUA_TNONE:
-          case LUA_TNIL: return value;
+          case LUA_TNIL:
           default: {
             return value;
           }
@@ -177,56 +178,56 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, in
             *(id*)value = [NSString stringWithUTF8String:lua_tostring(L, index)];
             return value;
           case LUA_TTABLE:{
-           BOOL dictionary = NO;
+            BOOL dictionary = NO;
 
-           lua_pushvalue(L, index); // Push the table reference on the top
-           lua_pushnil(L);  /* first key */
-           while (!dictionary && lua_next(L, -2)) {
-             if (lua_type(L, -2) != LUA_TNUMBER) {
-               dictionary = YES;
-               lua_pop(L, 2); // pop key and value off the stack
-             }
-             else {
-               lua_pop(L, 1);
-             }
-           }
+            lua_pushvalue(L, index); // Push the table reference on the top
+            lua_pushnil(L);  /* first key */
+            while (!dictionary && lua_next(L, -2)) {
+              if (lua_type(L, -2) != LUA_TNUMBER) {
+                dictionary = YES;
+                lua_pop(L, 2); // pop key and value off the stack
+              }
+              else {
+                lua_pop(L, 1);
+              }
+            }
 
-           if (dictionary) {
-             *(id*)value = [NSMutableDictionary dictionary];
+            if (dictionary) {
+              *(id*)value = [NSMutableDictionary dictionary];
 
-             lua_pushnil(L);  /* first key */
-             while (lua_next(L, -2)) {
-               id *key = (id*)luaoc_copy_toobjc(L, -2, "@", nil);
-               id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
-               if (*key && *object) // ignore NULL kv
-                 [*(id*)value setObject:*object forKey:*key];
-               lua_pop(L, 1); // Pop off the value
-               free(key);
-               free(object);
-             }
-           } else {
-             *(id*)value = [NSMutableArray array];
+              lua_pushnil(L);  /* first key */
+              while (lua_next(L, -2)) {
+                id *key = (id*)luaoc_copy_toobjc(L, -2, "@", nil);
+                id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
+                if (*key && *object) // ignore NULL kv
+                  [*(id*)value setObject:*object forKey:*key];
+                lua_pop(L, 1); // Pop off the value
+                free(key);
+                free(object);
+              }
+            } else {
+              *(id*)value = [NSMutableArray array];
 
-             size_t len = lua_rawlen(L, -1);
-             for (size_t i = 1; i <= len; ++i) {
-               lua_rawgeti(L, -1, i);
-               id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
-               [*(id*)value addObject:*object];
-               free(object);
-             }
-           }
+              size_t len = lua_rawlen(L, -1);
+              for (size_t i = 1; i <= len; ++i) {
+                lua_rawgeti(L, -1, i);
+                id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
+                [*(id*)value addObject:*object];
+                free(object);
+              }
+            }
 
-           lua_pop(L, 1); // Pop the table reference off
-           break;
+            lua_pop(L, 1); // Pop the table reference off
+            break;
           }
-          case LUA_TNIL: case LUA_TNONE:
+          case LUA_TNIL:
+          case LUA_TNONE:
           default: return value;
         }
       }
       case _C_SEL:{
         *outSize = sizeof(SEL); value = calloc(sizeof(SEL), 1);
-        *(const char**)value = lua_tostring(L, index);
-        if (*(char**)value) {
+        if ((*(const char**)value = lua_tostring(L, index))) {
           *(SEL*)value = sel_getUid(*(char**)value);
         }
         return value;
@@ -298,6 +299,86 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
   }
   DLOG("unable convert typeencoding %s", typeDescription);
   lua_pushnil(L);
+}
+
+int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, char** copyTypeName) {
+
+  #define CASE_SIZE(encoding, type) case encoding: ++(*stopPos); return sizeof(type);
+
+  if (NULL == stopPos){
+    stopPos = (const char**)alloca(sizeof(const char*));
+  }
+  *stopPos = typeDescription;
+  int size = 0;
+  do {
+    switch( **stopPos ){
+      CASE_SIZE(_C_ID      , id)
+      CASE_SIZE(_C_CLASS   , Class)
+      CASE_SIZE(_C_SEL     , SEL)
+      CASE_SIZE(_C_CHR     , char)
+      CASE_SIZE(_C_UCHR    , unsigned char)
+      CASE_SIZE(_C_SHT     , short)
+      CASE_SIZE(_C_USHT    , unsigned short)
+      CASE_SIZE(_C_INT     , int)
+      CASE_SIZE(_C_UINT    , unsigned int)
+      CASE_SIZE(_C_LNG     , long)
+      CASE_SIZE(_C_ULNG    , unsigned long)
+      CASE_SIZE(_C_LNG_LNG , long long)
+      CASE_SIZE(_C_ULNG_LNG, unsigned long long)
+      CASE_SIZE(_C_FLT     , float)
+      CASE_SIZE(_C_DBL     , double)
+      CASE_SIZE(_C_BOOL    , BOOL)
+      CASE_SIZE(_C_UNDEF   , void*)
+      CASE_SIZE(_C_CHARPTR , char*)
+      // FIXME: may need to deal error
+      case _C_BFLD: return ((int)strtol(++(*stopPos), (char**)stopPos, 10)+7)/8;
+      case _C_VOID: ++(*stopPos); return 0;
+      case _C_PTR: {
+        luaoc_get_one_typesize(++(*stopPos), stopPos, NULL); // set stopPos after ptr type
+        return sizeof(void*);
+      }
+      case _C_ARY_B: {
+        size = (int)strtol(++(*stopPos), (char**)stopPos, 10); // array count
+        size *= luaoc_get_one_typesize(*stopPos, stopPos, NULL);
+        // FIXME: may need to check array end
+        ++(*stopPos); // skip array end
+        return size;
+      }
+      case _C_STRUCT_B:
+      case _C_UNION_B: {
+        char* eqpos = strchr(*stopPos, '=');
+
+#if defined(DEBUG) && DEBUG != 0
+        if (NULL == eqpos) DLOG("Error: can't find '=' in union type");
+#endif
+        if (copyTypeName){
+          long len = eqpos - *stopPos;
+          *copyTypeName = (char*)malloc(len);
+          memcpy(*copyTypeName, (*stopPos)+1, len-1);
+          (*copyTypeName)[len-1] = '\0';
+        }
+
+        if (**stopPos == _C_UNION_B) {
+          *stopPos = eqpos+1; // set pos after =
+          while(**stopPos != _C_UNION_E){ // union get the max element size
+            int eleSize = luaoc_get_one_typesize(*stopPos, stopPos, NULL);
+            if (eleSize > size) size = eleSize;
+          }
+        } else { // struct
+          *stopPos = eqpos + 1;
+          while (**stopPos != _C_STRUCT_E){ // struct get all element size
+            size += luaoc_get_one_typesize(*stopPos, stopPos, NULL);
+          }
+        }
+        ++(*stopPos); // skip end
+        return size;
+      }
+      case 0: return size; // reach string end
+      default: { break; }
+    }
+    ++(*stopPos);
+  } while(true);
+  return size;
 }
 
 #pragma mark - DEBUG

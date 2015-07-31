@@ -10,11 +10,39 @@
 #import "lauxlib.h"
 #import "luaoc_helper.h"
 
+#import <stdlib.h>
+#import <string.h>
+
 /// table use to find offset by name {struct_name = {name = offset, ...}, ...}
 #define NAMED_STRUCT_TABLE_NAME "named_struct"
 
 void luaoc_push_struct(lua_State *L, const char* typeDescription, void* structRef) {
+  char *structName = NULL;
+  int size = luaoc_get_one_typesize(typeDescription, NULL, &structName);
 
+  if (size == 0) {DLOG("empty struct size!!"); lua_pushnil(L); return;}
+
+  void* ud = lua_newuserdata(L, size);
+  memcpy(ud, structRef, size);
+
+  luaL_getmetatable(L, LUAOC_STRUCT_METATABLE_NAME);
+  lua_setmetatable(L, -2);
+
+  { // the new user value table
+    lua_newtable(L);
+
+    lua_pushstring(L, typeDescription);
+    lua_rawsetfield(L, -2, "__encoding");
+
+    if (structName){
+      lua_pushstring(L, structName);
+      lua_rawsetfield(L, -2, "__name");
+    }
+
+    lua_setuservalue(L, -2);
+  }
+
+  free(structName);
 }
 
 static int __index(lua_State *L){

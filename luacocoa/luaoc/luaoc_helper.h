@@ -45,13 +45,26 @@ static inline int lua_rawgetfield(lua_State *L, int index, const char *k){
 }
 
 #pragma mark - api method
+
 /** first arg is receiver, second is method args */
 int luaoc_msg_send(lua_State* L);
+
 /** convert given index lua value to objc value, return alloc address */
 void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, int *outSize);
+
 /** push any obj to lua according to typeDescription */
 void  luaoc_push_obj(lua_State *L, const char *typeDescription, void* objRef);
-int luaoc_get_typesize(const char *typeDescription);
+
+/** get one type size from typeDescription
+ *
+ * @param typeDescription: type encoding str. for encode rule, see @encode()
+ * @param stopPos: point to pos after parse a type, can pass NULL
+ * @param copyTypeName:
+ *      if present, set as the struct name or union name, you must free it.
+ *      can pass NULL
+ * @return : the typesize
+ */
+int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, char** copyTypeName);
 
 #pragma mark - DEBUG METHOD
 /** generic print method, used for debug */
@@ -62,7 +75,7 @@ void luaoc_print_table(lua_State* L, int index);
 void luaoc_dump_stack(lua_State* L);
 
 #ifndef DLOG
-  #if defined(DEBUG) && DEBUG > 0
+  #if defined(DEBUG) && DEBUG != 0
     #define DLOG(fmt, ...) printf("%s[%d]: " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
   #else
     #define DLOG(...)
