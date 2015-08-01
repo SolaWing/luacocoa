@@ -14,3 +14,4 @@
 int luaopen_luaoc_class(lua_State *L);
 
 void luaoc_push_class(lua_State *L, Class cls);
+Class luaoc_toclass(lua_State *L, int index);

@@ -15,10 +15,15 @@
 #import <string.h>
 
 void luaoc_push_class(lua_State *L, Class cls) {
+  if (NULL == cls) {
+    lua_pushnil(L);
+    return;
+  }
+
   LUA_PUSH_STACK(L);
   if (!luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME)) {
     // no meta table, there is some wrong , or call this method when not open
-    DLOG("ERROR: can't get metaTable\n");
+    DLOG("ERROR: can't get metaTable, do you open oc lib?");
     LUA_POP_STACK(L, 1);
     return;
   }
@@ -41,6 +46,12 @@ void luaoc_push_class(lua_State *L, Class cls) {
   LUA_POP_STACK(L, 1);  // keep ud at the top
 }
 
+Class luaoc_toclass(lua_State *L, int index) {
+  Class* ud = (Class*)luaL_testudata(L, index, LUAOC_CLASS_METATABLE_NAME);
+  if (NULL == ud) return NULL;
+  return *ud;
+}
+
 #pragma mark - class search table
 static int indexClassByName(lua_State *L){
   const char *className = luaL_checkstring(L, 2);
@@ -48,12 +59,15 @@ static int indexClassByName(lua_State *L){
   if (cls) {
     luaoc_push_class(L, cls);
   }else {
+    DLOG("unknown class name: '%s', "
+         "did you spell correct or link the relevant framework?", className);
     lua_pushnil(L);
   }
   return 1;
 }
 
 static int newClass(lua_State *L){
+  // TODO: newClass
   return 1;
 }
 
@@ -71,7 +85,7 @@ static int name(lua_State *L){
           return 1;
         }
         case luaoc_super_type: {
-          lua_pushstring(L, class_getName(*(((Class*)lua_touserdata(L, 1)) + 1)));
+          lua_pushstring(L, class_getName(*(((Class*)lua_touserdata(L, 1)) + 1) ));
           return 1;
         }
         default: {

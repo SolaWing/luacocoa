@@ -46,7 +46,7 @@ static inline int lua_rawgetfield(lua_State *L, int index, const char *k){
 
 #pragma mark - api method
 
-/** first arg is receiver, second is method args */
+/** first arg is receiver, second is method args. and this method should have a upvalue as method name */
 int luaoc_msg_send(lua_State* L);
 
 /** convert given index lua value to objc value, return alloc address */
@@ -76,7 +76,7 @@ void luaoc_dump_stack(lua_State* L);
 
 #ifndef DLOG
   #if defined(DEBUG) && DEBUG != 0
-    #define DLOG(fmt, ...) printf("%s[%d]: " fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+    #define DLOG(fmt, ...) printf("%s[%d]: " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
   #else
     #define DLOG(...)
   #endif

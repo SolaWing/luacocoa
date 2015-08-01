@@ -14,6 +14,8 @@
 
 #import <objc/runtime.h>
 
+#define RAW_STR(...) #__VA_ARGS__
+
 void print_register_class(){
   unsigned int c;
   Class* p = objc_copyClassList(&c);
@@ -42,8 +44,8 @@ void print_register_class(){
 }
 
 - (void)testExample {
-  luaL_dostring(gLua_main_state, "a = 123; print(a); _ENV={print=print,a=333}; print(22,a)");
-    
+  // luaL_dostring(gLua_main_state, "a = 123; print(a); _ENV={print=print,a=333}; print(22,a)");
+
     // This is an example of a functional test case.
 #define CMethod(cls, name) class_getClassMethod([cls class], @selector(name))
 #define IMethod(cls, name) class_getInstanceMethod([cls class], @selector(name))
@@ -66,16 +68,40 @@ void print_register_class(){
 - (void)testClass {
   // print_register_class();
   // need to use class, or link UIKit. or objc_getClass return nil
-  [[UIView new] release];
+  XCTAssertEqual(lua_gettop(gLua_main_state), 0);
+
+  /** PUSH CLASS */
+  int startIndex = lua_gettop(gLua_main_state);
+  luaoc_push_class(gLua_main_state, [UIView class]);
+  XCTAssertEqual(startIndex+1, lua_gettop(gLua_main_state), "stack should only add 1");
+
+  XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [UIView class], "should be UIView class ptr");
+
+  luaoc_push_class(gLua_main_state, [UIView class]);
+  XCTAssertEqual(startIndex+2, lua_gettop(gLua_main_state), "stack should only add 1");
+  XCTAssertTrue(lua_rawequal(gLua_main_state, -1, -2), "some class should have some userdata");
+
+  luaoc_push_class(gLua_main_state, nil);
+  XCTAssertEqual(startIndex+3, lua_gettop(gLua_main_state), "stack should only add 1");
+  XCTAssertTrue(lua_isnil(gLua_main_state, -1), "nil class should return nil");
+
+  luaoc_push_class(gLua_main_state, [NSObject class]);
+  XCTAssertEqual(startIndex+4, lua_gettop(gLua_main_state), "stack should only add 1");
+  XCTAssertFalse(lua_rawequal(gLua_main_state, -1, -2), "different class should have different userdata");
+  XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [NSObject class], "should be NSObject ptr");
+
+  XCTAssertEqual(luaoc_toclass(gLua_main_state, startIndex+1), [UIView class], "shouldn't break exist stack");
+
+  /** LUA index CLASS */
+  luaL_dostring(gLua_main_state, "return oc.class.NSObject");
+  XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [NSObject class], "should return NSObject class userdata");
+
+  luaL_dostring(gLua_main_state, "return oc.class.UnknownClass");
+  XCTAssertTrue(lua_isnil(gLua_main_state, -1));
+
+  /** LUA get class name */
   luaL_dostring(gLua_main_state, "return oc.class.name(oc.class.UIView)");
   XCTAssertTrue(strcmp(lua_tostring(gLua_main_state, -1), "UIView") == 0);
-}
-
-- (void)testPerformanceExample {
-    // This is an example of a performance test case.
-    [self measureBlock:^{
-        // Put the code you want to measure the time of here.
-    }];
 }
 
 @end

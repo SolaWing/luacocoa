@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */ = {isa = PBXBuildFile; fileRef = 216B4A361B690A180060DCA5 /* luaoc_struct.m */; };
+		2197367E1B6D011400B6846D /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
 		21AE0CEF1B6711D1006FB83F /* luaoc.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0CEE1B6711D1006FB83F /* luaoc.h */; };
 		21AE0CF11B6711D1006FB83F /* luaoc.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0CF01B6711D1006FB83F /* luaoc.m */; };
 		21AE0CF71B6711D1006FB83F /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
@@ -156,6 +157,7 @@
 /* Begin PBXFileReference section */
 		216B4A351B690A180060DCA5 /* luaoc_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_struct.h; sourceTree = "<group>"; };
 		216B4A361B690A180060DCA5 /* luaoc_struct.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_struct.m; sourceTree = "<group>"; };
+		2197367D1B6D011400B6846D /* luaoc_test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_test.m; sourceTree = "<group>"; };
 		21AE0CEB1B6711D1006FB83F /* libluaoc.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libluaoc.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		21AE0CEE1B6711D1006FB83F /* luaoc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = luaoc.h; sourceTree = "<group>"; };
 		21AE0CF01B6711D1006FB83F /* luaoc.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = luaoc.m; sourceTree = "<group>"; };
@@ -314,6 +316,7 @@
 			children = (
 				21AE0CFB1B6711D1006FB83F /* Supporting Files */,
 				21AE0DB81B6754CF006FB83F /* class_test.m */,
+				2197367D1B6D011400B6846D /* luaoc_test.m */,
 			);
 			path = luaocTests;
 			sourceTree = "<group>";
@@ -587,6 +590,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2197367E1B6D011400B6846D /* luaoc_test.m in Sources */,
 				21AE0DB91B6754CF006FB83F /* class_test.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

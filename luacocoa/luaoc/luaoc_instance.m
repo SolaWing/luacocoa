@@ -22,7 +22,7 @@ void luaoc_push_instance(lua_State *L, id v){
   LUA_PUSH_STACK(L);
   if (!luaL_getmetatable(L, LUAOC_INSTANCE_METATABLE_NAME)){
     // no meta table, there is some wrong , or call this method when not open
-    DLOG("ERROR: can't get metaTable\n");
+    DLOG("ERROR: can't get metaTable");
     LUA_POP_STACK(L, 1);
     return;
   }
@@ -63,7 +63,10 @@ void luaoc_push_super(lua_State *L, int index) {
     else if (tt == luaoc_super_type) cls = *(ud+1);
   }
   if (NULL == cls){
-    luaL_error(L, "invalid instance type!");
+    DLOG("ERROR: invalid instance type!");
+    lua_pushnil(L);
+    LUA_POP_STACK(L, 1);
+    return;
   }
 
   cls = class_getSuperclass(cls);
@@ -86,6 +89,19 @@ void luaoc_push_super(lua_State *L, int index) {
   [*ud retain]; // retain it and release it in gc
 
   LUA_POP_STACK(L, 1); // + su
+}
+
+id luaoc_toinstance(lua_State *L, int index) {
+  id* ud = (id*)lua_touserdata(L, index);
+  if (ud && luaL_getmetafield(L, index, "__type") != LUA_TNIL){
+    LUA_INTEGER tt = lua_tointeger(L, -1); lua_pop(L, 1);
+
+    if (tt == luaoc_instance_type || tt == luaoc_super_type) {
+      return *ud;
+    }
+  }
+
+  return NULL;
 }
 
 static int __index(lua_State *L){
