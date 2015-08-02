@@ -13,12 +13,15 @@
 #import <stdlib.h>
 #import <string.h>
 
+#import <Foundation/Foundation.h>
+
 /// table use to find offset by name {struct_name = {name = offset, ...}, ...}
 #define NAMED_STRUCT_TABLE_NAME "named_struct"
 
 void luaoc_push_struct(lua_State *L, const char* typeDescription, void* structRef) {
   char *structName = NULL;
-  int size = luaoc_get_one_typesize(typeDescription, NULL, &structName);
+  const char *endPos;
+  int size = luaoc_get_one_typesize(typeDescription, &endPos, &structName);
 
   if (size == 0) {DLOG("empty struct size!!"); lua_pushnil(L); return;}
 
@@ -31,7 +34,7 @@ void luaoc_push_struct(lua_State *L, const char* typeDescription, void* structRe
   { // the new user value table
     lua_newtable(L);
 
-    lua_pushstring(L, typeDescription);
+    lua_pushlstring(L, typeDescription, endPos-typeDescription);
     lua_rawsetfield(L, -2, "__encoding");
 
     if (structName){
@@ -45,7 +48,46 @@ void luaoc_push_struct(lua_State *L, const char* typeDescription, void* structRe
   free(structName);
 }
 
+int luaoc_tostruct(lua_State *L, int index, void* outStructRef) {
+  return luaoc_tostruct_n(L, index, outStructRef, INT_MAX);
+}
+
+int luaoc_tostruct_n(lua_State *L, int index, void* outStructRef, size_t n) {
+  NSCParameterAssert(outStructRef);
+
+  void* ud = luaL_testudata(L, index, LUAOC_STRUCT_METATABLE_NAME);
+  if (NULL == ud) return false;
+
+  size_t size = lua_rawlen(L, index);
+  if (n < size) return false;
+
+  memcpy(outStructRef, ud, size);
+  return true;
+}
+
+void* luaoc_copystruct(lua_State *L, int index, size_t* outSize) {
+  void* ud = luaL_testudata(L, index, LUAOC_STRUCT_METATABLE_NAME);
+  if (NULL == ud) return false;
+
+  size_t size = lua_rawlen(L, index);
+  if (outSize) *outSize = size;
+
+  void* ret = malloc(size);
+  memcpy(ret, ud, size);
+
+  return ret;
+}
+
+void* luaoc_getstruct(lua_State *L, int index) {
+  return luaL_testudata(L, index, LUAOC_STRUCT_METATABLE_NAME);
+}
+
 static int __index(lua_State *L){
+  lua_getuservalue(L, 1);
+  lua_pushvalue(L, 2);
+
+  lua_rawget(L, -2);
+
   return 1;
 }
 
@@ -53,9 +95,15 @@ static int __newindex(lua_State *L){
   return 0;
 }
 
+static int __len(lua_State *L){
+  lua_pushinteger(L, lua_rawlen(L, 1));
+  return 1;
+}
+
 static const luaL_Reg metaMethods[] = {
   {"__index", __index},
   {"__newindex", __newindex},
+  {"__len", __len},
   {NULL, NULL},
 };
 

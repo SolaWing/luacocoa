@@ -50,7 +50,7 @@ static inline int lua_rawgetfield(lua_State *L, int index, const char *k){
 int luaoc_msg_send(lua_State* L);
 
 /** convert given index lua value to objc value, return alloc address */
-void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, int *outSize);
+void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, size_t *outSize);
 
 /** push any obj to lua according to typeDescription */
 void  luaoc_push_obj(lua_State *L, const char *typeDescription, void* objRef);

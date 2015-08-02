@@ -98,9 +98,13 @@ int luaoc_msg_send(lua_State* L){
   return 0;
 }
 
-void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, int *outSize) {
+void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, size_t *outSize) {
+  // return NULL only when invalid typeDescription.
+  // invalid lua value will return value ref to zero fill value
+  NSCParameterAssert(typeDescription);
+
   void* value = NULL;
-  if (outSize == NULL) outSize = (int*)alloca(sizeof(int));     // prevent NULL condition in deal
+  if (outSize == NULL) outSize = (size_t*)alloca(sizeof(size_t));     // prevent NULL condition in deal
 
   if (lua_isnoneornil(L, index)) { // if nil, return a pointer ref to NULL pointer, it also can treat as number 0
     *outSize = sizeof(void*); value = calloc(sizeof(void*), 1);
@@ -134,7 +138,7 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, in
       NUMBER_CASE (_C_FLT, float)
       NUMBER_CASE (_C_DBL, double)
       BOOL_CASE   (_C_BOOL, bool)
-      case _C_CHARPTR: {
+      case _C_CHARPTR: { // NOTE: the _C_CHARPTR return a const char*, shouldn't change it
         *outSize = sizeof(char*); value = malloc(sizeof(char*));
         *(const char**)value = lua_tostring(L, index);
         return value;
@@ -161,13 +165,25 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, in
         *outSize = sizeof(id); value = calloc(sizeof(id), 1);
         switch (lua_type(L, index)){
           case LUA_TLIGHTUSERDATA:
-            *(id*)value = *(id*)lua_touserdata(L, index);
+            *(id*)value = (id)lua_touserdata(L, index); // assume the ptr is convert from id
             return value;
-          case LUA_TUSERDATA:
-            *(id*)value = *(id*)lua_touserdata(L, index);
-            return value;
-            // TODO: bind table type to array and dict, value type to value
-
+          case LUA_TUSERDATA: {
+              if (luaL_getmetafield(L, index, "__type") != LUA_TNIL){
+                LUA_INTEGER tt = lua_tointeger(L, -1); lua_pop(L, 1);
+                if (tt == luaoc_struct_type){ // auto encapsulate struct to NSValue
+                  *(void**)value = lua_touserdata(L,index);
+                  lua_getfield(L, index, "__encoding");
+                  *(id*)value = [NSValue valueWithBytes:*(void**)value
+                                               objCType:lua_tostring(L, -1)];
+                  lua_pop(L, 1);
+                } else {
+                  *(id*)value = *(id*)lua_touserdata(L, index);
+                }
+              } else {
+                DLOG("unknown userdata type, this shouldn't happen!");
+              }
+              return value;
+          }
           case LUA_TBOOLEAN:
             *(id*)value = [NSNumber numberWithBool:lua_toboolean(L, index)];
             return value;
@@ -178,7 +194,7 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, in
             *(id*)value = [NSString stringWithUTF8String:lua_tostring(L, index)];
             return value;
           case LUA_TTABLE:{
-            BOOL dictionary = NO;
+            BOOL dictionary = NO; // has any other method to test dic or array?
 
             lua_pushvalue(L, index); // Push the table reference on the top
             lua_pushnil(L);  /* first key */
@@ -213,27 +229,40 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, in
                 lua_rawgeti(L, -1, i);
                 id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
                 [*(id*)value addObject:*object];
-                free(object);
+                free(object); lua_pop(L,1);
               }
             }
 
             lua_pop(L, 1); // Pop the table reference off
-            break;
+            return value;
           }
+          case LUA_TFUNCTION: DLOG("function now unsupported");
           case LUA_TNIL:
           case LUA_TNONE:
           default: return value;
         }
       }
-      case _C_SEL:{
+      case _C_SEL:{ // sel type is binding to str
         *outSize = sizeof(SEL); value = calloc(sizeof(SEL), 1);
         if ((*(const char**)value = lua_tostring(L, index))) {
           *(SEL*)value = sel_getUid(*(char**)value);
         }
         return value;
       }
-      // TODO:
-      case _C_STRUCT_B:
+      case _C_STRUCT_B:{
+        value = luaoc_copystruct(L, index, outSize);
+        if (!value) { // not a struct userdata at index, return a empty struct
+          *outSize = luaoc_get_one_typesize(typeDescription+i, NULL, NULL);
+          value = calloc(1,*outSize);
+        }
+        return value;
+      }
+      case _C_UNION_B:
+      case _C_UNDEF:
+      case _C_BFLD:
+      case _C_ARY_B:
+        luaL_error(L, "unsupported type encoding %c", typeDescription[i]);
+        return value;
       default: {
         break;
       }
@@ -245,6 +274,8 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, in
 }
 
 void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
+  NSCParameterAssert(buffer);
+  NSCParameterAssert(typeDescription);
 
 #define PUSH_INTEGER(encoding, type) case encoding: lua_pushinteger(L, *(type*)buffer); return;
 #define PUSH_NUMBER(encoding, type) case encoding: lua_pushnumber(L, *(type*)buffer); return;
@@ -269,7 +300,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       PUSH_INTEGER(_C_ULNG_LNG, unsigned long long)
       PUSH_NUMBER(_C_FLT , float)
       PUSH_NUMBER(_C_DBL , double)
-      PUSH_POINTER(_C_ID, id, luaoc_push_instance)
+      PUSH_POINTER(_C_ID, id, luaoc_push_instance)  // FIXME: if need to bind lua types?
       PUSH_POINTER(_C_CLASS, Class, luaoc_push_class)
       PUSH_POINTER(_C_PTR, void*, lua_pushlightuserdata)
       PUSH_POINTER(_C_CHARPTR, char*, lua_pushstring)
@@ -278,18 +309,18 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
         else lua_pushstring(L, sel_getName(*(SEL*)buffer));
         return;
       case _C_VOID:
+        DLOG("this shouldn't enter, treat as push nil");
         lua_pushnil(L); return;
       case _C_STRUCT_B:
         luaoc_push_struct(L, typeDescription+i, buffer);
         return;
+      case _C_ARY_B:
+      case _C_UNION_B:
+        lua_pushnil(L);
+        luaL_error(L, "unsupported type encoding %c", typeDescription[i]);
+        return;
 //#define _C_UNDEF    '?'
 //#define _C_ATOM     '%'
-//#define _C_ARY_B    '['
-//#define _C_ARY_E    ']'
-//#define _C_UNION_B  '('
-//#define _C_UNION_E  ')'
-//#define _C_STRUCT_B '{'
-//#define _C_STRUCT_E '}'
 //#define _C_VECTOR   '!'
       default: {
         break;
@@ -359,7 +390,7 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
         }
 
         if (**stopPos == _C_UNION_B) {
-          *stopPos = eqpos+1; // set pos after =
+          *stopPos = eqpos+1; // set pos after =, assuming it exist
           while(**stopPos != _C_UNION_E){ // union get the max element size
             int eleSize = luaoc_get_one_typesize(*stopPos, stopPos, NULL);
             if (eleSize > size) size = eleSize;
