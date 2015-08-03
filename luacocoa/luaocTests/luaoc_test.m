@@ -20,6 +20,7 @@
 #define RAW_STR(...) #__VA_ARGS__
 #define LUA_CODE RAW_STR
 #define RUN_LUA_CODE(...) luaL_dostring(gLua_main_state, LUA_CODE(__VA_ARGS__))
+#define RUN_LUA_STR(str) luaL_dostring(gLua_main_state, str)
 
 @interface luaoc_test : XCTestCase
 
@@ -279,15 +280,50 @@
   XCTAssertEqualObjects(luaoc_toinstance(L, -1), [NSObject description]);
   lua_pop(L, 1);
 
-  DLOG("%d", [[NSObject class] retainCount]);
-  Protocol* a = @protocol(NSObject);
-  DLOG("%d", [a retainCount]);
-  [a retain];
-  DLOG("%d", [a retainCount]);
-  [a release];
-  DLOG("%d", [a retainCount]);
-  // RUN_LUA_CODE(return oc.class.NS)
+  RUN_LUA_CODE(return oc.class.NSArray:isSubclassOfClass(oc.class.NSObject));
+  XCTAssertEqual(lua_type(L, -1), LUA_TBOOLEAN);
+  XCTAssertEqual(lua_toboolean(L, -1), true);
+  lua_pop(L, 1);
 
+  RUN_LUA_CODE(return oc.class.NSArray:isSubclassOfClass(oc.class.NSDictionary));
+  XCTAssertEqual(lua_type(L, -1), LUA_TBOOLEAN);
+  XCTAssertEqual(lua_toboolean(L, -1), false);
+  lua_pop(L, 1);
+
+  // vararg not support, it will treat have only one arg
+  RUN_LUA_STR("return oc.class.NSArray:arrayWithObjects(1,2,3,nil)");
+  lua_pop(L, 1);
+
+  RUN_LUA_CODE(return oc.class.NSArray:arrayWithArray{1,2,3});
+  id val = luaoc_toinstance(L, -1);
+  lua_pop(L, 1);
+  lua_gc(L, LUA_GCCOLLECT, 0);
+  XCTAssertEqual([val retainCount], 1u);
+  XCTAssertEqualObjects(val[0], @1);
+  XCTAssertEqualObjects(val[1], @2);
+  XCTAssertEqualObjects(val[2], @3);
+
+  RUN_LUA_CODE(v = oc.class.NSMutableArray:alloc():init() v:release() return v:retainCount());
+  XCTAssertEqual(lua_tonumber(L, -1), 1);
+  lua_pop(L,1);
+
+  RUN_LUA_CODE(v:addObject(1) v:addObject(2) v:addObject(5) return v);
+  val = luaoc_toinstance(L, -1);
+  XCTAssertEqualObjects(val[0], @1);
+  XCTAssertEqualObjects(val[1], @2);
+  XCTAssertEqualObjects(val[2], @5);
+
+  RUN_LUA_CODE(v:insertObject_atIndex(2, 0));
+  XCTAssertEqualObjects(val[0], @2);
+  XCTAssertEqualObjects(val[1], @1);
+  XCTAssertEqualObjects(val[2], @2);
+  XCTAssertEqualObjects(val[3], @5);
+
+  RUN_LUA_CODE(v:removeObjectAtIndex(1));
+  RUN_LUA_CODE(v:removeObjectAtIndex(1));
+  XCTAssertEqual([val count], 2);
+
+  /// test error deal
   int ret;
   ret = RUN_LUA_CODE(return oc.class.NSObject:unknownmethod());
   XCTAssertNotEqual(ret, 0);

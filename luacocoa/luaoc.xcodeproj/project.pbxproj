@@ -48,7 +48,6 @@
 		21AE0D8E1B67128F006FB83F /* lutf8lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D671B67128F006FB83F /* lutf8lib.c */; };
 		21AE0D8F1B67128F006FB83F /* lvm.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D681B67128F006FB83F /* lvm.c */; };
 		21AE0D901B67128F006FB83F /* lzio.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D6A1B67128F006FB83F /* lzio.c */; };
-		21AE0D911B67128F006FB83F /* Makefile in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D6C1B67128F006FB83F /* Makefile */; };
 		21AE0D921B6712D6006FB83F /* lapi.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0D301B67128F006FB83F /* lapi.h */; };
 		21AE0D931B6712D6006FB83F /* lauxlib.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0D321B67128F006FB83F /* lauxlib.h */; };
 		21AE0D941B6712D6006FB83F /* lcode.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0D361B67128F006FB83F /* lcode.h */; };
@@ -611,7 +610,6 @@
 				21AE0D831B67128F006FB83F /* loslib.c in Sources */,
 				21AE0D8D1B67128F006FB83F /* lundump.c in Sources */,
 				21AE0D851B67128F006FB83F /* lstate.c in Sources */,
-				21AE0D911B67128F006FB83F /* Makefile in Sources */,
 				21AE0D7E1B67128F006FB83F /* lmathlib.c in Sources */,
 				21AE0D891B67128F006FB83F /* ltablib.c in Sources */,
 				21AE0D751B67128F006FB83F /* ldblib.c in Sources */,

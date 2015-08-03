@@ -19,6 +19,7 @@
 static int _msg_send(lua_State* L, SEL selector) {
   // call intenally, the stack should have and only have receiver and args
   id target = *(id*)lua_touserdata(L, 1);
+  // for vararg, the signature only treat it as first arg
   NSMethodSignature* sign = [target methodSignatureForSelector: selector];
   if (!sign){
     luaL_error(L, "'%s' has no method '%s'",
@@ -63,6 +64,12 @@ static int _msg_send(lua_State* L, SEL selector) {
   return 1;
 }
 
+/** because super set implementation temporarily, it should restore even in error! */
+static int protect_super_call(lua_State* L) {
+  SEL selector = (SEL)lua_touserdata(L, lua_upvalueindex(1));
+  return _msg_send(L, selector);
+}
+
 int luaoc_msg_send(lua_State* L){
   id* ud = (id*)lua_touserdata(L, 1);
 
@@ -75,7 +82,26 @@ int luaoc_msg_send(lua_State* L){
   lua_pop(L, 1);
 
   const char* selName = lua_tostring(L, lua_upvalueindex(1));
-  SEL selector = sel_getUid(selName);
+  int argCount = lua_gettop(L) - 1;
+  size_t selLen = strlen(selName);
+  char* convertSelName = (char*)alloca(selLen + 2);
+
+  {// convert selName
+    const char* it = selName;
+    char* it2 = convertSelName;
+    while(*it) {
+      if (*it == '_') {
+        if (*(it + 1) == '_') {*it2 = '_'; ++it;} // __ is converted to _
+        else {*it2 = ':' ;}                        // _ is converted to :
+      }else {*it2 = *it;}
+
+      ++it; ++it2;
+    }
+    if (*(it2-1) != ':' && argCount > 0) *(it2++) = ':';
+    *it2 = '\0';
+  }
+
+  SEL selector = sel_getUid(convertSelName);
   if (tt == luaoc_super_type){
     Method selfMethod = class_getInstanceMethod([*ud class], selector);
     if (NULL == selfMethod) luaL_error(L, "unknown selector %s", selName);
@@ -84,13 +110,24 @@ int luaoc_msg_send(lua_State* L){
       IMP selfMethodIMP = method_getImplementation(selfMethod);
       IMP superMethodIMP = method_getImplementation(superMethod);
       method_setImplementation(selfMethod, superMethodIMP);
-      int ret = _msg_send(L, selector);
-      method_setImplementation(selfMethod, selfMethodIMP);
+      // call _msg_send in protect mode
+      lua_pushlightuserdata(L, selector);
+      lua_pushcclosure(L, protect_super_call, 1);
+      lua_insert(L, 1);
+      int ret = lua_pcall(L, lua_gettop(L) - 1, LUA_MULTRET, 0);
+
+      method_setImplementation(selfMethod, selfMethodIMP); // restore
+
+      if (ret == 0)          // no error
+        ret = lua_gettop(L); // all arg be used and left result
+      else
+        lua_error(L);        // re throw error;
       return ret;
     } else {
       return _msg_send(L, selector);
     }
-  } else if (tt == luaoc_class_type || tt == luaoc_instance_type) {
+  } else if (tt == luaoc_class_type || tt == luaoc_instance_type ||
+             tt == luaoc_var_type) { // var type should be the id or class container
     return _msg_send(L, selector);
   } else {
     luaL_error(L, "unsupported msg receiver type");
@@ -114,9 +151,19 @@ id luaoc_convert_toid(lua_State *L, int index) {
                                  objCType:lua_tostring(L, -1)];
           lua_pop(L, 1); // pop __encoding
         } else if (tt == luaoc_var_type) { // use var type's value
-          lua_getfield(L, index, "v");
-          value = luaoc_convert_toid(L, -1);
-          lua_pop(L, 1);
+          lua_getfield(L, index, "__encoding");
+          if (strcmp(lua_tostring(L, -1), (char[]){_C_ID,0}) == 0){
+            // var type store id. don't need to convert to id
+            lua_pop(L, 1);
+
+            value = *(id*)lua_touserdata(L, index);
+          }else {
+            lua_pop(L, 1);
+
+            lua_getfield(L, index, "v");
+            value = luaoc_convert_toid(L, -1);
+            lua_pop(L, 1);
+          }
         } else {
           value = *(id*)lua_touserdata(L, index);
         }
@@ -233,7 +280,7 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
         *outSize = sizeof(void*); value = calloc(sizeof(void*), 1);
         switch( lua_type(L, index) ){
           case LUA_TLIGHTUSERDATA:
-          case LUA_TUSERDATA: { // TODO: need to think how to deal
+          case LUA_TUSERDATA: {
             *(void**)value = lua_touserdata(L, index);
             return value;
           }
