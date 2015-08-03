@@ -98,6 +98,90 @@ int luaoc_msg_send(lua_State* L){
   return 0;
 }
 
+id luaoc_convert_toid(lua_State *L, int index) {
+  switch (lua_type(L, index)){
+    case LUA_TLIGHTUSERDATA:
+      return (id)lua_touserdata(L, index); // assume the ptr is convert from id
+    case LUA_TUSERDATA: {
+      id value = NULL;
+      if (luaL_getmetafield(L, index, "__type") != LUA_TNIL){
+        LUA_INTEGER tt = lua_tointeger(L, -1); lua_pop(L, 1);
+
+        if (tt == luaoc_struct_type){ // auto encapsulate struct to NSValue
+          void* bytes = lua_touserdata(L,index);
+          lua_getfield(L, index, "__encoding");
+          value = [NSValue valueWithBytes:bytes
+                                 objCType:lua_tostring(L, -1)];
+          lua_pop(L, 1); // pop __encoding
+        } else if (tt == luaoc_var_type) { // use var type's value
+          lua_getfield(L, index, "v");
+          value = luaoc_convert_toid(L, -1);
+          lua_pop(L, 1);
+        } else {
+          value = *(id*)lua_touserdata(L, index);
+        }
+      } else {
+        DLOG("unknown userdata type, this shouldn't happen!");
+      }
+      return value;
+    }
+    case LUA_TBOOLEAN:
+        return [NSNumber numberWithBool:lua_toboolean(L, index)];
+    case LUA_TNUMBER:
+        return [NSNumber numberWithDouble:lua_tonumber(L, index)];
+    case LUA_TSTRING:
+        return [NSString stringWithUTF8String:lua_tostring(L, index)];
+    case LUA_TTABLE:{
+      BOOL dictionary = NO; // has any other method to test dic or array?
+
+      lua_pushvalue(L, index); // Push the table reference on the top
+      lua_pushnil(L);  /* first key */
+      while (!dictionary && lua_next(L, -2)) {
+        if (lua_type(L, -2) != LUA_TNUMBER) {
+          dictionary = YES;
+          lua_pop(L, 2); // pop key and value off the stack
+        }
+        else {
+          lua_pop(L, 1);
+        }
+      }
+
+      id value = NULL;
+      if (dictionary) {
+        value = [NSMutableDictionary dictionary];
+
+        lua_pushnil(L);  /* first key */
+        while (lua_next(L, -2)) {
+          id *key = (id*)luaoc_copy_toobjc(L, -2, "@", nil);
+          id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
+          if (*key && *object) // ignore NULL kv
+            [value setObject:*object forKey:*key];
+          lua_pop(L, 1); // Pop off the value
+          free(key);
+          free(object);
+        }
+      } else {
+        value = [NSMutableArray array];
+
+        size_t len = lua_rawlen(L, -1);
+        for (size_t i = 1; i <= len; ++i) {
+          lua_rawgeti(L, -1, i);
+          id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
+          [value addObject:*object];
+          free(object); lua_pop(L,1);
+        }
+      }
+
+      lua_pop(L, 1); // Pop the table reference off
+      return value;
+    }
+    case LUA_TFUNCTION: DLOG("function now unsupported");
+    case LUA_TNIL:
+    case LUA_TNONE:
+    default: return NULL;
+  }
+}
+
 void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, size_t *outSize) {
   // return NULL only when invalid typeDescription.
   // invalid lua value will return value ref to zero fill value
@@ -163,84 +247,8 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
       case _C_CLASS:
       case _C_ID: {
         *outSize = sizeof(id); value = calloc(sizeof(id), 1);
-        switch (lua_type(L, index)){
-          case LUA_TLIGHTUSERDATA:
-            *(id*)value = (id)lua_touserdata(L, index); // assume the ptr is convert from id
-            return value;
-          case LUA_TUSERDATA: {
-              if (luaL_getmetafield(L, index, "__type") != LUA_TNIL){
-                LUA_INTEGER tt = lua_tointeger(L, -1); lua_pop(L, 1);
-                if (tt == luaoc_struct_type){ // auto encapsulate struct to NSValue
-                  *(void**)value = lua_touserdata(L,index);
-                  lua_getfield(L, index, "__encoding");
-                  *(id*)value = [NSValue valueWithBytes:*(void**)value
-                                               objCType:lua_tostring(L, -1)];
-                  lua_pop(L, 1);
-                } else {
-                  *(id*)value = *(id*)lua_touserdata(L, index);
-                }
-              } else {
-                DLOG("unknown userdata type, this shouldn't happen!");
-              }
-              return value;
-          }
-          case LUA_TBOOLEAN:
-            *(id*)value = [NSNumber numberWithBool:lua_toboolean(L, index)];
-            return value;
-          case LUA_TNUMBER:
-            *(id*)value = [NSNumber numberWithDouble:lua_tonumber(L, index)];
-            return value;
-          case LUA_TSTRING:
-            *(id*)value = [NSString stringWithUTF8String:lua_tostring(L, index)];
-            return value;
-          case LUA_TTABLE:{
-            BOOL dictionary = NO; // has any other method to test dic or array?
-
-            lua_pushvalue(L, index); // Push the table reference on the top
-            lua_pushnil(L);  /* first key */
-            while (!dictionary && lua_next(L, -2)) {
-              if (lua_type(L, -2) != LUA_TNUMBER) {
-                dictionary = YES;
-                lua_pop(L, 2); // pop key and value off the stack
-              }
-              else {
-                lua_pop(L, 1);
-              }
-            }
-
-            if (dictionary) {
-              *(id*)value = [NSMutableDictionary dictionary];
-
-              lua_pushnil(L);  /* first key */
-              while (lua_next(L, -2)) {
-                id *key = (id*)luaoc_copy_toobjc(L, -2, "@", nil);
-                id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
-                if (*key && *object) // ignore NULL kv
-                  [*(id*)value setObject:*object forKey:*key];
-                lua_pop(L, 1); // Pop off the value
-                free(key);
-                free(object);
-              }
-            } else {
-              *(id*)value = [NSMutableArray array];
-
-              size_t len = lua_rawlen(L, -1);
-              for (size_t i = 1; i <= len; ++i) {
-                lua_rawgeti(L, -1, i);
-                id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
-                [*(id*)value addObject:*object];
-                free(object); lua_pop(L,1);
-              }
-            }
-
-            lua_pop(L, 1); // Pop the table reference off
-            return value;
-          }
-          case LUA_TFUNCTION: DLOG("function now unsupported");
-          case LUA_TNIL:
-          case LUA_TNONE:
-          default: return value;
-        }
+        *(id*)value = luaoc_convert_toid(L, index);
+        return value;
       }
       case _C_SEL:{ // sel type is binding to str
         *outSize = sizeof(SEL); value = calloc(sizeof(SEL), 1);

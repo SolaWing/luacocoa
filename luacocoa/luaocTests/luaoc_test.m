@@ -18,6 +18,8 @@
 
 #define PP_IDENTITY(...) __VA_ARGS__
 #define RAW_STR(...) #__VA_ARGS__
+#define LUA_CODE RAW_STR
+#define RUN_LUA_CODE(...) luaL_dostring(gLua_main_state, LUA_CODE(__VA_ARGS__))
 
 @interface luaoc_test : XCTestCase
 
@@ -127,9 +129,9 @@
     free(ref);                                                                   \
     lua_pop(gLua_main_state, 1);                                                 \
   }
-#define TEST_PUSH_AND_COPY_VALUE(type, val, ...) TEST_PUSH_AND_COPY(type, val, 0,   \
+#define TEST_PUSH_AND_COPY_VALUE(type, val, ...) TEST_PUSH_AND_COPY(type, val, 0, \
     XCTAssertEqual(outSize, sizeof(type), #type " size should be equal");         \
-    XCTAssertTrue(memcmp(ref, &v, outSize) == 0, #type "value should be equal");  \
+    XCTAssertTrue(memcmp(ref, &v, outSize) == 0, #type " value should be equal"); \
     __VA_ARGS__)
 
 #define TEST_PUSH_AND_COPY_STR(val) TEST_PUSH_AND_COPY(const char*, val, 0, \
@@ -195,32 +197,32 @@
   TEST_PUSH_AND_WRAP_STRUCT(UIEdgeInsets, ((UIEdgeInsets){33,44,37,24}))
 
   {
-    luaL_dostring(gLua_main_state, RAW_STR( return {5,6,{a=2,b=3},a=1,b=2,c=3} ));
+    luaL_dostring(gLua_main_state, LUA_CODE( return {5,6,{a=2,b=3},a=1,b=2,c=3} ));
     ref = luaoc_copy_toobjc(gLua_main_state, -1, "@", &outSize);
 
-    XCTAssertEqual([(*(id*)ref)[@"a"]     intValue], 1);
-    XCTAssertEqual([(*(id*)ref)[@"b"]     intValue], 2);
-    XCTAssertEqual([(*(id*)ref)[@"c"]     intValue], 3);
-    XCTAssertEqual([(*(id*)ref)[@1]       intValue], 5);
-    XCTAssertEqual([(*(id*)ref)[@2]       intValue], 6);
-    XCTAssertEqual([(*(id*)ref)[@3][@"a"] intValue], 2);
-    XCTAssertEqual([(*(id*)ref)[@3][@"b"] intValue], 3);
+    XCTAssertEqual([(*(id*)ref) [@"a"]     intValue], 1);
+    XCTAssertEqual([(*(id*)ref) [@"b"]     intValue], 2);
+    XCTAssertEqual([(*(id*)ref) [@"c"]     intValue], 3);
+    XCTAssertEqual([(*(id*)ref) [@1]       intValue], 5);
+    XCTAssertEqual([(*(id*)ref) [@2]       intValue], 6);
+    XCTAssertEqual([(*(id*)ref) [@3][@"a"] intValue], 2);
+    XCTAssertEqual([(*(id*)ref) [@3][@"b"] intValue], 3);
 
     lua_pop(gLua_main_state, 1); free(ref);
   }
 
   {
-    luaL_dostring(gLua_main_state, RAW_STR( return {10,11,12, oc.class.UIView, {1,2}, {a=3}} ));
+    luaL_dostring(gLua_main_state, LUA_CODE( return {10,11,12, oc.class.UIView, {1,2}, {a=3}} ));
     ref = luaoc_copy_toobjc(gLua_main_state, -1, "@", &outSize);
 
     // when auto convert array , begin from 0. in lua, begin from 1
-    XCTAssertEqual( [(*(id*)ref)[0]       intValue], 10);
-    XCTAssertEqual( [(*(id*)ref)[1]       intValue], 11);
-    XCTAssertEqual( [(*(id*)ref)[2]       intValue], 12);
-    XCTAssertEqual( [(*(id*)ref)[4][0]    intValue], 1);
-    XCTAssertEqual( [(*(id*)ref)[4][1]    intValue], 2);
-    XCTAssertEqual( [(*(id*)ref)[5][@"a"] intValue], 3);
-    XCTAssertEqual( (*(id*)ref)[3]                 , [UIView class]);
+    XCTAssertEqual( [(*(id*)ref) [0]       intValue], 10);
+    XCTAssertEqual( [(*(id*)ref) [1]       intValue], 11);
+    XCTAssertEqual( [(*(id*)ref) [2]       intValue], 12);
+    XCTAssertEqual( [(*(id*)ref) [4][0]    intValue], 1);
+    XCTAssertEqual( [(*(id*)ref) [4][1]    intValue], 2);
+    XCTAssertEqual( [(*(id*)ref) [5][@"a"] intValue], 3);
+    XCTAssertEqual( (*(id*)ref)  [3]                , [UIView class]);
 
     lua_pop(gLua_main_state, 1); free(ref);
   }
@@ -267,7 +269,42 @@
 }
 
 - (void)testMsgSend {
+  lua_State* L = gLua_main_state;
 
+  RUN_LUA_CODE(return oc.class.NSObject:class());
+  XCTAssertEqualObjects(luaoc_toclass(L, -1), [NSObject class]);
+  lua_pop(L, 1);
+
+  RUN_LUA_CODE(return oc.class.NSObject:description());
+  XCTAssertEqualObjects(luaoc_toinstance(L, -1), [NSObject description]);
+  lua_pop(L, 1);
+
+  DLOG("%d", [[NSObject class] retainCount]);
+  Protocol* a = @protocol(NSObject);
+  DLOG("%d", [a retainCount]);
+  [a retain];
+  DLOG("%d", [a retainCount]);
+  [a release];
+  DLOG("%d", [a retainCount]);
+  // RUN_LUA_CODE(return oc.class.NS)
+
+  int ret;
+  ret = RUN_LUA_CODE(return oc.class.NSObject:unknownmethod());
+  XCTAssertNotEqual(ret, 0);
+  printf("%s\n", lua_tostring(L, -1));
+  lua_pop(L, 1);
+
+  // should call with receiver as first arguement
+  ret = RUN_LUA_CODE(return oc.class.NSObject.class());
+  XCTAssertNotEqual(ret, 0);
+  printf("%s\n", lua_tostring(L,-1));
+  lua_pop(L, 1);
+
+  // wrong receiver type, must be id or class
+  ret = RUN_LUA_CODE(return oc.class.NSObject.class(oc));
+  XCTAssertNotEqual(ret, 0);
+  printf("%s\n", lua_tostring(L,-1));
+  lua_pop(L, 1);
 }
 
 @end

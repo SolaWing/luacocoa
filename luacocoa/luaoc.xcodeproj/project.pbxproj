@@ -79,6 +79,7 @@
 		21AE0DB21B672552006FB83F /* luaoc_class.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB11B672552006FB83F /* luaoc_class.m */; };
 		21AE0DB51B67271F006FB83F /* luaoc_helper.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB41B67271F006FB83F /* luaoc_helper.m */; };
 		21AE0DB91B6754CF006FB83F /* class_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* class_test.m */; };
+		21B60B0D1B6F0AEA00C1FC19 /* luaoc_var.m in Sources */ = {isa = PBXBuildFile; fileRef = 21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */; };
 		21BFB3BB1B67686D00D45278 /* luaoc_instance.m in Sources */ = {isa = PBXBuildFile; fileRef = 21BFB3BA1B67686D00D45278 /* luaoc_instance.m */; };
 /* End PBXBuildFile section */
 
@@ -233,6 +234,8 @@
 		21AE0DB31B67271F006FB83F /* luaoc_helper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_helper.h; sourceTree = "<group>"; };
 		21AE0DB41B67271F006FB83F /* luaoc_helper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_helper.m; sourceTree = "<group>"; };
 		21AE0DB81B6754CF006FB83F /* class_test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = class_test.m; sourceTree = "<group>"; };
+		21B60B0B1B6F0AEA00C1FC19 /* luaoc_var.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_var.h; sourceTree = "<group>"; };
+		21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_var.m; sourceTree = "<group>"; };
 		21BFB3B91B67686D00D45278 /* luaoc_instance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_instance.h; sourceTree = "<group>"; };
 		21BFB3BA1B67686D00D45278 /* luaoc_instance.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_instance.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -305,6 +308,8 @@
 				21BFB3BA1B67686D00D45278 /* luaoc_instance.m */,
 				216B4A351B690A180060DCA5 /* luaoc_struct.h */,
 				216B4A361B690A180060DCA5 /* luaoc_struct.m */,
+				21B60B0B1B6F0AEA00C1FC19 /* luaoc_var.h */,
+				21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */,
 				21AE0DB31B67271F006FB83F /* luaoc_helper.h */,
 				21AE0DB41B67271F006FB83F /* luaoc_helper.m */,
 			);
@@ -580,6 +585,7 @@
 			files = (
 				21AE0CF11B6711D1006FB83F /* luaoc.m in Sources */,
 				21AE0DB21B672552006FB83F /* luaoc_class.m in Sources */,
+				21B60B0D1B6F0AEA00C1FC19 /* luaoc_var.m in Sources */,
 				216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */,
 				21AE0DB51B67271F006FB83F /* luaoc_helper.m in Sources */,
 				21BFB3BB1B67686D00D45278 /* luaoc_instance.m in Sources */,

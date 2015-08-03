@@ -14,6 +14,7 @@ enum luaoc_userdata_type {
   luaoc_instance_type = 2,
   luaoc_super_type    = 3,
   luaoc_struct_type   = 4,
+  luaoc_var_type      = 5,
 };
 
 #pragma mark - macro and inline method

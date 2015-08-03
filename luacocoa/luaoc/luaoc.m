@@ -12,6 +12,7 @@
 #import "lauxlib.h"
 #import "luaoc_instance.h"
 #import "luaoc_struct.h"
+#import "luaoc_var.h"
 
 lua_State *gLua_main_state = NULL;
 
@@ -48,6 +49,9 @@ int luaopen_luaoc(lua_State *L){
 
   luaopen_luaoc_struct(L);
   lua_setfield(L, -2, "struct");
+
+  luaopen_luaoc_var(L);
+  lua_setfield(L, -2, "var");
 
   return 1;
 }
