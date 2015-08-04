@@ -298,30 +298,57 @@
   id val = luaoc_toinstance(L, -1);
   lua_pop(L, 1);
   lua_gc(L, LUA_GCCOLLECT, 0);
-  XCTAssertEqual([val retainCount], 1u);
+  XCTAssertEqual([val retainCount], 1u); // have one autorelease count
   XCTAssertEqualObjects(val[0], @1);
   XCTAssertEqualObjects(val[1], @2);
   XCTAssertEqualObjects(val[2], @3);
 
-  RUN_LUA_CODE(v = oc.class.NSMutableArray:alloc():init() v:release() return v:retainCount());
+  // init obj owned by lua
+  RUN_LUA_CODE(v = oc.class.NSMutableArray:alloc():init() return v:retainCount());
   XCTAssertEqual(lua_tonumber(L, -1), 1);
   lua_pop(L,1);
 
+  // new obj owned by lua
+  RUN_LUA_CODE(v = oc.class.NSMutableArray:new() return v:retainCount());
+  XCTAssertEqual(lua_tonumber(L, -1), 1);
+  lua_pop(L, 1);
+
   RUN_LUA_CODE(v:addObject(1) v:addObject(2) v:addObject(5) return v);
-  val = luaoc_toinstance(L, -1);
-  XCTAssertEqualObjects(val[0], @1);
-  XCTAssertEqualObjects(val[1], @2);
-  XCTAssertEqualObjects(val[2], @5);
+  // in MRC, __weak is no use, so need to use objc_storeWeak
+  id weakval; objc_storeWeak(&weakval, luaoc_toinstance(L, -1));
+  lua_pop(L, 1);
+  XCTAssertEqualObjects(weakval[0], @1);
+  XCTAssertEqualObjects(weakval[1], @2);
+  XCTAssertEqualObjects(weakval[2], @5);
 
   RUN_LUA_CODE(v:insertObject_atIndex(2, 0));
-  XCTAssertEqualObjects(val[0], @2);
-  XCTAssertEqualObjects(val[1], @1);
-  XCTAssertEqualObjects(val[2], @2);
-  XCTAssertEqualObjects(val[3], @5);
+  XCTAssertEqualObjects(weakval[0], @2);
+  XCTAssertEqualObjects(weakval[1], @1);
+  XCTAssertEqualObjects(weakval[2], @2);
+  XCTAssertEqualObjects(weakval[3], @5);
+
+  RUN_LUA_CODE(v:insertObject_atIndex(3)); // if omit, default 0 or NULL
+  XCTAssertEqualObjects(weakval[0], @3);
+  XCTAssertEqualObjects(weakval[1], @2);
 
   RUN_LUA_CODE(v:removeObjectAtIndex(1));
   RUN_LUA_CODE(v:removeObjectAtIndex(1));
-  XCTAssertEqual([val count], 2);
+  XCTAssertEqual([weakval count], 3);
+
+  RUN_LUA_CODE(return oc.class.name(v));
+  // 聚合类的实例是该类子类的一个实例
+  XCTAssertTrue(strcmp(lua_tostring(L,-1), "__NSArrayM") == 0);
+  RUN_LUA_CODE(return oc.class.name(v.super));
+  // 聚合类的实例是该类子类的一个实例
+  XCTAssertTrue(strcmp(lua_tostring(L,-1), "NSMutableArray") == 0);
+  lua_pop(L, 2);
+
+  RUN_LUA_CODE(v = v:mutableCopy() return v:retainCount());
+  XCTAssertEqual(lua_tonumber(L, -1), 1);
+  lua_pop(L, 1);
+
+  lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
+  XCTAssertTrue(weakval == NULL, "after reassign v, weakval should be collect");
 
   /// test error deal
   int ret;

@@ -104,8 +104,11 @@ id luaoc_toinstance(lua_State *L, int index) {
   return NULL;
 }
 
+#pragma mark - Meta Funcs
 static int __index(lua_State *L){
-  luaL_checkudata(L, 1, LUAOC_INSTANCE_METATABLE_NAME);
+  if (!lua_isuserdata(L, 1))
+      luaL_argerror(L, 1, "index obj should be userdata");
+  // FIXME may need to check userdata type
 
   lua_getuservalue(L, 1);
   lua_pushvalue(L, 2); // : ud key udv key
@@ -133,12 +136,18 @@ static int __newindex(lua_State *L){
 }
 
 static int __gc(lua_State *L){
-  id* ud = (id*)luaL_checkudata(L, 1, LUAOC_INSTANCE_METATABLE_NAME);
-  [*ud release];
+  id* ud = (id*)lua_touserdata(L, 1);
+  if (!ud) DLOG("gc not instance type?");
+  else [*ud release];
 
   // TODO: need to test dealloc in gc, and call lua method
 
   return 0;
+}
+
+// TODO: other meta funcs
+static int __add(lua_State *L){
+  return 1;
 }
 
 static const luaL_Reg metaFunctions[] = {

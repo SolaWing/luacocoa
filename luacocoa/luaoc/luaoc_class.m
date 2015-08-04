@@ -80,7 +80,7 @@ static int name(lua_State *L){
           lua_pushstring(L, class_getName(*(Class*)(lua_touserdata(L, 1))));
           return 1;
         }
-        case luaoc_instance_type: {
+        case luaoc_instance_type: { // 对于聚合类, 实例的类可能不是聚合类名
           lua_pushstring(L, object_getClassName(*(id*)(lua_touserdata(L,1))));
           return 1;
         }

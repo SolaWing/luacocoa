@@ -57,6 +57,19 @@ static int _msg_send(lua_State* L, SEL selector) {
     void* buf = alloca(retLen);
     [invocation getReturnValue:buf];
     luaoc_push_obj(L, [sign methodReturnType], buf);
+    if ( strcmp([sign methodReturnType], "@") == 0) {
+      const char * selName = sel_getName(selector);
+      int n;
+      if ( ((n = 4, strncmp(selName, "init", 4) == 0) ||
+                    strncmp(selName, "copy", 4) == 0  ||
+            (n = 3, strncmp(selName, "new",  3) == 0) ||
+            (n = 11, strncmp(selName, "mutableCopy", n) == 0)) &&
+          !islower(selName[n]) ) {
+        // according to oc owner rule, this object is owned by caller. so lua
+        // own it. push obj already retain, so release it
+        [*(id*)buf release];
+      }
+    }
   } else{
     lua_pushnil(L);
   }
@@ -276,7 +289,8 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
       }
       case _C_PTR: {
          // FIXME: when convert to ptr, pass the userdata addr, just like pass by ref
-         // for non-const ptr, change inner value may unsafe.
+         // var type is designed for this purpose, it's store value is safe to change.
+         // other type change inner value may unsafe.
         *outSize = sizeof(void*); value = calloc(sizeof(void*), 1);
         switch( lua_type(L, index) ){
           case LUA_TLIGHTUSERDATA:
@@ -369,6 +383,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       case _C_STRUCT_B:
         luaoc_push_struct(L, typeDescription+i, buffer);
         return;
+      case _C_UNDEF:
       case _C_ARY_B:
       case _C_UNION_B:
         lua_pushnil(L);

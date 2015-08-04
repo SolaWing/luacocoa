@@ -20,7 +20,7 @@ enum luaoc_userdata_type {
 #pragma mark - macro and inline method
 /** register start index */
 #define LUA_START_INDEX(L) (__startStackIndex)
-#define LUA_PUSH_STACK(L) int __startStackIndex = lua_gettop(L);
+#define LUA_PUSH_STACK(L) int __startStackIndex = lua_gettop(L)
 
 /** reset to start index and may keep n value at top */
 #define LUA_POP_STACK(L, keep)                                        \
@@ -50,7 +50,7 @@ static inline int lua_rawgetfield(lua_State *L, int index, const char *k){
 /** first arg is receiver, second is method args. and this method should have a upvalue as method name */
 int luaoc_msg_send(lua_State* L);
 
-/** convert given index lua value to objc value, return alloc address */
+/** convert given index lua value to objc value, return alloc address, you must free the return pointer */
 void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, size_t *outSize);
 
 /** push any obj to lua according to typeDescription */
