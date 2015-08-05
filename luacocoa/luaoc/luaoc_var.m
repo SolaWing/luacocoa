@@ -42,7 +42,7 @@ void luaoc_push_var(lua_State *L, const char* typeDescription, void* initRef) {
     lua_setuservalue(L, -2);
   }
 
-  free(structName);
+  free(structName); // : ud
 }
 
 static const luaL_Reg varFuncs[] = {
@@ -50,6 +50,13 @@ static const luaL_Reg varFuncs[] = {
 };
 
 static int createVar(lua_State *L){
+  const char* typeDescription = luaL_checkstring(L, 2);
+  if (lua_isnoneornil(L, 3)) luaoc_push_var(L, typeDescription, NULL);
+  else {
+    void* v = luaoc_copy_toobjc(L, 3, typeDescription, NULL);
+    luaoc_push_var(L, typeDescription, v);
+    free(v);
+  }
   return 1;
 }
 

@@ -6,7 +6,6 @@
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 
-#import <UIKit/UIKit.h>
 #import <XCTest/XCTest.h>
 #import "luaoc.h"
 #import "lauxlib.h"
@@ -15,6 +14,8 @@
 #import "luaoc_class.h"
 #import "luaoc_struct.h"
 #import <objc/runtime.h>
+#import <Foundation/Foundation.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 #define PP_IDENTITY(...) __VA_ARGS__
 #define RAW_STR(...) #__VA_ARGS__
@@ -42,7 +43,7 @@
 
 - (void)testPushobj {
   /** push obj */
-  UIView *view = [[UIView new] autorelease];
+  NSObject *view = [[NSObject new] autorelease];
   XCTAssertEqual([view retainCount], 1);
 
   luaoc_push_obj(gLua_main_state, "@", &view);
@@ -92,15 +93,15 @@
   TEST_PUSH_INTEGER(_C_USHT     , unsigned short     , 1000)
   TEST_PUSH_INTEGER(_C_INT      , int                , (int)0xffffffff)
   TEST_PUSH_INTEGER(_C_UINT     , unsigned int       , 0xffffffff)
-  TEST_PUSH_INTEGER(_C_LNG      , long               , -1e15)
-  TEST_PUSH_INTEGER(_C_ULNG     , unsigned long      , 1e15)
+  TEST_PUSH_INTEGER(_C_LNG      , long               , -1e9) // 32bit long 4B, 64bit long 8B
+  TEST_PUSH_INTEGER(_C_ULNG     , unsigned long      , 1e9)
   TEST_PUSH_INTEGER(_C_LNG_LNG  , long long          , -1e17)
   TEST_PUSH_INTEGER(_C_ULNG_LNG , unsigned long long , 1e17)
   TEST_PUSH_NUMBER (_C_FLT      , float              , 3.14f)
   TEST_PUSH_NUMBER (_C_DBL      , double             , 43.23432e100)
   TEST_PUSH_VALUE  (luaoc_toinstance, _C_ID     , id         , view)
   TEST_PUSH_VALUE  (luaoc_toinstance, _C_ID     , id         , NULL)
-  TEST_PUSH_VALUE  (luaoc_toclass   , _C_CLASS  , Class      , [UIView class])
+  TEST_PUSH_VALUE  (luaoc_toclass   , _C_CLASS  , Class      , [NSArray class])
   TEST_PUSH_VALUE  (luaoc_toclass   , _C_CLASS  , Class      , NULL)
   TEST_PUSH_VALUE  (lua_touserdata  , _C_PTR    , void*      , &view)
   TEST_PUSH_VALUE  (lua_touserdata  , _C_PTR    , void*      , NULL)
@@ -195,7 +196,7 @@
   TEST_PUSH_AND_WRAP_STR("hello")
   TEST_PUSH_AND_WRAP_STR("world")
   TEST_PUSH_AND_WRAP_STRUCT(CGPoint, ((CGPoint){33,44}))
-  TEST_PUSH_AND_WRAP_STRUCT(UIEdgeInsets, ((UIEdgeInsets){33,44,37,24}))
+  TEST_PUSH_AND_WRAP_STRUCT(CGRect, ((CGRect){33,44,37,24}))
 
   {
     luaL_dostring(gLua_main_state, LUA_CODE( return {5,6,{a=2,b=3},a=1,b=2,c=3} ));
@@ -213,7 +214,7 @@
   }
 
   {
-    luaL_dostring(gLua_main_state, LUA_CODE( return {10,11,12, oc.class.UIView, {1,2}, {a=3}} ));
+    luaL_dostring(gLua_main_state, LUA_CODE( return {10,11,12, oc.class.NSArray, {1,2}, {a=3}} ));
     ref = luaoc_copy_toobjc(gLua_main_state, -1, "@", &outSize);
 
     // when auto convert array , begin from 0. in lua, begin from 1
@@ -223,7 +224,7 @@
     XCTAssertEqual( [(*(id*)ref) [4][0]    intValue], 1);
     XCTAssertEqual( [(*(id*)ref) [4][1]    intValue], 2);
     XCTAssertEqual( [(*(id*)ref) [5][@"a"] intValue], 3);
-    XCTAssertEqual( (*(id*)ref)  [3]                , [UIView class]);
+    XCTAssertEqual( (*(id*)ref)  [3]                , [NSArray class]);
 
     lua_pop(gLua_main_state, 1); free(ref);
   }
@@ -237,12 +238,12 @@
 
   /** PUSH CLASS */
   int startIndex = lua_gettop(gLua_main_state);
-  luaoc_push_class(gLua_main_state, [UIView class]);
+  luaoc_push_class(gLua_main_state, [NSArray class]);
   XCTAssertEqual(startIndex+1, lua_gettop(gLua_main_state), "stack should only add 1");
 
-  XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [UIView class], "should be UIView class ptr");
+  XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [NSArray class], "should be NSArray class ptr");
 
-  luaoc_push_class(gLua_main_state, [UIView class]);
+  luaoc_push_class(gLua_main_state, [NSArray class]);
   XCTAssertEqual(startIndex+2, lua_gettop(gLua_main_state), "stack should only add 1");
   XCTAssertTrue(lua_rawequal(gLua_main_state, -1, -2), "some class should have some userdata");
 
@@ -255,7 +256,7 @@
   XCTAssertFalse(lua_rawequal(gLua_main_state, -1, -2), "different class should have different userdata");
   XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [NSObject class], "should be NSObject ptr");
 
-  XCTAssertEqual(luaoc_toclass(gLua_main_state, startIndex+1), [UIView class], "shouldn't break exist stack");
+  XCTAssertEqual(luaoc_toclass(gLua_main_state, startIndex+1), [NSArray class], "shouldn't break exist stack");
 
   /** LUA index CLASS */
   luaL_dostring(gLua_main_state, "return oc.class.NSObject");
@@ -265,8 +266,8 @@
   XCTAssertTrue(lua_isnil(gLua_main_state, -1));
 
   /** LUA get class name */
-  luaL_dostring(gLua_main_state, "return oc.class.name(oc.class.UIView)");
-  XCTAssertTrue(strcmp(lua_tostring(gLua_main_state, -1), "UIView") == 0);
+  luaL_dostring(gLua_main_state, "return oc.class.name(oc.class.NSArray)");
+  XCTAssertTrue(strcmp(lua_tostring(gLua_main_state, -1), "NSArray") == 0);
 }
 
 - (void)testMsgSend {
@@ -281,8 +282,9 @@
   lua_pop(L, 1);
 
   RUN_LUA_CODE(return oc.class.NSArray:isSubclassOfClass(oc.class.NSObject));
-  XCTAssertEqual(lua_type(L, -1), LUA_TBOOLEAN);
-  XCTAssertEqual(lua_toboolean(L, -1), true);
+  // in OSX and 32bit ios, BOOL is signed char type
+    XCTAssertEqual(lua_type(L, -1), LUA_TBOOLEAN);
+    XCTAssertEqual(lua_toboolean(L, -1), true);
   lua_pop(L, 1);
 
   RUN_LUA_CODE(return oc.class.NSArray:isSubclassOfClass(oc.class.NSDictionary));
@@ -290,9 +292,9 @@
   XCTAssertEqual(lua_toboolean(L, -1), false);
   lua_pop(L, 1);
 
-  // vararg not support, it will treat have only one arg
-  RUN_LUA_STR("return oc.class.NSArray:arrayWithObjects(1,2,3,nil)");
-  lua_pop(L, 1);
+  // vararg not support, and may crash.
+//  RUN_LUA_STR("return oc.class.NSArray:arrayWithObjects(1,2,3,nil)");
+//  lua_pop(L, 1);
 
   RUN_LUA_CODE(return oc.class.NSArray:arrayWithArray{1,2,3});
   id val = luaoc_toinstance(L, -1);

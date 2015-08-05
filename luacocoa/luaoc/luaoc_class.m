@@ -13,6 +13,7 @@
 
 #import <objc/runtime.h>
 #import <string.h>
+#import <Foundation/Foundation.h>
 
 void luaoc_push_class(lua_State *L, Class cls) {
   if (NULL == cls) {
@@ -111,15 +112,29 @@ static const luaL_Reg ClassTableMethods[] = {
 };
 
 #pragma mark - class lua convert
+/** just overwrite it, in imp, search for the cls luafunc with luaName */
+static int override(Class cls, const char* luaName, bool isClassMethod) {
+  NSCParameterAssert(cls);
+  NSCParameterAssert(luaName);
+
+  Class add2Cls = isClassMethod ? object_getClass(cls) : cls;
+
+  char* selName = convert_copyto_selName(luaName, NO);
+
+  return 0;
+}
+
 static int __index(lua_State *L){
-  luaL_checkudata(L, 1, LUAOC_CLASS_METATABLE_NAME);
+  Class* cls = (Class*)luaL_checkudata(L, 1, LUAOC_CLASS_METATABLE_NAME);
 
   lua_getuservalue(L, 1);
   lua_pushvalue(L, 2); // : ud key udv key
   // is nil and key is string , return message wrapper
   if (lua_rawget(L, -2) == LUA_TNIL && lua_type(L,2) == LUA_TSTRING) {
-    lua_pushvalue(L,2);
-    lua_pushcclosure(L, luaoc_msg_send, 1);
+    SEL sel = luaoc_find_SEL_byname(*cls, lua_tostring(L, 2));
+    if (sel) {
+      luaoc_push_msg_send(L, sel);
+    }
   }
 
   return 1;

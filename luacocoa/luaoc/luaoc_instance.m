@@ -106,19 +106,22 @@ id luaoc_toinstance(lua_State *L, int index) {
 
 #pragma mark - Meta Funcs
 static int __index(lua_State *L){
-  if (!lua_isuserdata(L, 1))
-      luaL_argerror(L, 1, "index obj should be userdata");
+  id* ud = (id*)lua_touserdata(L, 1);
+  if (!ud) luaL_argerror(L, 1, "index obj should be userdata");
   // FIXME may need to check userdata type
 
   lua_getuservalue(L, 1);
   lua_pushvalue(L, 2); // : ud key udv key
   // is nil and key is string , return message wrapper
   if (lua_rawget(L, -2) == LUA_TNIL && lua_type(L,2) == LUA_TSTRING) {
-    if ( strcmp( lua_tostring(L, 2), "super" ) == 0 ){
+    const char* key = lua_tostring(L, 2);
+    if ( strcmp( key, "super" ) == 0 ){
       luaoc_push_super(L, 1);
     } else {
-      lua_pushvalue(L,2); // cclosure with key as upvalue
-      lua_pushcclosure(L, luaoc_msg_send, 1);
+      SEL sel = luaoc_find_SEL_byname(*ud, key);
+      if (sel){
+        luaoc_push_msg_send(L, sel);
+      }
     }
   }
 

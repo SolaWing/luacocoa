@@ -16,6 +16,54 @@
 #import <objc/runtime.h>
 #import <Foundation/Foundation.h>
 
+char* convert_copyto_selName(const char* luaName, bool isAppendColonIfNone) {
+  NSCParameterAssert(luaName);
+  size_t len = strlen(luaName);
+  NSCParameterAssert(len);
+
+  char* selName = (char*)malloc(len+2);
+
+  convert_to_selName(selName, luaName, isAppendColonIfNone);
+
+  return selName;
+}
+
+void convert_to_selName( char* buffer, const char* luaName, bool isAppendColonIfNone) {
+  const char* it = luaName;
+  char* it2 = buffer;
+  while(*it) {
+    if (*it == '_') {
+      if (*(it + 1) == '_') {*it2 = '_'; ++it;}             // __ is converted to _
+      else {*it2 = ':' ; isAppendColonIfNone = true;}       // _ is converted to :
+    }else {*it2 = *it;}
+
+    ++it; ++it2;
+  }
+  if ( isAppendColonIfNone && *(it2-1) != ':' ) *(it2++) = ':';
+  *it2 = '\0';
+}
+
+SEL luaoc_find_SEL_byname(id target, const char* luaName) {
+  char* selName = (char*)alloca(strlen(luaName) + 2);
+  convert_to_selName(selName, luaName, false);
+  SEL sel =  sel_getUid(selName);
+
+  if ([target respondsToSelector:sel]){
+    return sel;
+  } else{
+    size_t len = strlen(selName);
+    if (selName[len - 1] != ':') {
+      selName[len] = ':';
+      selName[len+1] = '\0';
+      sel = sel_getUid(selName);
+      if ([target respondsToSelector:sel]) {
+        return sel;
+      }
+    }
+  }
+  return NULL;
+}
+
 static int _msg_send(lua_State* L, SEL selector) {
   // call intenally, the stack should have and only have receiver and args
   id target = *(id*)lua_touserdata(L, 1);
@@ -38,18 +86,23 @@ static int _msg_send(lua_State* L, SEL selector) {
     [invocation setArgument:arguements[i] atIndex:i];
   }
 
+  NSException* err = nil;
   @try {
     [invocation invoke];
   }
   @catch (NSException* exception) {
-    luaL_error(L, "Error invoking '%s''s method '%s'. reason is:\n%s",
-        object_getClassName(target),
-        sel_getName(selector),
-        [[exception reason] UTF8String]);
+    err = exception;
   }
 
   for (NSUInteger i = 2; i < argCount; ++i) {
     free(arguements[i]);
+  }
+
+  if (err) { // luaL_error will do a long jmp, so do clean up first
+    luaL_error(L, "Error invoking '%s''s method '%s'. reason is:\n%s",
+        object_getClassName(target),
+        sel_getName(selector),
+        [[err reason] UTF8String]);
   }
 
   NSUInteger retLen = [sign methodReturnLength];
@@ -94,30 +147,12 @@ int luaoc_msg_send(lua_State* L){
   LUA_INTEGER tt = lua_tointeger(L, -1);
   lua_pop(L, 1);
 
-  const char* selName = lua_tostring(L, lua_upvalueindex(1));
-  int argCount = lua_gettop(L) - 1;
-  size_t selLen = strlen(selName);
-  char* convertSelName = (char*)alloca(selLen + 2);
+  SEL selector = (SEL)lua_touserdata(L, lua_upvalueindex(1));
 
-  {// convert selName
-    const char* it = selName;
-    char* it2 = convertSelName;
-    while(*it) {
-      if (*it == '_') {
-        if (*(it + 1) == '_') {*it2 = '_'; ++it;} // __ is converted to _
-        else {*it2 = ':' ;}                        // _ is converted to :
-      }else {*it2 = *it;}
-
-      ++it; ++it2;
-    }
-    if (*(it2-1) != ':' && argCount > 0) *(it2++) = ':';
-    *it2 = '\0';
-  }
-
-  SEL selector = sel_getUid(convertSelName);
   if (tt == luaoc_super_type){
     Method selfMethod = class_getInstanceMethod([*ud class], selector);
-    if (NULL == selfMethod) luaL_error(L, "unknown selector %s", selName);
+    if (NULL == selfMethod)
+      luaL_error(L, "unknown selector %s", sel_getName(selector));
     Method superMethod = class_getInstanceMethod(*(ud+1), selector);
     if (superMethod && superMethod != selfMethod){
       IMP selfMethodIMP = method_getImplementation(selfMethod);
@@ -235,7 +270,8 @@ id luaoc_convert_toid(lua_State *L, int index) {
       lua_pop(L, 1); // Pop the table reference off
       return value;
     }
-    case LUA_TFUNCTION: DLOG("function now unsupported");
+    case LUA_TFUNCTION: // convert lua function to block obj
+        DLOG("block now unsupported");
     case LUA_TNIL:
     case LUA_TNONE:
     default: return NULL;
@@ -327,7 +363,7 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
         return value;
       }
       case _C_UNION_B:
-      case _C_UNDEF:
+      case _C_UNDEF: // ^? and @? both have type before, this never enter
       case _C_BFLD:
       case _C_ARY_B:
         luaL_error(L, "unsupported type encoding %c", typeDescription[i]);
@@ -357,7 +393,12 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       case _C_BOOL:
         lua_pushboolean(L, *(bool*)buffer);
         return;
-      PUSH_INTEGER(_C_CHR     , char)
+      case _C_CHR: // in osx and 32bit ios, BOOL is char type. so treat char 0,1 as bool
+        if (*(char*)buffer == 0 || *(char*)buffer == 1)
+          lua_pushboolean(L, *(char*)buffer);
+        else
+          lua_pushinteger(L, *(char*)buffer);
+        return;
       PUSH_INTEGER(_C_UCHR    , unsigned char)
       PUSH_INTEGER(_C_SHT     , short)
       PUSH_INTEGER(_C_USHT    , unsigned short)
@@ -383,7 +424,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       case _C_STRUCT_B:
         luaoc_push_struct(L, typeDescription+i, buffer);
         return;
-      case _C_UNDEF:
+      case _C_UNDEF: // mainly function or block
       case _C_ARY_B:
       case _C_UNION_B:
         lua_pushnil(L);
@@ -429,11 +470,11 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
       CASE_SIZE(_C_FLT     , float)
       CASE_SIZE(_C_DBL     , double)
       CASE_SIZE(_C_BOOL    , BOOL)
-      CASE_SIZE(_C_UNDEF   , void*)
       CASE_SIZE(_C_CHARPTR , char*)
       // FIXME: may need to deal error
       case _C_BFLD: return ((int)strtol(++(*stopPos), (char**)stopPos, 10)+7)/8;
       case _C_VOID: ++(*stopPos); return 0;
+      case _C_UNDEF: ++(*stopPos); return 0; // ^? function pointer, @? block
       case _C_PTR: {
         luaoc_get_one_typesize(++(*stopPos), stopPos, NULL); // set stopPos after ptr type
         return sizeof(void*);
