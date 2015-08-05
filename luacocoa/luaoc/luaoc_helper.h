@@ -24,12 +24,13 @@ enum luaoc_userdata_type {
 #define LUA_PUSH_STACK(L) int __startStackIndex = lua_gettop(L)
 
 /** reset to start index and may keep n value at top */
-#define LUA_POP_STACK(L, keep)                                        \
-   ((keep)>0?lua_rotate((L),                                          \
-                        (__startStackIndex)+1,                        \
-                        (keep))                                       \
-            :(void)0,                                                 \
-    lua_settop(L, __startStackIndex+(keep)))                          \
+static inline void __luaoc_pop_stack(lua_State* L, int start, int keep) {
+  if (lua_gettop(L) - start > keep) {
+    if (keep > 0) lua_rotate(L, start+1, keep);
+    lua_settop(L, start+keep);
+  }
+}
+#define LUA_POP_STACK(L, keep) __luaoc_pop_stack((L), (__startStackIndex), (keep))
 
 #define IS_RELATIVE_INDEX(index) ((index) < 0 && (index) > LUA_REGISTRYINDEX)
 

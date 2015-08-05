@@ -11,6 +11,7 @@
 #import "lua.h"
 #import "lauxlib.h"
 #import "luaoc_helper.h"
+#import "luaoc_class.h"
 
 #import <objc/runtime.h>
 
@@ -112,16 +113,23 @@ static int __index(lua_State *L){
 
   lua_getuservalue(L, 1);
   lua_pushvalue(L, 2); // : ud key udv key
-  // is nil and key is string , return message wrapper
-  if (lua_rawget(L, -2) == LUA_TNIL && lua_type(L,2) == LUA_TSTRING) {
-    const char* key = lua_tostring(L, 2);
-    if ( strcmp( key, "super" ) == 0 ){
-      luaoc_push_super(L, 1);
-    } else {
-      SEL sel = luaoc_find_SEL_byname(*ud, key);
-      if (sel){
-        luaoc_push_msg_send(L, sel);
+  if (lua_rawget(L, -2) == LUA_TNIL) {
+    if (lua_type(L,2) == LUA_TSTRING) {
+      const char* key = lua_tostring(L, 2);
+      if ( strcmp( key, "super" ) == 0 ){
+        luaoc_push_super(L, 1);
+        return 1;
+      } else {
+        // is nil and key is string , try return message wrapper
+        SEL sel = luaoc_find_SEL_byname(*ud, key);
+        if (sel){
+          luaoc_push_msg_send(L, sel);
+        }
       }
+    }
+    if (lua_isnil(L, -1)){
+      // when not a oc msg, try to find lua value in cls
+      indexValueFromClass(L, [*ud class], 2);
     }
   }
 

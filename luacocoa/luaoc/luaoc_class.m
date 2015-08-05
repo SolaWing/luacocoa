@@ -119,8 +119,27 @@ static int override(Class cls, const char* luaName, bool isClassMethod) {
 
   Class add2Cls = isClassMethod ? object_getClass(cls) : cls;
 
-  char* selName = convert_copyto_selName(luaName, NO);
+  return 0;
+}
 
+int indexValueFromClass(lua_State *L, Class cls, int keyIndex) {
+  LUA_PUSH_STACK(L);
+  luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME);
+  lua_rawgetfield(L, -1, "loaded");
+  keyIndex = lua_absindex(L, keyIndex);
+  while(cls) {
+    if (lua_rawgetp(L, -1, cls) == LUA_TUSERDATA){
+      lua_getuservalue(L, -1);
+      lua_pushvalue(L, keyIndex);
+      if (lua_rawget(L, -2) != LUA_TNIL) {
+        LUA_POP_STACK(L, 1);
+        return 1;
+      }
+      lua_pop(L, 3); // pop lua_rawgetp, uservalue, rawget value
+    }
+    cls = class_getSuperclass(cls);
+  }
+  LUA_POP_STACK(L, 0);
   return 0;
 }
 
@@ -129,11 +148,17 @@ static int __index(lua_State *L){
 
   lua_getuservalue(L, 1);
   lua_pushvalue(L, 2); // : ud key udv key
-  // is nil and key is string , return message wrapper
-  if (lua_rawget(L, -2) == LUA_TNIL && lua_type(L,2) == LUA_TSTRING) {
-    SEL sel = luaoc_find_SEL_byname(*cls, lua_tostring(L, 2));
-    if (sel) {
-      luaoc_push_msg_send(L, sel);
+  if (lua_rawget(L, -2) == LUA_TNIL) {
+    if (lua_type(L,2) == LUA_TSTRING) {
+      // is nil and key is string , return try message wrapper
+      SEL sel = luaoc_find_SEL_byname(*cls, lua_tostring(L, 2));
+      if (sel) {
+        luaoc_push_msg_send(L, sel);
+      }
+    }
+    if (lua_isnil(L, -1)) { // still nil
+      // when not a oc msg, try to find value in super
+      indexValueFromClass(L, class_getSuperclass(*cls), 2);
     }
   }
 

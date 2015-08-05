@@ -54,6 +54,7 @@ flags = [
 ## For a C project, you would set this to something like 'c99' instead of
 ## 'c++11'.
 #'-std=c++11',
+'-std=c99',
 '-D__arm__',
 '-arch armv7',
 '-miphoneos-version-min=6.0',
@@ -124,6 +125,7 @@ flags = [
 "-Wprotocol",
 "-Wdeprecated-declarations",
 "-Wno-sign-conversion",
+"-Wno-sign-compare",
 "-mios-simulator-version-min=6.0",
 ]
 
