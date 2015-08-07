@@ -13,6 +13,12 @@
 #import "luaoc.h"
 #import "luaoc_instance.h"
 
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
+#import "ffi.h"
+#else
+#import <ffi/ffi.h>
+#endif
+
 #import <objc/runtime.h>
 #import <string.h>
 #import <Foundation/Foundation.h>

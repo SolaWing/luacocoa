@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		21576BB21B74F83900F132B1 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAD1B74F81D00F132B1 /* libffi.a */; };
+		21576BB41B74F86400F132B1 /* libffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BB31B74F86400F132B1 /* libffi.dylib */; };
 		216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */ = {isa = PBXBuildFile; fileRef = 216B4A361B690A180060DCA5 /* luaoc_struct.m */; };
 		2197367E1B6D011400B6846D /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
 		21A36DE01B71A2B80094CF55 /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D2F1B67128F006FB83F /* lapi.c */; };
@@ -160,6 +162,27 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		21576BAC1B74F81D00F132B1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21576BA71B74F81D00F132B1 /* libffi.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = DB13B1661849DF1E0010F42D;
+			remoteInfo = "libffi-iOS";
+		};
+		21576BAE1B74F81D00F132B1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21576BA71B74F81D00F132B1 /* libffi.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = DB13B1911849DF510010F42D;
+			remoteInfo = "libffi-Mac";
+		};
+		21576BB01B74F83400F132B1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21576BA71B74F81D00F132B1 /* libffi.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = DB13B1651849DF1E0010F42D;
+			remoteInfo = "libffi-iOS";
+		};
 		21A36E311B71A41F0094CF55 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 21AE0CE31B6711D1006FB83F /* Project object */;
@@ -239,6 +262,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		21576BA71B74F81D00F132B1 /* libffi.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = libffi.xcodeproj; path = libffi/libffi.xcodeproj; sourceTree = "<group>"; };
+		21576BB31B74F86400F132B1 /* libffi.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libffi.dylib; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/usr/lib/libffi.dylib; sourceTree = DEVELOPER_DIR; };
 		216B4A351B690A180060DCA5 /* luaoc_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_struct.h; sourceTree = "<group>"; };
 		216B4A361B690A180060DCA5 /* luaoc_struct.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_struct.m; sourceTree = "<group>"; };
 		2197367D1B6D011400B6846D /* luaoc_test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_test.m; sourceTree = "<group>"; };
@@ -340,6 +365,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				21576BB41B74F86400F132B1 /* libffi.dylib in Frameworks */,
 				21A36E4A1B71A4A10094CF55 /* liblua_osx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -356,6 +382,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				21576BB21B74F83900F132B1 /* libffi.a in Frameworks */,
 				21AE0DAC1B67168B006FB83F /* liblua.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -378,9 +405,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		21576BA81B74F81D00F132B1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				21576BAD1B74F81D00F132B1 /* libffi.a */,
+				21576BAF1B74F81D00F132B1 /* ffi.dylib */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		21A36E1F1B71A3790094CF55 /* link */ = {
 			isa = PBXGroup;
 			children = (
+				21576BB31B74F86400F132B1 /* libffi.dylib */,
 				21A36E1D1B71A3640094CF55 /* libreadline.dylib */,
 			);
 			name = link;
@@ -412,6 +449,7 @@
 		21AE0CE21B6711D1006FB83F = {
 			isa = PBXGroup;
 			children = (
+				21576BA71B74F81D00F132B1 /* libffi.xcodeproj */,
 				21A36E1F1B71A3790094CF55 /* link */,
 				21AE0CED1B6711D1006FB83F /* luaoc */,
 				21AE0CFA1B6711D1006FB83F /* luaocTests */,
@@ -699,6 +737,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				21576BB11B74F83400F132B1 /* PBXTargetDependency */,
 				21AE0DAE1B671692006FB83F /* PBXTargetDependency */,
 			);
 			name = luaoc;
@@ -780,6 +819,12 @@
 			mainGroup = 21AE0CE21B6711D1006FB83F;
 			productRefGroup = 21AE0CEC1B6711D1006FB83F /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 21576BA81B74F81D00F132B1 /* Products */;
+					ProjectRef = 21576BA71B74F81D00F132B1 /* libffi.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				21AE0CEA1B6711D1006FB83F /* luaoc */,
@@ -791,6 +836,23 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		21576BAD1B74F81D00F132B1 /* libffi.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = libffi.a;
+			remoteRef = 21576BAC1B74F81D00F132B1 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		21576BAF1B74F81D00F132B1 /* ffi.dylib */ = {
+			isa = PBXReferenceProxy;
+			fileType = "compiled.mach-o.dylib";
+			path = ffi.dylib;
+			remoteRef = 21576BAE1B74F81D00F132B1 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		21A36E2D1B71A41F0094CF55 /* Resources */ = {
@@ -941,6 +1003,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		21576BB11B74F83400F132B1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "libffi-iOS";
+			targetProxy = 21576BB01B74F83400F132B1 /* PBXContainerItemProxy */;
+		};
 		21A36E321B71A41F0094CF55 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 21A36E241B71A41F0094CF55 /* luaoc_osx */;
@@ -1154,6 +1221,13 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/lua/lua-5.3.1/src",
+					"$(SRCROOT)/libffi/darwin_common/include",
+					"$(SRCROOT)/libffi/darwin_ios/include",
+				);
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1163,6 +1237,13 @@
 		21AE0D011B6711D1006FB83F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/lua/lua-5.3.1/src",
+					"$(SRCROOT)/libffi/darwin_common/include",
+					"$(SRCROOT)/libffi/darwin_ios/include",
+				);
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

@@ -14,6 +14,7 @@
 #import "luaoc_class.h"
 #import "luaoc_struct.h"
 #import <objc/runtime.h>
+#import <objc/message.h>
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>
 
@@ -49,6 +50,14 @@
 
 @end
 
+float floatFunc(id self, SEL _cmd, ...) {
+  va_list ap;
+  va_start(ap, _cmd);
+  float a = va_arg(ap, double);
+  va_end(ap);
+  return a * 2 ;
+}
+
 @implementation aTestClass
 
 @end
@@ -58,6 +67,20 @@
 @end
 
 @implementation luaoc_test
+
+- (void)testVa_float {
+  class_addMethod([aTestClass class], sel_getUid("test:"), (IMP)floatFunc, "f@:f");
+  // this work
+  float d = ((float(*)(id,SEL,...))objc_msgSend_fpret)([aTestClass new], sel_getUid("test:"), 33.0);
+    // this not work
+    d = ((float(*)(id,SEL,float))objc_msgSend_fpret)([aTestClass new], sel_getUid("test:"), 33.0);
+    // not work
+    // so the compiler need to know it call va_func first, then va_arg will work.
+    d = ((float(*)(id,SEL,float))floatFunc)(nil, nil, 33.0);
+
+//    float d = floatFunc(nil, nil, 33.0);
+  XCTAssertEqual(d, 66.0);
+}
 
 - (void)setUp {
     [super setUp];
@@ -435,4 +458,5 @@
   RUN_LUA_CODE(oc.class.aTestClass("protoFloat:a2:", function(self, f1, f2) return f1+f2 end));
   XCTAssertEqual([obj protoFloat:1.2f a2:(double)2.0], 3.2);
 }
+
 @end
