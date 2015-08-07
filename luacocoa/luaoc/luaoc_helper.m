@@ -474,7 +474,7 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
       // FIXME: may need to deal error
       case _C_BFLD: return ((int)strtol(++(*stopPos), (char**)stopPos, 10)+7)/8;
       case _C_VOID: ++(*stopPos); return 0;
-      case _C_UNDEF: ++(*stopPos); return 0; // ^? function pointer, @? block
+      case _C_UNDEF: ++(*stopPos); return 0; // ^? function pointer, @? block, FIXME but @? is one type, there may treat two type
       case _C_PTR: {
         luaoc_get_one_typesize(++(*stopPos), stopPos, NULL); // set stopPos after ptr type
         return sizeof(void*);
@@ -515,7 +515,7 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
         ++(*stopPos); // skip end
         return size;
       }
-      case 0: return size; // reach string end
+      case '\0': return size; // reach string end
       default: { break; }
     }
     ++(*stopPos);

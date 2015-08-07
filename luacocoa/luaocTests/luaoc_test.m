@@ -23,6 +23,36 @@
 #define RUN_LUA_CODE(...) luaL_dostring(gLua_main_state, LUA_CODE(__VA_ARGS__))
 #define RUN_LUA_STR(str) luaL_dostring(gLua_main_state, str)
 
+@protocol aTestSuperProtocol <NSObject>
+
+@optional
+- (void)proto1;
+- (id)proto2:(id)arg;
+- (BOOL)proto2:(id)arg arg2:(int)arg2;
+- (int)proto3:(id)arg arg2:(int)arg2 arg3:(CGPoint)p;
+- (CGFloat)protoFloat:(float)val a2:(double)val2;
+
+@end
+
+@protocol aTestChildProtocol <aTestSuperProtocol>
+
+@optional
+- (bool)childProto:(char)ss arg1:(bool)arg1 arg2:(void*)arg2;
++ (int)childProto:(id*)outArg;
++ (CGPoint)childProtoS:(CGPoint)p;
+
+@end
+
+@interface aTestClass : NSMutableArray <aTestChildProtocol>
+{
+}
+
+@end
+
+@implementation aTestClass
+
+@end
+
 @interface luaoc_test : XCTestCase
 
 @end
@@ -345,6 +375,7 @@
   XCTAssertTrue(strcmp(lua_tostring(L,-1), "NSMutableArray") == 0);
   lua_pop(L, 2);
 
+  // copy obj retain by lua
   RUN_LUA_CODE(v = v:mutableCopy() return v:retainCount());
   XCTAssertEqual(lua_tonumber(L, -1), 1);
   lua_pop(L, 1);
@@ -372,4 +403,36 @@
   lua_pop(L, 1);
 }
 
+- (void)testOverride {
+  lua_State* L = gLua_main_state;
+  RUN_LUA_CODE(return oc.class.aTestClass("proto1", function() aret=1 end));
+  XCTAssertTrue(lua_toboolean(L, -1));
+
+  aTestClass* obj = [[aTestClass new] autorelease];
+  [obj proto1];
+
+  RUN_LUA_CODE(return aret);
+  XCTAssertEqual(lua_tonumber(L, -1), 1);
+
+  RUN_LUA_CODE(return oc.class.aTestClass("proto2:", function(self,obj) return self == obj and self or obj end));
+  XCTAssertTrue(lua_toboolean(L, -1));
+
+  XCTAssertEqual([obj proto2:NULL], NULL);
+  XCTAssertEqual([obj proto2:obj], obj);
+  XCTAssertEqual([obj proto2:[NSArray class]], [NSArray class]);
+
+  RUN_LUA_CODE(return oc.class.aTestClass("proto3:arg2:arg3:", function(self, obj, num, p) return num*2 end));
+  XCTAssertTrue(lua_toboolean(L, -1));
+
+  // XCTAssertEqual([obj proto3:obj arg2:44 arg3:CGPointMake(33,55)], 88);
+
+  RUN_LUA_CODE(oc.class.aTestClass("+ childProtoS:", function(cls, p) return p end));
+   CGPoint a = CGPointMake(44,55);
+   a = [aTestClass childProtoS:a];
+   XCTAssertEqual(a.x, 44);
+   XCTAssertEqual(a.y, 55);
+
+  RUN_LUA_CODE(oc.class.aTestClass("protoFloat:a2:", function(self, f1, f2) return f1+f2 end));
+  XCTAssertEqual([obj protoFloat:1.2f a2:(double)2.0], 3.2);
+}
 @end

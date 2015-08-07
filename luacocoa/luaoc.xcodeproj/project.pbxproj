@@ -1249,6 +1249,7 @@
 				21A36DDE1B71A2A20094CF55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		21A36E361B71A41F0094CF55 /* Build configuration list for PBXNativeTarget "luaoc_osx" */ = {
 			isa = XCConfigurationList;
@@ -1257,6 +1258,7 @@
 				21A36E381B71A41F0094CF55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		21A36E391B71A41F0094CF55 /* Build configuration list for PBXNativeTarget "luaoc_osxTests" */ = {
 			isa = XCConfigurationList;
@@ -1265,6 +1267,7 @@
 				21A36E3B1B71A41F0094CF55 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		21AE0CE61B6711D1006FB83F /* Build configuration list for PBXProject "luaoc" */ = {
 			isa = XCConfigurationList;
