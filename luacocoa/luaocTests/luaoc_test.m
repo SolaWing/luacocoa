@@ -32,6 +32,7 @@
 - (BOOL)proto2:(id)arg arg2:(int)arg2;
 - (int)proto3:(id)arg arg2:(int)arg2 arg3:(CGPoint)p;
 - (CGFloat)protoFloat:(float)val a2:(double)val2;
+- (CGRect)protoRect:(CGRect)rect flt:(float)val dbl:(double)dbl;
 
 @end
 
@@ -41,6 +42,7 @@
 - (bool)childProto:(char)ss arg1:(bool)arg1 arg2:(void*)arg2;
 + (int)childProto:(id*)outArg;
 + (CGPoint)childProtoS:(CGPoint)p;
+- (float)test:(float)a;
 
 @end
 
@@ -50,13 +52,7 @@
 
 @end
 
-float floatFunc(id self, SEL _cmd, ...) {
-  va_list ap;
-  va_start(ap, _cmd);
-  float a = va_arg(ap, double);
-  va_end(ap);
-  return a * 2 ;
-}
+
 
 @implementation aTestClass
 
@@ -68,19 +64,7 @@ float floatFunc(id self, SEL _cmd, ...) {
 
 @implementation luaoc_test
 
-- (void)testVa_float {
-  class_addMethod([aTestClass class], sel_getUid("test:"), (IMP)floatFunc, "f@:f");
-  // this work
-  float d = ((float(*)(id,SEL,...))objc_msgSend_fpret)([aTestClass new], sel_getUid("test:"), 33.0);
-    // this not work
-    d = ((float(*)(id,SEL,float))objc_msgSend_fpret)([aTestClass new], sel_getUid("test:"), 33.0);
-    // not work
-    // so the compiler need to know it call va_func first, then va_arg will work.
-    d = ((float(*)(id,SEL,float))floatFunc)(nil, nil, 33.0);
 
-//    float d = floatFunc(nil, nil, 33.0);
-  XCTAssertEqual(d, 66.0);
-}
 
 - (void)setUp {
     [super setUp];
@@ -456,7 +440,17 @@ float floatFunc(id self, SEL _cmd, ...) {
    XCTAssertEqual(a.y, 55);
 
   RUN_LUA_CODE(oc.class.aTestClass("protoFloat:a2:", function(self, f1, f2) return f1+f2 end));
-  XCTAssertEqual([obj protoFloat:1.2f a2:(double)2.0], 3.2);
+  XCTAssertEqualWithAccuracy([obj protoFloat:1.2f a2:2], 3.2, 0.001);
+
+  RUN_LUA_CODE(oc.class.aTestClass("protoRect:flt:dbl:", function(self, rect, f1, f2) aret=f1*f2  return rect end));
+  CGRect b = CGRectMake(3,5,22,33);
+  b = [obj protoRect:b flt:22 dbl:4];
+  XCTAssertEqual(b.origin.x, 3);
+  XCTAssertEqual(b.origin.y, 5);
+  XCTAssertEqual(b.size.width, 22);
+  XCTAssertEqual(b.size.height, 33);
+  RUN_LUA_CODE(return aret);
+  XCTAssertEqual(lua_tonumber(L, -1), 88);
 }
 
 @end

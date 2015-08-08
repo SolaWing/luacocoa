@@ -30,6 +30,7 @@ static inline void __luaoc_pop_stack(lua_State* L, int start, int keep) {
     lua_settop(L, start+keep);
   }
 }
+
 #define LUA_POP_STACK(L, keep) __luaoc_pop_stack((L), (__startStackIndex), (keep))
 
 #define IS_RELATIVE_INDEX(index) ((index) < 0 && (index) > LUA_REGISTRYINDEX)
@@ -98,3 +99,5 @@ void luaoc_dump_stack(lua_State* L);
     #define DLOG(...)
   #endif
 #endif
+
+#define PP_STR(str) #str

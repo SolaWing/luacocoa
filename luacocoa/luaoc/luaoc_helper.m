@@ -451,12 +451,13 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
     stopPos = (const char**)alloca(sizeof(const char*));
   }
   *stopPos = typeDescription;
-  int size = 0;
+  int size = -1;
   do {
     switch( **stopPos ){
       CASE_SIZE(_C_ID      , id)
       CASE_SIZE(_C_CLASS   , Class)
       CASE_SIZE(_C_SEL     , SEL)
+      CASE_SIZE(_C_CHARPTR , char*)
       CASE_SIZE(_C_CHR     , char)
       CASE_SIZE(_C_UCHR    , unsigned char)
       CASE_SIZE(_C_SHT     , short)
@@ -470,7 +471,6 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
       CASE_SIZE(_C_FLT     , float)
       CASE_SIZE(_C_DBL     , double)
       CASE_SIZE(_C_BOOL    , BOOL)
-      CASE_SIZE(_C_CHARPTR , char*)
       // FIXME: may need to deal error
       case _C_BFLD: return ((int)strtol(++(*stopPos), (char**)stopPos, 10)+7)/8;
       case _C_VOID: ++(*stopPos); return 0;
@@ -491,7 +491,7 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
         char* eqpos = strchr(*stopPos, '=');
 
 #if defined(DEBUG) && DEBUG != 0
-        if (NULL == eqpos) DLOG("Error: can't find '=' in union type");
+        if (NULL == eqpos) DLOG("Error: can't find '=' in struct type");
 #endif
         if (copyTypeName){
           long len = eqpos - *stopPos;
@@ -508,6 +508,7 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
           }
         } else { // struct
           *stopPos = eqpos + 1;
+          size = 0;
           while (**stopPos != _C_STRUCT_E){ // struct get all element size
             size += luaoc_get_one_typesize(*stopPos, stopPos, NULL);
           }

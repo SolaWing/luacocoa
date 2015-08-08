@@ -42,6 +42,46 @@ void print_register_class(){
     luaoc_close();
 }
 
+float floatFunc(id self, SEL _cmd, ...) {
+    va_list ap;
+    va_start(ap, _cmd);
+    double a = va_arg(ap, double);
+    double b = va_arg(ap, double);
+    for (int i =0; i< 11;++i){
+        long c = va_arg(ap, long);
+        c=c;
+    }
+    va_end(ap);
+    return a + b ;
+}
+
+void asmFunc(){
+    __asm__("popq %rbp\n\t"
+            "jmp _floatFunc");
+//    goto floatFunc;
+//    ((void(*)(void))floatFunc)();
+}
+
+- (void)testVa_float {
+    id obj = [[NSArray new] autorelease];
+    SEL sel = sel_getUid("test:");
+    float d;
+    // in x64, there is a dedicated XMM register, in ios, seem there is none
+
+    // promote rule only for va_func.
+    // this not work, float won't promoted, in x64, this even not got pass.
+    d = ((float(*)(id,SEL,float, float))floatFunc)(obj, sel, 33.0, 23.0);
+    d = ((float(*)(id,SEL,double,float))floatFunc)(obj, sel, 33.0, 23.0);
+    d = ((float(*)(id,SEL,float, char, short, int,long, long,long,long,long,long,long))floatFunc)(obj, sel, 33.0,3,4,5,6,7,8,9,0,1,2);
+
+    // work
+    d = floatFunc(obj, sel, 33.0, 44.0, 55.0);
+    d = floatFunc(obj, sel, 33.0, 44.0, 22l,33l,44l,55l,66l,77l, 88l, 99l, 00l, 10l);
+    XCTAssertEqual(d, 77.0);
+    // so the compiler need to know it call va_func first, then va_arg will work.
+    d = ((float(*)(id,SEL,float, float))asmFunc)(obj, sel, 33.0, 23.0);
+}
+
 - (void)testExample {
   // luaL_dostring(gLua_main_state, "a = 123; print(a); _ENV={print=print,a=333}; print(22,a)");
   luaL_dostring(gLua_main_state, "a=function (b) end print(a) a.name = 'ss' print(a.name, ' is') return a");

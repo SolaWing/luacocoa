@@ -13,11 +13,6 @@
 #import "luaoc.h"
 #import "luaoc_instance.h"
 
-#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
-#import "ffi.h"
-#else
-#import <ffi/ffi.h>
-#endif
 
 #import <objc/runtime.h>
 #import <string.h>
@@ -27,6 +22,442 @@
 #define kClassMethodIndex    "__cmsg"
 #define kInstanceMethodIndex "__imsg"
 
+static void luaoc_pushLuaFunc(lua_State *L, Class cls, SEL sel, bool isClassMethod);
+static void luaoc_setLuaFunc(lua_State *L, int clsIndex, const char* name, bool isClassMethod);
+
+//#define NO_USE_FFI
+#ifndef NO_USE_FFI
+#pragma mark - FFI MSG
+#import "ffi.h"
+
+// the following two dict used to cache generate closureFunc and ffi_type
+static NSMutableDictionary* luaFuncDict; // encoding => closureFunc
+static NSMutableDictionary* luaStructFFIType; // encoding => ffi_type
+static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
+  if (![NSThread isMainThread])
+    NSLog(@"[WARN] call lua method on non-main thread!!");
+
+  id self = *(id*)args[0];
+  SEL _cmd = *(SEL*)args[1];
+  lua_State *L = gLua_main_state;
+
+  Class cls = [self class];
+  bool isClass = cls == self;
+  luaoc_pushLuaFunc(L, cls, _cmd, isClass);
+  if (lua_isnil(L, -1)) {DLOG("can't found lua func"); return;}
+
+  if (isClass) luaoc_push_class(L, cls);
+  else luaoc_push_instance(L, self);
+
+  NSMethodSignature* sign = [self methodSignatureForSelector:_cmd];
+  int argCount = (int)[sign numberOfArguments];
+
+  for (int i = 2; i<argCount; ++i) {
+    const char* encoding = [sign getArgumentTypeAtIndex:i];
+    luaoc_push_obj(L, encoding, args[i]);
+  }
+  size_t retLen = [sign methodReturnLength];
+  if (lua_pcall(L, argCount-1, retLen>0?1:0, 0) != 0) {
+    DLOG("%s call lua func %s error:\n  %s",
+        class_getName(cls), sel_getName(_cmd), lua_tostring(L, -1) );
+    lua_pop(L,1);
+  } else if (retLen>0) {
+    void* buf = luaoc_copy_toobjc(L, -1, [sign methodReturnType], &retLen);
+    memcpy(ret, buf, retLen);
+
+    free(buf);
+    lua_pop(L,1);
+  }
+}
+
+static ffi_type* ffi_type_for_one_encoding(const char* encoding, const char** stopPos) {
+  if (NULL == stopPos) stopPos = (const char**)alloca(sizeof(const char*));
+  *stopPos = encoding;
+  int size;
+
+#define ADVANCE_AND_RETURN(type) ++(*stopPos); return &type
+
+  do {
+    switch( **stopPos ){
+      case _C_BOOL:
+      case _C_CHR: ADVANCE_AND_RETURN(ffi_type_sint8);
+      case _C_UCHR: ADVANCE_AND_RETURN(ffi_type_uint8);
+      case _C_SHT: ADVANCE_AND_RETURN(ffi_type_sint16);
+      case _C_USHT: ADVANCE_AND_RETURN(ffi_type_uint16);
+      case _C_INT: ADVANCE_AND_RETURN(ffi_type_sint32);
+      case _C_UINT: ADVANCE_AND_RETURN(ffi_type_uint32);
+      case _C_LNG: ADVANCE_AND_RETURN(ffi_type_slong);
+      case _C_ULNG: ADVANCE_AND_RETURN(ffi_type_ulong);
+      case _C_LNG_LNG: ADVANCE_AND_RETURN(ffi_type_sint64);
+      case _C_ULNG_LNG: ADVANCE_AND_RETURN(ffi_type_uint64);
+      case _C_FLT: ADVANCE_AND_RETURN(ffi_type_float);
+      case _C_DBL: ADVANCE_AND_RETURN(ffi_type_double);
+      case _C_VOID: ADVANCE_AND_RETURN(ffi_type_void);
+      case _C_ID:
+      case _C_CLASS:
+      case _C_SEL:
+      case _C_CHARPTR: ADVANCE_AND_RETURN(ffi_type_pointer);
+      case _C_PTR: // ptr have one type following
+        luaoc_get_one_typesize(++(*stopPos), stopPos, NULL);
+        return &ffi_type_pointer;
+      case _C_ARY_B:
+        size = (int)strtol(++(*stopPos), (char**)stopPos, 10); // array count
+        size *= luaoc_get_one_typesize(*stopPos, stopPos, NULL);
+        // FIXME: may need to check array end
+        ADVANCE_AND_RETURN(ffi_type_pointer);
+      case _C_STRUCT_B: {
+        char* eqpos = strchr(*stopPos, '=');
+        if (NULL == eqpos){
+          DLOG("can't find = in struct!!"); return NULL;
+        }
+
+        *stopPos = eqpos + 1;
+        // cal struct arg number
+        size = 0;
+        while (**stopPos != _C_STRUCT_E){ // struct get all element size
+          luaoc_get_one_typesize(*stopPos, stopPos, NULL);
+          ++size;
+        }
+        NSString* structEncoding = [[[NSString alloc] initWithBytes:eqpos+1
+            length:*stopPos-eqpos-1 encoding:NSUTF8StringEncoding] autorelease];
+        NSValue* structEncodingType = luaStructFFIType[structEncoding];
+        if (structEncodingType){
+          ++(*stopPos); // skip end;
+          return [structEncodingType pointerValue];
+        }
+
+        ffi_type** elements = calloc(size+1, sizeof(ffi_type*)); // NULL terminated
+        ffi_type* struct_type = calloc(1, sizeof(ffi_type));
+        struct_type->type = FFI_TYPE_STRUCT;
+        struct_type->elements = elements;
+
+        *stopPos = eqpos + 1;
+        while (**stopPos != _C_STRUCT_E){
+          *(elements++) = ffi_type_for_one_encoding(*stopPos, stopPos);
+        }
+
+        structEncodingType = [NSValue valueWithPointer:struct_type];
+        luaStructFFIType[structEncoding] = structEncodingType;
+
+        ++(*stopPos); // skip _C_STRUCT_E
+
+        return struct_type;
+      }
+      case _C_UNION_B: DLOG("union type is unsupported!"); return NULL;
+      case '\0': DLOG("reach encoding end, unsupported type!"); return NULL;
+      default: break;
+    }
+
+    ++(*stopPos);
+  } while( true );
+
+  return NULL;
+}
+
+static IMP impForEncoding(const char* encoding){
+  NSString *str = [NSString stringWithUTF8String:encoding];
+  NSValue *imp = luaFuncDict[str];
+  if (imp) return [imp pointerValue]; // return cached func pointer
+
+  // get type count in encoding
+  int typeNumber = 0;
+  const char* stopPos = encoding;
+  while (*stopPos) {
+    // skip one type, encoding like v16@0:8, which have offset in encoding,
+    // may not end with \0, so need to judge it
+    if (luaoc_get_one_typesize(stopPos, &stopPos, NULL)>=0)
+      ++typeNumber;
+  }
+
+  stopPos = encoding;
+  ffi_type* ret_type = ffi_type_for_one_encoding(stopPos, &stopPos);
+  if (NULL == ret_type) return NULL; // ERROR occur;
+
+  ffi_type** args = NULL;
+  if (typeNumber > 1) {             // fill arg types
+    args = calloc(typeNumber - 1, sizeof(ffi_type*)); // minus return type
+    ffi_type** args_it = args;
+    do{
+      if (!(*(args_it++) = ffi_type_for_one_encoding(stopPos, &stopPos))){
+        free(args); return NULL;
+      }
+    }while (args_it - args < typeNumber - 1);
+  }
+
+  void* code_ptr = NULL;
+  ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &code_ptr);
+  if (closure) {
+    ffi_cif* cif = malloc(sizeof(ffi_cif));
+    if (ffi_prep_cif(cif, FFI_DEFAULT_ABI, typeNumber-1,
+          ret_type, args) == FFI_OK) {
+      if (ffi_prep_closure_loc(closure, cif, luaoc_msg_from_oc,
+            NULL, code_ptr) == FFI_OK)
+      {
+        luaFuncDict[str] = [NSValue valueWithPointer:code_ptr];
+        return (IMP)code_ptr;
+      }
+    }
+    free(cif);
+    ffi_closure_free(closure);
+  }
+  return NULL;
+}
+
+#else
+#pragma mark - NON-FFI MSG float struct not work in x64
+#ifdef __LP64__
+    #define _ASM_WRAP(name) static void a##name () {\
+      __asm__("movb $1, %al \n\t popq %rbp\n\t jmp " PP_STR(_##name)); } // HACK, now x64 can save xmm value in stack
+    #define ASM_WRAP(name) _ASM_WRAP(name) // ensure param expand
+#else
+    #define ASM_WRAP(name)
+#endif
+    typedef struct { char b[8]; } _buf_8;
+    typedef struct { char b[16]; } _buf_16;
+    typedef struct { char b[32]; } _buf_32;
+/** though here use va_arg, but in objc, the actual call will be cast to correct
+ *  parameter type, and not the va_list form.
+ *  test in x86, the float won't promote to double. now fix to support it
+ *  test in x64, there has a xmm register, and float type even not
+ *    get pass for cast-call!! it seem to unpossible except write a assemble func.
+ *    struct contain float can even wrose!
+ *    so now haven't supportted float relevant func
+ */
+static const char* luaoc_method_call(lua_State *L, id receiver, SEL _cmd, va_list ap, void* retBuf, size_t bufLen) {
+  if (![NSThread isMainThread])
+    NSLog(@"[WARN] pcall lua method on non-main thread!!");
+
+  if (retBuf) memset(retBuf, 0, bufLen);
+
+  Class cls = [receiver class];
+  bool isClass = cls == receiver;
+  luaoc_pushLuaFunc(L, cls, _cmd, isClass);
+  if (lua_isnil(L, -1)) return "can't found func!";
+
+  if (isClass) luaoc_push_class(L, cls);
+  else luaoc_push_instance(L, receiver);
+
+  NSMethodSignature* sign = [receiver methodSignatureForSelector:_cmd];
+  int argCount = (int)[sign numberOfArguments];
+
+  void* buffer = NULL;
+#define VAR_TYPE(type)                  \
+  buffer = alloca(sizeof(type));        \
+  *(type*)buffer = va_arg(ap, type);    \
+  goto pcall_end_while
+
+  for (int i = 2; i < argCount; ++i) {
+    // get arg from encoding
+    const char* encoding = [sign getArgumentTypeAtIndex:i];
+    while(*encoding){
+      switch( *encoding ){
+        case _C_BOOL:
+        case _C_CHR:
+        case _C_UCHR:
+        case _C_SHT:
+        case _C_USHT:
+        case _C_INT:
+        case _C_UINT:
+          VAR_TYPE(int);
+        case _C_LNG:
+        case _C_ULNG:
+          VAR_TYPE(long);
+        case _C_LNG_LNG:
+        case _C_ULNG_LNG:
+          VAR_TYPE(long long);
+        case _C_FLT:
+          VAR_TYPE(float); // HACK: in x86, cast call won't promote float to double
+        case _C_DBL:
+          VAR_TYPE(double);
+          // buffer = alloca(sizeof(double));
+          // *(double*)buffer = va_arg(ap, double); // get double but in memory it's float...
+          // *(double*)buffer = *(float*)buffer;     // convert float in memory to double type
+          // goto pcall_end_while;
+        case _C_PTR:
+        case _C_CHARPTR:
+        case _C_ID:
+        case _C_SEL:
+        case _C_CLASS:
+        case _C_ARY_B:
+          VAR_TYPE(id);
+        case _C_STRUCT_B:
+          // in x64, copyt float to stack is jump over. I don't know why. try ffi later.
+          // HACK, float and other save in different register. so for struct
+          // need to get each primitive field
+          buffer = alloca(luaoc_get_one_typesize(encoding, NULL, NULL));
+          void* bufferPtr = buffer;
+
+#define CASE_TYPE(encode, type, apType) case encode: \
+    *((type*)bufferPtr) = va_arg(ap, apType); bufferPtr+=sizeof(type); break;
+
+          const char* structBegin = encoding;
+          while (*encoding){
+            switch( *encoding ){
+              CASE_TYPE(_C_BOOL     ,bool, int)
+              CASE_TYPE(_C_CHR      ,char, int)
+              CASE_TYPE(_C_UCHR     ,unsigned char, int)
+              CASE_TYPE(_C_SHT      ,short, int)
+              CASE_TYPE(_C_USHT     ,unsigned short, int)
+              CASE_TYPE(_C_INT      ,int , int)
+              CASE_TYPE(_C_UINT     ,unsigned int, int)
+              CASE_TYPE(_C_LNG      ,long, long)
+              CASE_TYPE(_C_ULNG     ,unsigned long, unsigned long)
+              CASE_TYPE(_C_LNG_LNG  ,long long, long long)
+              CASE_TYPE(_C_ULNG_LNG ,unsigned long long, unsigned long long)
+              CASE_TYPE(_C_FLT      ,float, float) // x86 simulator, not promote to double
+              CASE_TYPE(_C_DBL      ,double, double)
+              case _C_PTR:
+                luaoc_get_one_typesize(encoding+1, &encoding, NULL);
+                --encoding; // ++ encoding at end
+              case _C_CHARPTR:
+              case _C_ID:
+              case _C_SEL:
+              case _C_CLASS:
+                *(id*)bufferPtr = va_arg(ap, id); bufferPtr+=sizeof(id);
+                break;
+              case _C_ARY_B:
+              case _C_UNION_B:
+                return "union and array not supported currently";
+              case _C_STRUCT_B: {
+                encoding = strchr(encoding+1, '=');
+                if (!encoding) return "struct encoding error, can't find =";
+              }
+              default: break;
+            }
+            ++encoding;
+          }
+          encoding = structBegin; // restore encoding for later push use
+          goto pcall_end_while;
+        case _C_UNION_B:
+          return "union type in method_call not support!";
+        default: {
+          break;
+        }
+      }
+      ++encoding;
+    }
+pcall_end_while:
+    if (!*encoding) return "pcall unsupported encoding!"; // use out encoding
+
+    luaoc_push_obj(L, encoding, buffer);
+  }
+
+  int retCount = [sign methodReturnLength]>0?1:0;
+  if (lua_pcall(L, argCount-1, retCount, 0) != 0) {
+    const char* err = lua_tostring(L, -1);
+    lua_pop(L, 1);
+    return err;
+  } else if (retCount && retBuf) {
+    size_t outLen;
+    const char* returnType = [sign methodReturnType];
+    void* buf = luaoc_copy_toobjc(L, -1, returnType, &outLen);
+    memcpy(retBuf, buf, outLen);
+    free(buf);
+    lua_pop(L, 1);
+  }
+
+  return NULL;
+}
+
+
+#define LUAOC_METHOD_NAME(returnType) luaoc_##returnType##_call
+
+#define LUAOC_TYPE_CALL(_type_)                                             \
+_type_ LUAOC_METHOD_NAME(_type_)(id self, SEL _cmd, ...) {           \
+  _type_ returnValue;                                                       \
+  va_list args;                                                             \
+  va_start(args, _cmd);   int a=0; if (a) va_arg(args, int);                \
+  const char* result = luaoc_method_call(gLua_main_state, self, _cmd, args, \
+      &returnValue, sizeof(_type_));                                        \
+  va_end(args);                                                             \
+                                                                            \
+  if (result) {                                                             \
+    luaL_error(gLua_main_state, "Error calling '%s' on '%s'n%s",            \
+        _cmd, [[self description] UTF8String],                              \
+        result);                                                            \
+  }                                                                         \
+  return returnValue;                                                       \
+}                                                                           \
+ASM_WRAP(LUAOC_METHOD_NAME(_type_))
+
+LUAOC_TYPE_CALL(id)
+LUAOC_TYPE_CALL(long)
+LUAOC_TYPE_CALL(int64_t)
+LUAOC_TYPE_CALL(float)
+LUAOC_TYPE_CALL(double)
+LUAOC_TYPE_CALL(_buf_8)
+LUAOC_TYPE_CALL(_buf_16)
+LUAOC_TYPE_CALL(_buf_32)
+LUAOC_TYPE_CALL(CGPoint)
+LUAOC_TYPE_CALL(CGRect)
+
+#ifdef __LP64__
+#define LUAOC_IMP_METHOD_NAME(returnType) aluaoc_##returnType##_call
+#else
+#define LUAOC_IMP_METHOD_NAME LUAOC_METHOD_NAME
+#endif
+
+static IMP impForEncoding(const char* encoding) {
+  while (*encoding){
+    switch( *encoding ){
+      case _C_BOOL:
+      case _C_CHR:
+      case _C_UCHR:
+      case _C_SHT:
+      case _C_USHT:
+      case _C_INT:
+      case _C_UINT:
+      case _C_PTR:
+      case _C_CHARPTR:
+      case _C_ID:
+      case _C_SEL:
+      case _C_CLASS:
+      case _C_ARY_B:
+      case _C_VOID:
+        return (IMP)LUAOC_IMP_METHOD_NAME(id);
+      case _C_LNG:
+      case _C_ULNG:
+        return (IMP)LUAOC_IMP_METHOD_NAME(long);
+      case _C_LNG_LNG:
+      case _C_ULNG_LNG:
+        return (IMP)LUAOC_IMP_METHOD_NAME(int64_t);
+      case _C_FLT:
+        return (IMP)LUAOC_IMP_METHOD_NAME(float);
+      case _C_DBL:
+        return (IMP)LUAOC_IMP_METHOD_NAME(double);
+      case _C_STRUCT_B: {
+#ifdef __LP64__
+        char* structName;
+        int returnTypeSize = luaoc_get_one_typesize(encoding, NULL, &structName);
+        IMP imp = NULL;
+        if (strcmp(structName, "CGPoint") == 0) imp = LUAOC_IMP_METHOD_NAME(CGPoint);
+        else if (strcmp(structName, "CGSize") == 0) imp = LUAOC_IMP_METHOD_NAME(CGPoint);
+        // CGRect not use xmm register
+        // else if (strcmp(structName, "CGRect") == 0) imp = LUAOC_IMP_METHOD_NAME(CGRect);
+        free(structName);
+        if (imp) return imp;
+#else
+        int returnTypeSize = luaoc_get_one_typesize(encoding, NULL, NULL);
+#endif
+        if (returnTypeSize<=8) return (IMP)LUAOC_IMP_METHOD_NAME(_buf_8);
+        else if (returnTypeSize <= 16) return (IMP)LUAOC_IMP_METHOD_NAME(_buf_16);
+        else if (returnTypeSize <= 32) return (IMP)LUAOC_IMP_METHOD_NAME(_buf_32);
+        else { DLOG("unsupported struct type %s", encoding); return NULL; }
+      }
+      case _C_BFLD:
+      case _C_UNION_B:
+        DLOG("unsupported encoding type!");
+      case '\0':
+        return NULL;
+      default: break;
+    }
+    ++encoding;
+  }
+  return NULL;
+}
+
+#endif
+#pragma mark - class luac convert
 void luaoc_push_class(lua_State *L, Class cls) {
   if (NULL == cls) {
     lua_pushnil(L);
@@ -123,7 +554,68 @@ static const luaL_Reg ClassTableMethods[] = {
   {NULL, NULL}
 };
 
-#pragma mark - class lua convert
+#pragma mark - class meta func
+static const char* findOverrideMethodEncoding(Class cls, SEL selector, bool isClassMethod){
+  Method m = isClassMethod ? class_getClassMethod(cls, selector)
+                           : class_getInstanceMethod(cls, selector);
+  if (m) return method_getTypeEncoding(m);
+
+  // find in protocol
+  do {
+    Protocol** proto = class_copyProtocolList(cls, NULL);
+    if (proto){
+      Protocol** proto_it = proto;
+      while(*proto_it){
+        // look at objc header, objc_method just have more field of IMP
+        struct objc_method_description mdes =
+          protocol_getMethodDescription(*proto_it, selector, YES, !isClassMethod);
+        if (!mdes.name) mdes =
+          protocol_getMethodDescription(*proto_it, selector, NO, !isClassMethod);
+        if (mdes.name){
+          free(proto);
+          return mdes.types;
+        }
+        ++proto_it;
+      }
+      free(proto);
+    }
+
+    cls = class_getSuperclass(cls);
+  } while(cls);
+  return NULL;
+}
+
+/** just overwrite it, in imp, search for the cls luafunc with luaName
+ *  OC old imp save in selector prefix with OC
+ */
+static bool override(Class cls, const char* selName, bool isClassMethod) {
+  NSCParameterAssert(cls);
+  NSCParameterAssert(selName);
+
+  size_t selLen = strlen(selName);
+  char* selBuffer = (char*)alloca(selLen + 3); // 2 for OC prefix
+  SEL sel =  sel_getUid(selName);
+
+  const char *encoding = findOverrideMethodEncoding(cls, sel, isClassMethod);
+
+  if (NULL == encoding) return false;
+
+  IMP imp = impForEncoding(encoding);
+  if (!imp) return false;
+
+  Class add2Cls = isClassMethod ? object_getClass(cls) : cls;
+  IMP oldIMP = class_replaceMethod(add2Cls, sel, imp, encoding);
+
+  memcpy(selBuffer, "OC", 2); // add OC prefix
+  memcpy(selBuffer+2, selName, selLen+1); // include \0 end
+  sel = sel_getUid(selBuffer);
+  if (!class_respondsToSelector(add2Cls, sel)){ // first override, set OC imp
+    class_addMethod(add2Cls, sel, oldIMP, encoding);
+  }
+
+  return true;
+}
+
 static void luaoc_pushLuaFunc(lua_State *L, Class cls, SEL sel, bool isClassMethod) {
   LUA_PUSH_STACK(L);
 
@@ -170,269 +662,6 @@ static void luaoc_setLuaFunc(lua_State *L, int clsIndex, const char* name, bool 
   lua_rawsetfield(L, -2, name); // table[name] = func
 
   LUA_POP_STACK(L, -1); // popup the func
-}
-
-
-typedef struct { char b[8]; } _buf_8;
-//typedef struct { char b[16]; } _buf_16;
-typedef CGPoint _buf_16;
-typedef struct { char b[32]; } _buf_32;
-static const char* luaoc_method_call(lua_State *L, id receiver, SEL _cmd, va_list ap, void* retBuf, size_t bufLen) {
-  if (![NSThread isMainThread])
-    NSLog(@"[WARN] pcall lua method on non-main thread!!");
-
-//  VARG(CGRect);
-//  VARG(float);
-//  VARG(double);
-//  VARG(bool);
-//  VARG(char);
-//  VARG(short);
-//  VARG(int);
-//  VARG(UInt64);
-
-
-  if (retBuf) memset(retBuf, 0, bufLen);
-
-  Class cls = [receiver class];
-  bool isClass = cls == receiver;
-  luaoc_pushLuaFunc(L, cls, _cmd, isClass);
-  if (lua_isnil(L, -1)) return "can't found func!";
-
-  if (isClass) luaoc_push_class(L, cls);
-  else luaoc_push_instance(L, receiver);
-
-  NSMethodSignature* sign = [receiver methodSignatureForSelector:_cmd];
-  int argCount = (int)[sign numberOfArguments];
-
-  void* buffer = NULL;
-#define VAR_TYPE(type)                  \
-  buffer = alloca(sizeof(type));        \
-  *(type*)buffer = va_arg(ap, type);    \
-  goto pcall_end_while
-
-  for (int i = 2; i < argCount; ++i) {
-    // get arg from encoding
-    const char* encoding = [sign getArgumentTypeAtIndex:i];
-    while(*encoding){
-      switch( *encoding ){
-        case _C_BOOL:
-        case _C_CHR:
-        case _C_UCHR:
-        case _C_SHT:
-        case _C_USHT:
-        case _C_INT:
-        case _C_UINT:
-          VAR_TYPE(int);
-        case _C_LNG:
-        case _C_ULNG:
-          VAR_TYPE(long);
-        case _C_LNG_LNG:
-        case _C_ULNG_LNG:
-          VAR_TYPE(long long);
-        case _C_FLT:
-        case _C_DBL:
-          VAR_TYPE(double); // va_arg have problem when get float or double, in x86, get from double but use as float? even for double type
-        case _C_PTR:
-        case _C_CHARPTR:
-        case _C_ID:
-        case _C_SEL:
-        case _C_CLASS:
-        case _C_ARY_B:
-          VAR_TYPE(id);
-        case _C_STRUCT_B:
-          // in x64, copyt float to stack is jump over. I don't know why. try ffi later.
-          // HACK, float and other save in different register. so for struct
-          // need to get each primitive field
-          buffer = alloca(luaoc_get_one_typesize(encoding, NULL, NULL));
-          void* bufferPtr = buffer;
-
-#define CASE_TYPE(encode, type, apType) case encode: \
-    *((type*)bufferPtr) = va_arg(ap, apType); bufferPtr+=sizeof(type); break;
-
-          while (*encoding){
-            switch( *encoding ){
-              CASE_TYPE(_C_BOOL     ,bool, int)
-              CASE_TYPE(_C_CHR      ,char, int)
-              CASE_TYPE(_C_UCHR     ,unsigned char, int)
-              CASE_TYPE(_C_SHT      ,short, int)
-              CASE_TYPE(_C_USHT     ,unsigned short, int)
-              CASE_TYPE(_C_INT      ,int , int)
-              CASE_TYPE(_C_UINT     ,unsigned int, int)
-              CASE_TYPE(_C_LNG      ,long, long)
-              CASE_TYPE(_C_ULNG     ,unsigned long, unsigned long)
-              CASE_TYPE(_C_LNG_LNG  ,long long, long long)
-              CASE_TYPE(_C_ULNG_LNG ,unsigned long long, unsigned long long)
-              CASE_TYPE(_C_FLT      ,double, double) // x86 simulator, not promote to double
-              CASE_TYPE(_C_DBL      ,double, double)
-              case _C_PTR:
-                luaoc_get_one_typesize(encoding+1, &encoding, NULL);
-              case _C_CHARPTR:
-              case _C_ID:
-              case _C_SEL:
-              case _C_CLASS:
-                *(id*)bufferPtr = va_arg(ap, id); bufferPtr+=sizeof(id);
-                break;
-              case _C_ARY_B:
-              case _C_UNION_B:
-                return "not supported currently";
-              case _C_STRUCT_B: {
-                encoding = strchr(encoding+1, '=');
-                if (!encoding) return "struct encoding error, can't find =";
-              }
-              default: break;
-            }
-            ++encoding;
-          }
-          --encoding; // avoid point to \0 and treat err
-          goto pcall_end_while;
-
-          // switch( luaoc_get_one_typesize(encoding, NULL, NULL) ){
-          //   case 8:
-          //     VAR_TYPE(_buf_8);
-          //   case 16:
-          //     VAR_TYPE(CGPoint);
-          //   case 32:
-          //     VAR_TYPE(_buf_32);
-          //   default:
-          //     return "unsupported struct size";
-          // }
-        case _C_UNION_B:
-          return "union type in method_call not support!";
-        default: {
-          break;
-        }
-      }
-      ++encoding;
-    }
-pcall_end_while:
-    if (!*encoding) return "pcall unsupported encoding!"; // use out encoding
-
-    luaoc_push_obj(L, encoding, buffer);
-  }
-
-  int retCount = [sign methodReturnLength]>0?1:0;
-  if (lua_pcall(L, argCount-1, retCount, 0) != 0) {
-    const char* err = lua_tostring(L, -1);
-    lua_pop(L, 1);
-    return err;
-  } else if (retCount && retBuf) {
-    size_t outLen;
-    void* buf = luaoc_copy_toobjc(L, -1, [sign methodReturnType], &outLen);
-    if (outLen <= bufLen){
-      memcpy(retBuf, buf, outLen);
-    }
-    free(buf);
-    lua_pop(L, 1);
-  }
-
-  return NULL;
-}
-
-#define LUAOC_METHOD_NAME(returnType) luaoc_##returnType##_call
-
-#define LUAOC_TYPE_CALL(_type_)                                           \
-static _type_ LUAOC_METHOD_NAME(_type_)(id self, SEL _cmd, ...) {         \
-  _type_ returnValue;                                                     \
-  va_list args;                                                           \
-  va_start(args, _cmd);   int a=0; if (a) va_arg(args, int);                                                \
-  const char* result = luaoc_method_call(gLua_main_state, self, _cmd, args,        \
-      &returnValue, sizeof(_type_));                                      \
-  va_end(args);                                                           \
-                                                                          \
-  if (result) {                                                       \
-    luaL_error(gLua_main_state, "Error calling '%s' on '%s'n%s",          \
-        _cmd, [[self description] UTF8String],                            \
-        result);                               \
-  }                                                                       \
-  return returnValue;                                                     \
-}                                                                         \
-
-LUAOC_TYPE_CALL(id)
-LUAOC_TYPE_CALL(int64_t)
-
-LUAOC_TYPE_CALL(_buf_16)
-LUAOC_TYPE_CALL(_buf_32)
-
-static const char* findOverrideMethodEncoding(Class cls, SEL selector, bool isClassMethod){
-  Method m = isClassMethod ? class_getClassMethod(cls, selector)
-                           : class_getInstanceMethod(cls, selector);
-  if (m) return method_getTypeEncoding(m);
-
-  // find in protocol
-  do {
-    Protocol** proto = class_copyProtocolList(cls, NULL);
-    if (proto){
-      Protocol** proto_it = proto;
-      while(*proto_it){
-        // look at objc header, objc_method just have more field of IMP
-        struct objc_method_description mdes =
-          protocol_getMethodDescription(*proto_it, selector, YES, !isClassMethod);
-        if (!mdes.name) mdes =
-          protocol_getMethodDescription(*proto_it, selector, NO, !isClassMethod);
-        if (mdes.name){
-          free(proto);
-          return mdes.types;
-        }
-        ++proto_it;
-      }
-      free(proto);
-    }
-
-    cls = class_getSuperclass(cls);
-  } while(cls);
-  return NULL;
-}
-
-/** just overwrite it, in imp, search for the cls luafunc with luaName
- *  OC old imp save in selector prefix with OC
- */
-static bool override(Class cls, const char* selName, bool isClassMethod) {
-  NSCParameterAssert(cls);
-  NSCParameterAssert(selName);
-
-  size_t selLen = strlen(selName);
-  char* selBuffer = (char*)alloca(selLen + 3); // 2 for OC prefix
-  // char* selName = selBuffer+2;
-  // convert_to_selName(selName, luaName, false);
-  SEL sel =  sel_getUid(selName);
-
-  const char *encoding = findOverrideMethodEncoding(cls, sel, isClassMethod);
-  // if (NULL == encoding){ //d sel with : ended
-  //   size_t selLen = strlen(selName);
-  //   if (selName[selLen - 1] != ':'){
-  //     selName[selLen] = ':';
-  //     selName[selLen+1] = '\0';
-  //     sel = sel_getUid(selName);
-  //     encoding = findOverrideMethodEncoding(cls, sel, isClassMethod);
-  //   }
-  // }
-
-  if (NULL == encoding) return false;
-
-  const char * firstArgPos; // first encoding is return type, than first arg(which is receiver @, than sel :)
-  int returnTypeSize = luaoc_get_one_typesize(encoding, &firstArgPos, NULL);
-  IMP imp;
-  // if (returnTypeSize == 0) imp = (IMP)LUAOC_METHOD_NAME(void);
-  if (returnTypeSize <= sizeof(id)) imp = (IMP)LUAOC_METHOD_NAME( id );
-  else if (returnTypeSize <= sizeof(int64_t)) imp = (IMP)LUAOC_METHOD_NAME(int64_t);
-  else if (returnTypeSize <= sizeof(_buf_16)) imp = (IMP)LUAOC_METHOD_NAME(_buf_16);
-  else if (returnTypeSize <= sizeof(_buf_32)) imp = (IMP)LUAOC_METHOD_NAME(_buf_32);
-  else {
-    DLOG("can't override, encoding %s", encoding);
-    return false;
-  }
-
-  Class add2Cls = isClassMethod ? object_getClass(cls) : cls;
-  IMP oldIMP = class_replaceMethod(add2Cls, sel, imp, encoding);
-
-  memcpy(selBuffer, "OC", 2); // add OC prefix
-  memcpy(selBuffer+2, selName, selLen+1); // include \0 end
-  sel = sel_getUid(selBuffer);
-  if (!class_respondsToSelector(add2Cls, sel)){ // first override, set OC imp
-    class_addMethod(add2Cls, sel, oldIMP, encoding);
-  }
-
-  return true;
 }
 
 int indexValueFromClass(lua_State *L, Class cls, int keyIndex) {
@@ -548,6 +777,13 @@ int luaopen_luaoc_class(lua_State *L) {
   lua_rawset(L, -3);                                // classMetaTable.loaded = {}
 
   lua_pop(L, 1);                                    // : clsTable
+
+  #ifndef NO_USE_FFI
+  if (!luaFuncDict){
+    luaFuncDict = [[NSMutableDictionary alloc] init];
+    luaStructFFIType = [[NSMutableDictionary alloc] init];
+  }
+  #endif
 
   return 1;
 }

@@ -8,8 +8,20 @@
 
 /* Begin PBXBuildFile section */
 		21576BB21B74F83900F132B1 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAD1B74F81D00F132B1 /* libffi.a */; };
-		21576BB41B74F86400F132B1 /* libffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BB31B74F86400F132B1 /* libffi.dylib */; };
 		216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */ = {isa = PBXBuildFile; fileRef = 216B4A361B690A180060DCA5 /* luaoc_struct.m */; };
+		216CE9A01B76516D006CA509 /* ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAF1B74F81D00F132B1 /* ffi.dylib */; };
+		216CE9A11B765438006CA509 /* ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAF1B74F81D00F132B1 /* ffi.dylib */; };
+		216CE9AB1B76551E006CA509 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9AA1B76551E006CA509 /* main.m */; };
+		216CE9AE1B76551E006CA509 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9AD1B76551E006CA509 /* AppDelegate.m */; };
+		216CE9B11B76551E006CA509 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9B01B76551E006CA509 /* ViewController.m */; };
+		216CE9B41B76551E006CA509 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 216CE9B21B76551E006CA509 /* Main.storyboard */; };
+		216CE9B61B76551E006CA509 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 216CE9B51B76551E006CA509 /* Images.xcassets */; };
+		216CE9B91B76551E006CA509 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 216CE9B71B76551E006CA509 /* LaunchScreen.xib */; };
+		216CE9CE1B765545006CA509 /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
+		216CE9CF1B765572006CA509 /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
+		216CE9D01B765572006CA509 /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
+		216CE9D11B765A23006CA509 /* liblua.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0D091B671202006FB83F /* liblua.a */; };
+		216CE9D31B765A89006CA509 /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
 		2197367E1B6D011400B6846D /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
 		21A36DE01B71A2B80094CF55 /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D2F1B67128F006FB83F /* lapi.c */; };
 		21A36DE11B71A2B80094CF55 /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D311B67128F006FB83F /* lauxlib.c */; };
@@ -87,7 +99,7 @@
 		21A36E461B71A4680094CF55 /* luaoc_helper.h in Headers */ = {isa = PBXBuildFile; fileRef = 21AE0DB31B67271F006FB83F /* luaoc_helper.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		21A36E471B71A4680094CF55 /* luaoc_helper.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB41B67271F006FB83F /* luaoc_helper.m */; };
 		21A36E4A1B71A4A10094CF55 /* liblua_osx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21A36DDC1B71A2A20094CF55 /* liblua_osx.a */; };
-		21A36E4B1B71BF4F0094CF55 /* class_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* class_test.m */; };
+		21A36E4B1B71BF4F0094CF55 /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
 		21A36E4C1B71BF4F0094CF55 /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
 		21AE0CEF1B6711D1006FB83F /* luaoc.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0CEE1B6711D1006FB83F /* luaoc.h */; };
 		21AE0CF11B6711D1006FB83F /* luaoc.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0CF01B6711D1006FB83F /* luaoc.m */; };
@@ -156,7 +168,7 @@
 		21AE0DAC1B67168B006FB83F /* liblua.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0D091B671202006FB83F /* liblua.a */; };
 		21AE0DB21B672552006FB83F /* luaoc_class.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB11B672552006FB83F /* luaoc_class.m */; };
 		21AE0DB51B67271F006FB83F /* luaoc_helper.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB41B67271F006FB83F /* luaoc_helper.m */; };
-		21AE0DB91B6754CF006FB83F /* class_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* class_test.m */; };
+		21AE0DB91B6754CF006FB83F /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
 		21B60B0D1B6F0AEA00C1FC19 /* luaoc_var.m in Sources */ = {isa = PBXBuildFile; fileRef = 21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */; };
 		21BFB3BB1B67686D00D45278 /* luaoc_instance.m in Sources */ = {isa = PBXBuildFile; fileRef = 21BFB3BA1B67686D00D45278 /* luaoc_instance.m */; };
 /* End PBXBuildFile section */
@@ -182,6 +194,27 @@
 			proxyType = 1;
 			remoteGlobalIDString = DB13B1651849DF1E0010F42D;
 			remoteInfo = "libffi-iOS";
+		};
+		216CE99D1B76515B006CA509 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21576BA71B74F81D00F132B1 /* libffi.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = DB13B1901849DF510010F42D;
+			remoteInfo = "libffi-Mac";
+		};
+		216CE9BF1B76551E006CA509 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21AE0CE31B6711D1006FB83F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 216CE9A51B76551E006CA509;
+			remoteInfo = example;
+		};
+		216CE9CC1B765533006CA509 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21AE0CE31B6711D1006FB83F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 21AE0CEA1B6711D1006FB83F;
+			remoteInfo = luaoc;
 		};
 		21A36E311B71A41F0094CF55 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -266,6 +299,18 @@
 		21576BB31B74F86400F132B1 /* libffi.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libffi.dylib; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/usr/lib/libffi.dylib; sourceTree = DEVELOPER_DIR; };
 		216B4A351B690A180060DCA5 /* luaoc_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_struct.h; sourceTree = "<group>"; };
 		216B4A361B690A180060DCA5 /* luaoc_struct.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_struct.m; sourceTree = "<group>"; };
+		216CE9A61B76551E006CA509 /* example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = example.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		216CE9A91B76551E006CA509 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		216CE9AA1B76551E006CA509 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		216CE9AC1B76551E006CA509 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		216CE9AD1B76551E006CA509 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		216CE9AF1B76551E006CA509 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		216CE9B01B76551E006CA509 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		216CE9B31B76551E006CA509 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		216CE9B51B76551E006CA509 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
+		216CE9B81B76551E006CA509 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
+		216CE9BE1B76551E006CA509 /* exampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = exampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		216CE9C31B76551E006CA509 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		2197367D1B6D011400B6846D /* luaoc_test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_test.m; sourceTree = "<group>"; };
 		21A36DDC1B71A2A20094CF55 /* liblua_osx.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua_osx.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		21A36E1D1B71A3640094CF55 /* libreadline.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libreadline.dylib; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/usr/lib/libreadline.dylib; sourceTree = DEVELOPER_DIR; };
@@ -345,7 +390,7 @@
 		21AE0DB11B672552006FB83F /* luaoc_class.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_class.m; sourceTree = "<group>"; };
 		21AE0DB31B67271F006FB83F /* luaoc_helper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_helper.h; sourceTree = "<group>"; };
 		21AE0DB41B67271F006FB83F /* luaoc_helper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_helper.m; sourceTree = "<group>"; };
-		21AE0DB81B6754CF006FB83F /* class_test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = class_test.m; sourceTree = "<group>"; };
+		21AE0DB81B6754CF006FB83F /* play_test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = play_test.m; sourceTree = "<group>"; };
 		21B60B0B1B6F0AEA00C1FC19 /* luaoc_var.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_var.h; sourceTree = "<group>"; };
 		21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_var.m; sourceTree = "<group>"; };
 		21BFB3B91B67686D00D45278 /* luaoc_instance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_instance.h; sourceTree = "<group>"; };
@@ -353,6 +398,23 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		216CE9A31B76551E006CA509 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				216CE9D11B765A23006CA509 /* liblua.a in Frameworks */,
+				216CE9CE1B765545006CA509 /* libluaoc.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		216CE9BB1B76551E006CA509 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				216CE9D31B765A89006CA509 /* libluaoc.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		21A36DD91B71A2A20094CF55 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -365,7 +427,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				21576BB41B74F86400F132B1 /* libffi.dylib in Frameworks */,
+				216CE9A01B76516D006CA509 /* ffi.dylib in Frameworks */,
 				21A36E4A1B71A4A10094CF55 /* liblua_osx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -374,6 +436,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				216CE9A11B765438006CA509 /* ffi.dylib in Frameworks */,
 				21A36E301B71A41F0094CF55 /* libluaoc_osx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -412,6 +475,46 @@
 				21576BAF1B74F81D00F132B1 /* ffi.dylib */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		216CE9A71B76551E006CA509 /* example */ = {
+			isa = PBXGroup;
+			children = (
+				216CE9AC1B76551E006CA509 /* AppDelegate.h */,
+				216CE9AD1B76551E006CA509 /* AppDelegate.m */,
+				216CE9AF1B76551E006CA509 /* ViewController.h */,
+				216CE9B01B76551E006CA509 /* ViewController.m */,
+				216CE9B21B76551E006CA509 /* Main.storyboard */,
+				216CE9B51B76551E006CA509 /* Images.xcassets */,
+				216CE9B71B76551E006CA509 /* LaunchScreen.xib */,
+				216CE9A81B76551E006CA509 /* Supporting Files */,
+			);
+			path = example;
+			sourceTree = "<group>";
+		};
+		216CE9A81B76551E006CA509 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				216CE9A91B76551E006CA509 /* Info.plist */,
+				216CE9AA1B76551E006CA509 /* main.m */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		216CE9C11B76551E006CA509 /* exampleTests */ = {
+			isa = PBXGroup;
+			children = (
+				216CE9C21B76551E006CA509 /* Supporting Files */,
+			);
+			path = exampleTests;
+			sourceTree = "<group>";
+		};
+		216CE9C21B76551E006CA509 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				216CE9C31B76551E006CA509 /* Info.plist */,
+			);
+			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
 		21A36E1F1B71A3790094CF55 /* link */ = {
@@ -457,6 +560,8 @@
 				21AE0D171B671203006FB83F /* luaTests */,
 				21A36E261B71A41F0094CF55 /* luaoc_osx */,
 				21A36E331B71A41F0094CF55 /* luaoc_osxTests */,
+				216CE9A71B76551E006CA509 /* example */,
+				216CE9C11B76551E006CA509 /* exampleTests */,
 				21AE0CEC1B6711D1006FB83F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -470,6 +575,8 @@
 				21A36DDC1B71A2A20094CF55 /* liblua_osx.a */,
 				21A36E251B71A41F0094CF55 /* libluaoc_osx.a */,
 				21A36E2F1B71A41F0094CF55 /* luaoc_osxTests.xctest */,
+				216CE9A61B76551E006CA509 /* example.app */,
+				216CE9BE1B76551E006CA509 /* exampleTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -497,7 +604,7 @@
 			isa = PBXGroup;
 			children = (
 				21AE0CFB1B6711D1006FB83F /* Supporting Files */,
-				21AE0DB81B6754CF006FB83F /* class_test.m */,
+				21AE0DB81B6754CF006FB83F /* play_test.m */,
 				2197367D1B6D011400B6846D /* luaoc_test.m */,
 			);
 			path = luaocTests;
@@ -673,6 +780,42 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		216CE9A51B76551E006CA509 /* example */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 216CE9C61B76551E006CA509 /* Build configuration list for PBXNativeTarget "example" */;
+			buildPhases = (
+				216CE9A21B76551E006CA509 /* Sources */,
+				216CE9A31B76551E006CA509 /* Frameworks */,
+				216CE9A41B76551E006CA509 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				216CE9CD1B765533006CA509 /* PBXTargetDependency */,
+			);
+			name = example;
+			productName = example;
+			productReference = 216CE9A61B76551E006CA509 /* example.app */;
+			productType = "com.apple.product-type.application";
+		};
+		216CE9BD1B76551E006CA509 /* exampleTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 216CE9C91B76551E006CA509 /* Build configuration list for PBXNativeTarget "exampleTests" */;
+			buildPhases = (
+				216CE9BA1B76551E006CA509 /* Sources */,
+				216CE9BB1B76551E006CA509 /* Frameworks */,
+				216CE9BC1B76551E006CA509 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				216CE9C01B76551E006CA509 /* PBXTargetDependency */,
+			);
+			name = exampleTests;
+			productName = exampleTests;
+			productReference = 216CE9BE1B76551E006CA509 /* exampleTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		21A36DDB1B71A2A20094CF55 /* lua_osx */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 21A36DDF1B71A2A20094CF55 /* Build configuration list for PBXNativeTarget "lua_osx" */;
@@ -701,6 +844,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				216CE99E1B76515B006CA509 /* PBXTargetDependency */,
 				21A36E491B71A49A0094CF55 /* PBXTargetDependency */,
 			);
 			name = luaoc_osx;
@@ -789,6 +933,13 @@
 				LastUpgradeCheck = 0620;
 				ORGANIZATIONNAME = sw;
 				TargetAttributes = {
+					216CE9A51B76551E006CA509 = {
+						CreatedOnToolsVersion = 6.4;
+					};
+					216CE9BD1B76551E006CA509 = {
+						CreatedOnToolsVersion = 6.4;
+						TestTargetID = 216CE9A51B76551E006CA509;
+					};
 					21A36DDB1B71A2A20094CF55 = {
 						CreatedOnToolsVersion = 6.2;
 					};
@@ -815,6 +966,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = 21AE0CE21B6711D1006FB83F;
 			productRefGroup = 21AE0CEC1B6711D1006FB83F /* Products */;
@@ -833,6 +985,8 @@
 				21A36E2E1B71A41F0094CF55 /* luaoc_osxTests */,
 				21AE0D081B671202006FB83F /* lua */,
 				21A36DDB1B71A2A20094CF55 /* lua_osx */,
+				216CE9A51B76551E006CA509 /* example */,
+				216CE9BD1B76551E006CA509 /* exampleTests */,
 			);
 		};
 /* End PBXProject section */
@@ -855,6 +1009,23 @@
 /* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
+		216CE9A41B76551E006CA509 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				216CE9B41B76551E006CA509 /* Main.storyboard in Resources */,
+				216CE9B91B76551E006CA509 /* LaunchScreen.xib in Resources */,
+				216CE9B61B76551E006CA509 /* Images.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		216CE9BC1B76551E006CA509 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		21A36E2D1B71A41F0094CF55 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -872,6 +1043,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		216CE9A21B76551E006CA509 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				216CE9B11B76551E006CA509 /* ViewController.m in Sources */,
+				216CE9AE1B76551E006CA509 /* AppDelegate.m in Sources */,
+				216CE9AB1B76551E006CA509 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		216CE9BA1B76551E006CA509 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				216CE9CF1B765572006CA509 /* play_test.m in Sources */,
+				216CE9D01B765572006CA509 /* luaoc_test.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		21A36DD81B71A2A20094CF55 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -932,7 +1122,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				21A36E4C1B71BF4F0094CF55 /* luaoc_test.m in Sources */,
-				21A36E4B1B71BF4F0094CF55 /* class_test.m in Sources */,
+				21A36E4B1B71BF4F0094CF55 /* play_test.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -954,7 +1144,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2197367E1B6D011400B6846D /* luaoc_test.m in Sources */,
-				21AE0DB91B6754CF006FB83F /* class_test.m in Sources */,
+				21AE0DB91B6754CF006FB83F /* play_test.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1008,6 +1198,21 @@
 			name = "libffi-iOS";
 			targetProxy = 21576BB01B74F83400F132B1 /* PBXContainerItemProxy */;
 		};
+		216CE99E1B76515B006CA509 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "libffi-Mac";
+			targetProxy = 216CE99D1B76515B006CA509 /* PBXContainerItemProxy */;
+		};
+		216CE9C01B76551E006CA509 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 216CE9A51B76551E006CA509 /* example */;
+			targetProxy = 216CE9BF1B76551E006CA509 /* PBXContainerItemProxy */;
+		};
+		216CE9CD1B765533006CA509 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 21AE0CEA1B6711D1006FB83F /* luaoc */;
+			targetProxy = 216CE9CC1B765533006CA509 /* PBXContainerItemProxy */;
+		};
 		21A36E321B71A41F0094CF55 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 21A36E241B71A41F0094CF55 /* luaoc_osx */;
@@ -1030,7 +1235,106 @@
 		};
 /* End PBXTargetDependency section */
 
+/* Begin PBXVariantGroup section */
+		216CE9B21B76551E006CA509 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				216CE9B31B76551E006CA509 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		216CE9B71B76551E006CA509 /* LaunchScreen.xib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				216CE9B81B76551E006CA509 /* Base */,
+			);
+			name = LaunchScreen.xib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
+		216CE9C71B76551E006CA509 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = example/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "e3a721d8-f3f3-43b9-8e1c-9e697e06891f";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		216CE9C81B76551E006CA509 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_NO_COMMON_BLOCKS = YES;
+				INFOPLIST_FILE = example/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "e3a721d8-f3f3-43b9-8e1c-9e697e06891f";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		216CE9CA1B76551E006CA509 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_ARC = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SDKROOT)/Developer/Library/Frameworks",
+					"$(inherited)",
+				);
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				INFOPLIST_FILE = exampleTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "e3a721d8-f3f3-43b9-8e1c-9e697e06891f";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/example.app/example";
+			};
+			name = Debug;
+		};
+		216CE9CB1B76551E006CA509 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_ARC = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(SDKROOT)/Developer/Library/Frameworks",
+					"$(inherited)",
+				);
+				GCC_NO_COMMON_BLOCKS = YES;
+				INFOPLIST_FILE = exampleTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "e3a721d8-f3f3-43b9-8e1c-9e697e06891f";
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/example.app/example";
+			};
+			name = Release;
+		};
 		21A36DDD1B71A2A20094CF55 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1069,6 +1373,13 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/lua/lua-5.3.1/src",
+					"$(SRCROOT)/libffi/darwin_common/include",
+					"$(SRCROOT)/libffi/darwin_osx/include",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1082,6 +1393,13 @@
 				CLANG_ENABLE_OBJC_ARC = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				EXECUTABLE_PREFIX = lib;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/lua/lua-5.3.1/src",
+					"$(SRCROOT)/libffi/darwin_common/include",
+					"$(SRCROOT)/libffi/darwin_osx/include",
+				);
 				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1323,6 +1641,24 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		216CE9C61B76551E006CA509 /* Build configuration list for PBXNativeTarget "example" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				216CE9C71B76551E006CA509 /* Debug */,
+				216CE9C81B76551E006CA509 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		216CE9C91B76551E006CA509 /* Build configuration list for PBXNativeTarget "exampleTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				216CE9CA1B76551E006CA509 /* Debug */,
+				216CE9CB1B76551E006CA509 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		21A36DDF1B71A2A20094CF55 /* Build configuration list for PBXNativeTarget "lua_osx" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
