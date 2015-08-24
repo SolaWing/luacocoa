@@ -12,6 +12,7 @@
 #import "lauxlib.h"
 
 #import <objc/runtime.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 #define RAW_STR(...) #__VA_ARGS__
 
@@ -86,6 +87,14 @@ void asmFunc(){
   // luaL_dostring(gLua_main_state, "a = 123; print(a); _ENV={print=print,a=333}; print(22,a)");
   luaL_dostring(gLua_main_state, "a=function (b) end print(a) a.name = 'ss' print(a.name, ' is') return a");
   NSLog(@"%s", lua_tostring(gLua_main_state, -1)); // error, function can't use as table
+
+#define LOG_ENCODING(type) \
+    NSLog(@"%s encoding is %s", #type, @encode(type))
+
+    LOG_ENCODING(CGRect);
+    LOG_ENCODING(CGPoint);
+    LOG_ENCODING(CGSize);
+
 
   Class meta1 = object_getClass([NSObject class]);
   Class meta2 = objc_getMetaClass("NSObject");

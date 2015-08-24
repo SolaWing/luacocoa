@@ -278,6 +278,64 @@ id luaoc_convert_toid(lua_State *L, int index) {
   }
 }
 
+void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencoding, size_t *outSize) {
+  if (!outSize) outSize = alloca(sizeof(size_t));
+  void* value;
+
+  switch (lua_type(L, index)) {
+    case LUA_TLIGHTUSERDATA: // assume pointer is point to a struct
+      *outSize = luaoc_get_one_typesize(typeencoding, NULL, NULL);
+      return lua_touserdata(L, index);
+    case LUA_TUSERDATA: {
+      if (luaL_getmetafield(L, index, "__type") != LUA_TNIL) {
+        LUA_INTEGER tt = lua_tointeger(L, -1); lua_pop(L, 1);
+        if (tt == luaoc_struct_type){
+          // FIXME: may need to check encoding compatible
+          return luaoc_copystruct(L, index, outSize);
+        } else if (tt == luaoc_var_type) {
+          *outSize = luaoc_get_one_typesize(typeencoding, NULL, NULL);
+          value = calloc(1, *outSize);
+          void* buf = lua_touserdata(L, index);
+          lua_getfield(L, index, "__encoding");
+          int sizeBuf = luaoc_get_one_typesize(lua_tostring(L, -1), NULL, NULL);
+          lua_pop(L, 1);
+          if (sizeBuf == *outSize) {
+            memcpy(value, buf, sizeBuf);
+          } else if (sizeBuf < *outSize){
+            DLOG("var type convert to struct with non-enough size!");
+            memcpy(value, buf, sizeBuf);
+          } else {
+            DLOG("var type convert to struct with trailing size!");
+            memcpy(value, buf, *outSize);
+          }
+          return value;
+        } else { // id type
+          id instance = *(id*)lua_touserdata(L, index);
+          if ([instance isKindOfClass:[NSValue class]]) {
+            *outSize = luaoc_get_one_typesize(typeencoding, NULL, NULL);
+            value = calloc(1, *outSize);
+            [instance getValue:value];
+            return value;
+          } else {
+            DLOG("can't convert non value id type to struct!");
+          }
+        }
+      } else {
+        DLOG("unknown userdata type, this shouldn't happen!");
+      }
+      break;
+    }
+    case LUA_TTABLE: {
+      *outSize = luaoc_get_one_typesize(typeencoding, NULL, NULL);
+      value = calloc(1, *outSize);
+      //TODO 想清楚了再写
+      
+      return value;
+    }
+  }
+  return NULL;
+}
+
 void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, size_t *outSize) {
   // return NULL only when invalid typeDescription.
   // invalid lua value will return value ref to zero fill value
@@ -355,7 +413,9 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
         return value;
       }
       case _C_STRUCT_B:{
-        value = luaoc_copystruct(L, index, outSize);
+        value = luaoc_convert_copytostruct(L, index, typeDescription+i, outSize);
+
+        // value = luaoc_copystruct(L, index, outSize);
         if (!value) { // not a struct userdata at index, return a empty struct
           *outSize = luaoc_get_one_typesize(typeDescription+i, NULL, NULL);
           value = calloc(1,*outSize);

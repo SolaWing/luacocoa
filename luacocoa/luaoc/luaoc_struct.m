@@ -14,9 +14,18 @@
 #import <string.h>
 
 #import <Foundation/Foundation.h>
+#import <CoreGraphics/CoreGraphics.h>
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+    #import <UIKit/UIKit.h>
+#else
+#endif
 
 /// table use to find offset by name {struct_name = {name = offset, ...}, ...}
 #define NAMED_STRUCT_TABLE_NAME "named_struct"
+typedef struct struct_attr_info {
+  int offset;
+  const char* encoding;
+}struct_attr_info;
 
 void luaoc_push_struct(lua_State *L, const char* typeDescription, void* structRef) {
   char *structName = NULL;
@@ -83,15 +92,98 @@ void* luaoc_getstruct(lua_State *L, int index) {
 }
 
 static int __index(lua_State *L){
-  lua_getuservalue(L, 1);
-  lua_pushvalue(L, 2);
+  luaL_checktype(L, 1, LUA_TUSERDATA);
 
-  lua_rawget(L, -2);
+  lua_getuservalue(L, 1);       // uv
+  lua_pushvalue(L, 2);
+  if (lua_rawget(L, -2) == LUA_TNIL) {
+    if ( lua_isinteger(L, 2) ) {
+      LUA_INTEGER index = lua_tointeger(L, 2);
+      lua_rawgetfield(L, -2, "__encoding");
+      const char* encoding = lua_tostring(L, -1);
+      encoding = strchr(encoding, '=');
+      if (NULL == encoding++) luaL_error(L, "can't get encoding of struct!");
+
+      void* attrPointer = lua_touserdata(L, 1);
+      while(index > 1) {
+        int typesize = luaoc_get_one_typesize(encoding, &encoding, NULL);
+        if (typesize <= 0)
+            luaL_error(L, "index offset error!");
+
+        attrPointer += typesize;
+        --index;
+      }
+      luaoc_push_obj(L, encoding, attrPointer);
+    } else {
+      luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
+      lua_rawgetfield(L, -3, "__name");
+      if (lua_rawget(L, -2) == LUA_TNIL){
+        DLOG("index undefined struct");
+        return 1;
+      }
+
+      lua_pushvalue(L, 2);
+      if (lua_rawget(L, -2) == LUA_TUSERDATA) {
+        struct_attr_info* info = lua_touserdata(L, -1);
+        void* attrPointer = lua_touserdata(L, 1) + info->offset;
+        luaoc_push_obj(L, info->encoding, attrPointer);
+      }
+    }
+  }
 
   return 1;
 }
 
 static int __newindex(lua_State *L){
+  luaL_checktype(L, 1, LUA_TUSERDATA);
+  lua_getuservalue(L, 1);
+  do{
+    if ( lua_isinteger(L, 2) ) {
+      LUA_INTEGER index = lua_tointeger(L, 2);
+      lua_rawgetfield(L, -1, "__encoding");
+      const char* encoding = lua_tostring(L, -1);
+      encoding = strchr(encoding, '=');
+      if (NULL == encoding++) luaL_error(L, "can't get encoding of struct!");
+
+      void* attrPointer = lua_touserdata(L,1);
+      while(index > 1) {
+        int typesize = luaoc_get_one_typesize(encoding, &encoding, NULL);
+        if (typesize <= 0)
+          luaL_error(L, "newindex offset error!");
+        attrPointer += typesize;
+        --index;
+      }
+      size_t outSize;
+      void* v = luaoc_copy_toobjc(L, 3, encoding, &outSize);
+      memcpy(attrPointer,v,outSize);
+      free(v);
+      return 0;
+    } else {
+      luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
+      lua_rawgetfield(L, -2, "__name");
+      if (lua_rawget(L, -2) == LUA_TNIL){
+        DLOG("newindex unreg struct");
+        break;
+      }
+      lua_pushvalue(L, 2);
+      if (lua_rawget(L, -2) == LUA_TUSERDATA) {
+        struct_attr_info* info = lua_touserdata(L, -1);
+        void* attrPointer = lua_touserdata(L, 1) + info->offset;
+        size_t outSize;
+        void* v = luaoc_copy_toobjc(L, 3, info->encoding, &outSize);
+        memcpy(attrPointer, v, outSize);
+        free(v);
+        return 0;
+      }
+    }
+  } while(0);
+
+  // otherwise, set key in uservalue
+  lua_getuservalue(L, 1);
+  lua_pushvalue(L,2);
+  lua_pushvalue(L,3);
+  lua_rawset(L, -3);
+
   return 0;
 }
 
@@ -111,13 +203,171 @@ static int pack(lua_State *L){
   return 1;
 }
 
+/** first is name, after is {name, type} pair ... */
+static int reg_struct(lua_State *L){
+  size_t structNameLen;
+  const char* structName = luaL_checklstring(L, 1, &structNameLen);
+  int top = lua_gettop(L);
+
+  luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
+  lua_pushvalue(L, 1); // structName
+  if (lua_rawget(L, -2) == LUA_TNIL){
+    lua_pop(L, 1);
+    lua_newtable(L);
+
+    lua_pushvalue(L, 1);
+    lua_pushvalue(L, -2);
+    lua_rawset(L, -4); // mt[name] = structTable
+  }
+  // : mt structTable
+  luaL_Buffer encodingBuf;
+  luaL_buffinit(L, &encodingBuf);
+  luaL_addchar(&encodingBuf, '{');
+  luaL_addlstring(&encodingBuf, structName, structNameLen);
+  luaL_addchar(&encodingBuf, '='); {
+    size_t offset = 0;
+    for (int i = 2; i <= top; ++i){
+      lua_geti(L, i, 2); // type encoding
+      lua_geti(L, i, 1); // name
+      struct_attr_info* sai = lua_newuserdata(L, sizeof(struct_attr_info));
+      sai->offset = (int)offset;
+      size_t encodingLen;
+      sai->encoding = luaL_checklstring(L, -3, &encodingLen);
+      int typesize = luaoc_get_one_typesize(sai->encoding, NULL, NULL);
+      if (typesize < 0) luaL_error(L, "[reg struct] %d invalid encoding", i);
+
+      offset += typesize;
+      lua_rawset(L, -4); // structTable[name] = struct_attr_info
+      lua_pop(L, 1);     // pop type encoding
+      luaL_addlstring(&encodingBuf, sai->encoding, encodingLen);
+    }
+  } luaL_addchar(&encodingBuf, '}');
+
+  luaL_pushresult(&encodingBuf);
+  lua_rawsetfield(L, -2, "__encoding");
+
+  return 0;
+}
+
+static int createStruct(lua_State *L){
+  int structInfoTableIndex = lua_upvalueindex(1);
+  lua_rawgetfield(L, structInfoTableIndex, "__encoding");
+  const char* encoding = lua_tostring(L, -1);
+  if (NULL == encoding) luaL_error(L, "unreg struct type!");
+
+  luaoc_push_struct(L, encoding, NULL);
+
+  // init struct
+  switch (lua_type(L, 1)){
+    case LUA_TUSERDATA: {
+      break;
+    }
+  }
+
+  return 1;
+}
+
+static int indexStructByName(lua_State *L){
+  luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
+  lua_pushvalue(L, 1);
+  if (lua_rawget(L, -2) != LUA_TNIL){
+    lua_pushcclosure(L, createStruct, 1);
+  }
+  return 1;
+}
+
 static const luaL_Reg structFunctions[] = {
   {"pack", pack},
+  {"reg", reg_struct},
+  {"__index", indexStructByName},
   {NULL, NULL},
 };
 
+static void reg_default_struct(lua_State *L){
+  LUA_PUSH_STACK(L);
+  char buf[256]; // used for get compiler struct info
+  struct_attr_info* sai;
+
+#define DEF_NAMED_STRUCT(...) _DEF_NAMED_STRUCT(CUR_NAME, __VA_ARGS__)
+// #name = {__encoding=(encode), __VA_ARGS__(pair of `name = struct_attr_info`) }
+#define _DEF_NAMED_STRUCT(name, ...)                            \
+  lua_newtable(L);                                              \
+  lua_pushstring(L, @encode(name));                             \
+  lua_rawsetfield(L, -2, "__encoding");                         \
+  __VA_ARGS__                                                   \
+  lua_rawsetfield(L, -2, #name);                                \
+
+#define RAW_STRUCT_ATTR(name, type, path) _RAW_STRUCT_ATTR(name, type, path, CUR_NAME)
+// {name = struct_attr_info}
+#define _RAW_STRUCT_ATTR(name, type, path, parent)              \
+  lua_pushstring(L, #name);                                     \
+  sai = lua_newuserdata(L, sizeof(struct_attr_info));           \
+  sai->offset = (char*)&(((parent*)buf)-> path ) - buf;         \
+  sai->encoding = @encode( type );                              \
+  lua_rawset(L, -3);                                            \
+
+#define STRUCT_ATTR(name, type) RAW_STRUCT_ATTR(name, type, name)
+
+
+#undef  CUR_NAME
+#define CUR_NAME CGRect
+  DEF_NAMED_STRUCT(
+      STRUCT_ATTR(origin    , CGPoint)
+      STRUCT_ATTR(size      , CGSize )
+      RAW_STRUCT_ATTR(x     , CGFloat  , origin.x)
+      RAW_STRUCT_ATTR(y     , CGFloat  , origin.y)
+      RAW_STRUCT_ATTR(width , CGFloat  , size.width)
+      RAW_STRUCT_ATTR(height, CGFloat  , size.height)
+  );
+
+#undef CUR_NAME
+#define CUR_NAME CGPoint
+  DEF_NAMED_STRUCT(
+      STRUCT_ATTR(x, CGFloat)
+      STRUCT_ATTR(y, CGFloat)
+  )
+
+#undef CUR_NAME
+#define CUR_NAME CGSize
+  DEF_NAMED_STRUCT(
+      STRUCT_ATTR(width, CGFloat)
+      STRUCT_ATTR(height, CGFloat)
+  )
+
+#undef CUR_NAME
+#define CUR_NAME NSRange
+  DEF_NAMED_STRUCT(
+      STRUCT_ATTR(location, NSUInteger)
+      STRUCT_ATTR(length, NSUInteger)
+  )
+
+#undef CUR_NAME
+#define CUR_NAME UIEdgeInsets
+  DEF_NAMED_STRUCT(
+      STRUCT_ATTR(top, CGFloat)
+      STRUCT_ATTR(left, CGFloat)
+      STRUCT_ATTR(bottom, CGFloat)
+      STRUCT_ATTR(right, CGFloat)
+  )
+
+#undef CUR_NAME
+#define CUR_NAME CGAffineTransform
+  DEF_NAMED_STRUCT(
+      STRUCT_ATTR(a, CGFloat)
+      STRUCT_ATTR(b, CGFloat)
+      STRUCT_ATTR(c, CGFloat)
+      STRUCT_ATTR(d, CGFloat)
+      STRUCT_ATTR(tx, CGFloat)
+      STRUCT_ATTR(ty, CGFloat)
+  )
+
+  LUA_POP_STACK(L,0);
+}
+
 int luaopen_luaoc_struct(lua_State *L) {
   luaL_newlib(L, structFunctions);
+  lua_pushvalue(L, -1);
+  lua_setmetatable(L, -2); // set self as metaTable
 
   luaL_newmetatable(L, LUAOC_STRUCT_METATABLE_NAME);
   luaL_setfuncs(L, metaMethods, 0);
@@ -127,6 +377,8 @@ int luaopen_luaoc_struct(lua_State *L) {
   lua_rawset(L, -3);
 
   luaL_newmetatable(L, NAMED_STRUCT_TABLE_NAME);    // use to save named struct info
+  reg_default_struct(L);
+
   lua_pop(L, 2);                                    // pop 2 metaTable
 
   return 1; // :structFunctions;
