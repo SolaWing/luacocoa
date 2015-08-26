@@ -64,6 +64,7 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
   } else if (retLen>0) {
     void* buf = luaoc_copy_toobjc(L, -1, [sign methodReturnType], &retLen);
     memcpy(ret, buf, retLen);
+    // TODO: May apply create retain rule on return object.
 
     free(buf);
     lua_pop(L,1);

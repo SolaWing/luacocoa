@@ -233,6 +233,7 @@ static int reg_struct(lua_State *L){
       sai->offset = (int)offset;
       size_t encodingLen;
       sai->encoding = luaL_checklstring(L, -3, &encodingLen);
+      // TODO: consider struct align
       int typesize = luaoc_get_one_typesize(sai->encoding, NULL, NULL);
       if (typesize < 0) luaL_error(L, "[reg struct] %d invalid encoding", i);
 
@@ -251,17 +252,31 @@ static int reg_struct(lua_State *L){
 
 static int createStruct(lua_State *L){
   int structInfoTableIndex = lua_upvalueindex(1);
+  int top = lua_gettop(L);
   lua_rawgetfield(L, structInfoTableIndex, "__encoding");
   const char* encoding = lua_tostring(L, -1);
   if (NULL == encoding) luaL_error(L, "unreg struct type!");
 
-  luaoc_push_struct(L, encoding, NULL);
-
-  // init struct
-  switch (lua_type(L, 1)){
-    case LUA_TUSERDATA: {
-      break;
+  void* value;
+  if (top == 0) luaoc_push_struct(L, encoding, NULL); // empty struct
+  else {
+    // if construct struct with method call, it's parameter count must >=2
+    if ( 1==top )
+    {
+      value = luaoc_copy_toobjc(L, 1, encoding, NULL);
     }
+    else
+    {
+      lua_newtable(L); // array of all parameter
+      for (int i = 1; i <= top; ++i) {
+        lua_pushvalue(L, i);
+        lua_rawseti(L, -2, i);
+      }
+
+      value = luaoc_copy_toobjc(L, -1, encoding, NULL);
+    }
+    luaoc_push_struct(L, encoding, value);
+    free(value);
   }
 
   return 1;
@@ -342,15 +357,6 @@ static void reg_default_struct(lua_State *L){
   )
 
 #undef CUR_NAME
-#define CUR_NAME UIEdgeInsets
-  DEF_NAMED_STRUCT(
-      STRUCT_ATTR(top, CGFloat)
-      STRUCT_ATTR(left, CGFloat)
-      STRUCT_ATTR(bottom, CGFloat)
-      STRUCT_ATTR(right, CGFloat)
-  )
-
-#undef CUR_NAME
 #define CUR_NAME CGAffineTransform
   DEF_NAMED_STRUCT(
       STRUCT_ATTR(a, CGFloat)
@@ -360,6 +366,19 @@ static void reg_default_struct(lua_State *L){
       STRUCT_ATTR(tx, CGFloat)
       STRUCT_ATTR(ty, CGFloat)
   )
+
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+
+#undef CUR_NAME
+#define CUR_NAME UIEdgeInsets
+  DEF_NAMED_STRUCT(
+      STRUCT_ATTR(top, CGFloat)
+      STRUCT_ATTR(left, CGFloat)
+      STRUCT_ATTR(bottom, CGFloat)
+      STRUCT_ATTR(right, CGFloat)
+  )
+
+#endif
 
   LUA_POP_STACK(L,0);
 }

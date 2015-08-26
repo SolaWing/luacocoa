@@ -295,6 +295,7 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
         } else if (tt == luaoc_var_type) {
           *outSize = luaoc_get_one_typesize(typeencoding, NULL, NULL);
           value = calloc(1, *outSize);
+
           void* buf = lua_touserdata(L, index);
           lua_getfield(L, index, "__encoding");
           int sizeBuf = luaoc_get_one_typesize(lua_tostring(L, -1), NULL, NULL);
@@ -328,8 +329,31 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
     case LUA_TTABLE: {
       *outSize = luaoc_get_one_typesize(typeencoding, NULL, NULL);
       value = calloc(1, *outSize);
-      //TODO 想清楚了再写
-      
+
+      const char* encodingPointer = strchr(typeencoding, '=');
+      if (encodingPointer++ == NULL) return value;
+      const char* endPos;
+
+      void* attrPointer = value;
+
+      index = lua_absindex(L, index);
+      int i = 1;
+      size_t typeSize;
+      void* attr;
+      while (lua_geti(L, index, i++) != LUA_TNIL &&
+             *encodingPointer != _C_STRUCT_E)
+      {
+        // TODO consider struct align, and flatten primitive table
+        attr = luaoc_copy_toobjc(L, -1, encodingPointer, &typeSize);
+        if (NULL == attr) luaL_error(L, "invalid typeencoding:%s", typeencoding);
+        memcpy(attrPointer, attr, typeSize);
+
+        free(attr);
+        attrPointer += typeSize;
+        encodingPointer = endPos;
+        lua_pop(L, 1); // pop table[i]
+      }
+      // TODO support key-value assign
       return value;
     }
   }
@@ -550,9 +574,14 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
       case _C_UNION_B: {
         char* eqpos = strchr(*stopPos, '=');
 
-#if defined(DEBUG) && DEBUG != 0
-        if (NULL == eqpos) DLOG("Error: can't find '=' in struct type");
-#endif
+        if (NULL == eqpos) {
+          DLOG("Error: can't find '=' in struct type,"
+               "this can happen when use ^^(type), or invalid encoding");
+          if (**stopPos == _C_STRUCT_B) *stopPos = strchr(*stopPos, _C_STRUCT_E);
+          else *stopPos = strchr(*stopPos, _C_UNION_E);
+          ++(*stopPos);
+          return 0;
+        }
         if (copyTypeName){
           long len = eqpos - *stopPos;
           *copyTypeName = (char*)malloc(len);
@@ -567,6 +596,7 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
             if (eleSize > size) size = eleSize;
           }
         } else { // struct
+          // TODO apply align rule
           *stopPos = eqpos + 1;
           size = 0;
           while (**stopPos != _C_STRUCT_E){ // struct get all element size
