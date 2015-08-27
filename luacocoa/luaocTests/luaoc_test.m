@@ -235,7 +235,7 @@
   TEST_PUSH_AND_WRAP_STRUCT(CGPoint, ((CGPoint){33,44}))
   TEST_PUSH_AND_WRAP_STRUCT(CGRect, ((CGRect){33,44,37,24}))
 
-  {
+  { // auto convert table to NSDictionary
     luaL_dostring(gLua_main_state, LUA_CODE( return {5,6,{a=2,b=3},a=1,b=2,c=3} ));
     ref = luaoc_copy_toobjc(gLua_main_state, -1, "@", &outSize);
 
@@ -250,7 +250,7 @@
     lua_pop(gLua_main_state, 1); free(ref);
   }
 
-  {
+  { // auto convert table to NSArray
     luaL_dostring(gLua_main_state, LUA_CODE( return {10,11,12, oc.class.NSArray, {1,2}, {a=3}} ));
     ref = luaoc_copy_toobjc(gLua_main_state, -1, "@", &outSize);
 

@@ -70,7 +70,7 @@ static int _msg_send(lua_State* L, SEL selector) {
   // for vararg, the signature only treat it as first arg
   NSMethodSignature* sign = [target methodSignatureForSelector: selector];
   if (!sign){
-    luaL_error(L, "'%s' has no method '%s'",
+    LUAOC_ERROR( "'%s' has no method '%s'",
         object_getClassName(target), sel_getName(selector));
   }
 
@@ -99,7 +99,7 @@ static int _msg_send(lua_State* L, SEL selector) {
   }
 
   if (err) { // luaL_error will do a long jmp, so do clean up first
-    luaL_error(L, "Error invoking '%s''s method '%s'. reason is:\n%s",
+    LUAOC_ERROR( "Error invoking '%s''s method '%s'. reason is:\n%s",
         object_getClassName(target),
         sel_getName(selector),
         [[err reason] UTF8String]);
@@ -139,10 +139,10 @@ static int protect_super_call(lua_State* L) {
 int luaoc_msg_send(lua_State* L){
   id* ud = (id*)lua_touserdata(L, 1);
 
-  if (!ud) { luaL_argerror(L, 1, "msg receiver must be objc object!"); }
+  if (!ud) { LUAOC_ARGERROR( 1, "msg receiver must be objc object!"); }
 
   if (luaL_getmetafield(L, 1, "__type") != LUA_TNUMBER) {
-    luaL_error(L, "can't found metaTable!");
+    LUAOC_ERROR( "can't found metaTable!");
   }
   LUA_INTEGER tt = lua_tointeger(L, -1);
   lua_pop(L, 1);
@@ -152,7 +152,7 @@ int luaoc_msg_send(lua_State* L){
   if (tt == luaoc_super_type){
     Method selfMethod = class_getInstanceMethod([*ud class], selector);
     if (NULL == selfMethod)
-      luaL_error(L, "unknown selector %s", sel_getName(selector));
+      LUAOC_ERROR( "unknown selector %s", sel_getName(selector));
     Method superMethod = class_getInstanceMethod(*(ud+1), selector);
     if (superMethod && superMethod != selfMethod){
       IMP selfMethodIMP = method_getImplementation(selfMethod);
@@ -178,7 +178,7 @@ int luaoc_msg_send(lua_State* L){
              tt == luaoc_var_type) { // var type should be the id or class container
     return _msg_send(L, selector);
   } else {
-    luaL_error(L, "unsupported msg receiver type");
+    LUAOC_ERROR( "unsupported msg receiver type");
   }
   return 0;
 }
@@ -332,7 +332,6 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
 
       const char* encodingPointer = strchr(typeencoding, '=');
       if (encodingPointer++ == NULL) return value;
-      const char* endPos;
 
       void* attrPointer = value;
 
@@ -345,12 +344,12 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
       {
         // TODO consider struct align, and flatten primitive table
         attr = luaoc_copy_toobjc(L, -1, encodingPointer, &typeSize);
-        if (NULL == attr) luaL_error(L, "invalid typeencoding:%s", typeencoding);
+        if (NULL == attr) LUAOC_ERROR( "invalid typeencoding:%s", typeencoding);
         memcpy(attrPointer, attr, typeSize);
 
         free(attr);
         attrPointer += typeSize;
-        encodingPointer = endPos;
+        luaoc_get_one_typesize(encodingPointer, &encodingPointer, NULL);
         lua_pop(L, 1); // pop table[i]
       }
       // TODO support key-value assign
@@ -450,7 +449,7 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
       case _C_UNDEF: // ^? and @? both have type before, this never enter
       case _C_BFLD:
       case _C_ARY_B:
-        luaL_error(L, "unsupported type encoding %c", typeDescription[i]);
+        LUAOC_ERROR( "unsupported type encoding %c", typeDescription[i]);
         return value;
       default: {
         break;
@@ -512,7 +511,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       case _C_ARY_B:
       case _C_UNION_B:
         lua_pushnil(L);
-        luaL_error(L, "unsupported type encoding %c", typeDescription[i]);
+        LUAOC_ERROR( "unsupported type encoding %c", typeDescription[i]);
         return;
 //#define _C_UNDEF    '?'
 //#define _C_ATOM     '%'

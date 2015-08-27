@@ -201,6 +201,7 @@ static IMP impForEncoding(const char* encoding){
     free(cif);
     ffi_closure_free(closure);
   }
+  free(args);
   return NULL;
 }
 

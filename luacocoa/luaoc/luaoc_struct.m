@@ -35,7 +35,7 @@ void luaoc_push_struct(lua_State *L, const char* typeDescription, void* structRe
   if (size == 0) {DLOG("empty struct size!!"); lua_pushnil(L); return;}
 
   void* ud = lua_newuserdata(L, size);
-  memcpy(ud, structRef, size);
+  if (structRef) memcpy(ud, structRef, size);
 
   luaL_getmetatable(L, LUAOC_STRUCT_METATABLE_NAME);
   lua_setmetatable(L, -2);
@@ -102,13 +102,13 @@ static int __index(lua_State *L){
       lua_rawgetfield(L, -2, "__encoding");
       const char* encoding = lua_tostring(L, -1);
       encoding = strchr(encoding, '=');
-      if (NULL == encoding++) luaL_error(L, "can't get encoding of struct!");
+      if (NULL == encoding++) LUAOC_ERROR( "can't get encoding of struct!");
 
       void* attrPointer = lua_touserdata(L, 1);
       while(index > 1) {
         int typesize = luaoc_get_one_typesize(encoding, &encoding, NULL);
         if (typesize <= 0)
-            luaL_error(L, "index offset error!");
+            LUAOC_ERROR( "index offset error!");
 
         attrPointer += typesize;
         --index;
@@ -143,13 +143,13 @@ static int __newindex(lua_State *L){
       lua_rawgetfield(L, -1, "__encoding");
       const char* encoding = lua_tostring(L, -1);
       encoding = strchr(encoding, '=');
-      if (NULL == encoding++) luaL_error(L, "can't get encoding of struct!");
+      if (NULL == encoding++) LUAOC_ERROR( "can't get encoding of struct!");
 
       void* attrPointer = lua_touserdata(L,1);
       while(index > 1) {
         int typesize = luaoc_get_one_typesize(encoding, &encoding, NULL);
         if (typesize <= 0)
-          luaL_error(L, "newindex offset error!");
+          LUAOC_ERROR( "newindex offset error!");
         attrPointer += typesize;
         --index;
       }
@@ -235,7 +235,7 @@ static int reg_struct(lua_State *L){
       sai->encoding = luaL_checklstring(L, -3, &encodingLen);
       // TODO: consider struct align
       int typesize = luaoc_get_one_typesize(sai->encoding, NULL, NULL);
-      if (typesize < 0) luaL_error(L, "[reg struct] %d invalid encoding", i);
+      if (typesize < 0) LUAOC_ERROR( "[reg struct] %d invalid encoding", i);
 
       offset += typesize;
       lua_rawset(L, -4); // structTable[name] = struct_attr_info
@@ -255,7 +255,7 @@ static int createStruct(lua_State *L){
   int top = lua_gettop(L);
   lua_rawgetfield(L, structInfoTableIndex, "__encoding");
   const char* encoding = lua_tostring(L, -1);
-  if (NULL == encoding) luaL_error(L, "unreg struct type!");
+  if (NULL == encoding) LUAOC_ERROR( "unreg struct type!");
 
   void* value;
   if (top == 0) luaoc_push_struct(L, encoding, NULL); // empty struct

@@ -108,7 +108,7 @@ id luaoc_toinstance(lua_State *L, int index) {
 #pragma mark - Meta Funcs
 static int __index(lua_State *L){
   id* ud = (id*)lua_touserdata(L, 1);
-  if (!ud) luaL_argerror(L, 1, "index obj should be userdata");
+  if (!ud) LUAOC_ARGERROR( 1, "index obj should be userdata");
   // FIXME may need to check userdata type
 
   lua_getuservalue(L, 1);
