@@ -535,6 +535,8 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
   }
   *stopPos = typeDescription;
   int size = -1;
+  int a; // tmp value
+  size_t len;
   do {
     switch( **stopPos ){
       CASE_SIZE(_C_ID      , id)
@@ -582,17 +584,21 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
           return 0;
         }
         if (copyTypeName){
-          long len = eqpos - *stopPos;
-          *copyTypeName = (char*)malloc(len);
-          memcpy(*copyTypeName, (*stopPos)+1, len-1);
-          (*copyTypeName)[len-1] = '\0';
+          // some struct name actually have _ before, like _NSRange. remove it.
+          a = 1;
+          while( *((*stopPos)+a) == '_') { ++a; }
+
+          len = eqpos - *stopPos - a;
+          *copyTypeName = (char*)malloc(len + 1);
+          memcpy(*copyTypeName, (*stopPos)+a, len);
+          (*copyTypeName)[len] = '\0';
         }
 
         if (**stopPos == _C_UNION_B) {
           *stopPos = eqpos+1; // set pos after =, assuming it exist
           while(**stopPos != _C_UNION_E){ // union get the max element size
-            int eleSize = luaoc_get_one_typesize(*stopPos, stopPos, NULL);
-            if (eleSize > size) size = eleSize;
+            a = luaoc_get_one_typesize(*stopPos, stopPos, NULL);
+            if (a > size) size = a;
           }
         } else { // struct
           // TODO apply align rule
@@ -614,7 +620,7 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
 }
 
 #pragma mark - DEBUG
-void luaoc_print(lua_State* L, int index) {
+static void _luaoc_print(lua_State* L, int index) {
   switch( lua_type(L, index) ){
     case LUA_TNIL: {
       printf("nil");
@@ -660,6 +666,12 @@ void luaoc_print(lua_State* L, int index) {
   }
 }
 
+void luaoc_print(lua_State *L, int index) {
+  _luaoc_print(L, index);
+  printf("\n"); // when not print \n, print will not flush
+}
+
+
 void luaoc_print_table(lua_State* L, int index) {
   if (lua_type(L, index) == LUA_TTABLE) {
     int top = lua_gettop(L);
@@ -669,9 +681,9 @@ void luaoc_print_table(lua_State* L, int index) {
     lua_pushnil(L);
     while(lua_next(L, index) != 0) {
       printf("\t");
-      luaoc_print(L, -2);
+      _luaoc_print(L, -2);
       printf("\t:\t");
-      luaoc_print(L, -1);
+      _luaoc_print(L, -1);
       printf("\n");
 
       lua_pop(L, 1);
@@ -687,7 +699,7 @@ void luaoc_dump_stack(lua_State* L) {
   int top = lua_gettop(L);
   for (int i = 1; i<=top; ++i){
     printf("stack %d:\n", i);
-    luaoc_print(L, i);
+    _luaoc_print(L, i);
     printf("\n");
   }
 }

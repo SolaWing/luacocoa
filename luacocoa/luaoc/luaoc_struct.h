@@ -36,3 +36,6 @@ void* luaoc_copystruct(lua_State *L, int index, size_t* outSize);
 
 /** get the lua inner userdata struct ref */
 void* luaoc_getstruct(lua_State *L, int index);
+
+/** LUAFUNC, first arg is name, return encoding of named_struct. or nil otherwise */
+int luaoc_encoding_of_named_struct(lua_State *L);

@@ -22,7 +22,11 @@
 #define RAW_STR(...) #__VA_ARGS__
 #define LUA_CODE RAW_STR
 #define RUN_LUA_CODE(...) luaL_dostring(gLua_main_state, LUA_CODE(__VA_ARGS__))
-#define RUN_LUA_STR(str) luaL_dostring(gLua_main_state, str)
+#define RUN_LUA_SAFE_CODE(...) RUN_LUA_SAFE_STR(LUA_CODE(__VA_ARGS__))
+
+// RUN_LUA_SAFE_CODE's code may be convert by macro. so use RUN_LUA_STR to avoid it
+#define RUN_LUA_SAFE_STR(str) if (luaL_dostring(gLua_main_state, str)) \
+    { printf("%s\n", lua_tostring(gLua_main_state, -1)); lua_pop(gLua_main_state, 1); }
 
 @protocol aTestSuperProtocol <NSObject>
 
@@ -310,30 +314,30 @@
 - (void)testMsgSend {
   lua_State* L = gLua_main_state;
 
-  RUN_LUA_CODE(return oc.class.NSObject:class());
+  RUN_LUA_SAFE_CODE(return oc.class.NSObject:class());
   XCTAssertEqualObjects(luaoc_toclass(L, -1), [NSObject class]);
   lua_pop(L, 1);
 
-  RUN_LUA_CODE(return oc.class.NSObject:description());
+  RUN_LUA_SAFE_CODE(return oc.class.NSObject:description());
   XCTAssertEqualObjects(luaoc_toinstance(L, -1), [NSObject description]);
   lua_pop(L, 1);
 
-  RUN_LUA_CODE(return oc.class.NSArray:isSubclassOfClass(oc.class.NSObject));
+  RUN_LUA_SAFE_CODE(return oc.class.NSArray:isSubclassOfClass(oc.class.NSObject));
   // in OSX and 32bit ios, BOOL is signed char type
     XCTAssertEqual(lua_type(L, -1), LUA_TBOOLEAN);
     XCTAssertEqual(lua_toboolean(L, -1), true);
   lua_pop(L, 1);
 
-  RUN_LUA_CODE(return oc.class.NSArray:isSubclassOfClass(oc.class.NSDictionary));
+  RUN_LUA_SAFE_CODE(return oc.class.NSArray:isSubclassOfClass(oc.class.NSDictionary));
   XCTAssertEqual(lua_type(L, -1), LUA_TBOOLEAN);
   XCTAssertEqual(lua_toboolean(L, -1), false);
   lua_pop(L, 1);
 
   // vararg not support, and may crash.
-//  RUN_LUA_STR("return oc.class.NSArray:arrayWithObjects(1,2,3,nil)");
+//  RUN_LUA_SAFE_STR("return oc.class.NSArray:arrayWithObjects(1,2,3,nil)");
 //  lua_pop(L, 1);
 
-  RUN_LUA_CODE(return oc.class.NSArray:arrayWithArray{1,2,3});
+  RUN_LUA_SAFE_CODE(return oc.class.NSArray:arrayWithArray{1,2,3});
   id val = luaoc_toinstance(L, -1);
   lua_pop(L, 1);
   lua_gc(L, LUA_GCCOLLECT, 0);
@@ -343,16 +347,16 @@
   XCTAssertEqualObjects(val[2], @3);
 
   // init obj owned by lua
-  RUN_LUA_CODE(v = oc.class.NSMutableArray:alloc():init() return v:retainCount());
+  RUN_LUA_SAFE_CODE(v = oc.class.NSMutableArray:alloc():init() return v:retainCount());
   XCTAssertEqual(lua_tonumber(L, -1), 1);
   lua_pop(L,1);
 
   // new obj owned by lua
-  RUN_LUA_CODE(v = oc.class.NSMutableArray:new() return v:retainCount());
+  RUN_LUA_SAFE_CODE(v = oc.class.NSMutableArray:new() return v:retainCount());
   XCTAssertEqual(lua_tonumber(L, -1), 1);
   lua_pop(L, 1);
 
-  RUN_LUA_CODE(v:addObject(1) v:addObject(2) v:addObject(5) return v);
+  RUN_LUA_SAFE_CODE(v:addObject(1) v:addObject(2) v:addObject(5) return v);
   // in MRC, __weak is no use, so need to use objc_storeWeak
   id weakval; objc_storeWeak(&weakval, luaoc_toinstance(L, -1));
   lua_pop(L, 1);
@@ -360,30 +364,30 @@
   XCTAssertEqualObjects(weakval[1], @2);
   XCTAssertEqualObjects(weakval[2], @5);
 
-  RUN_LUA_CODE(v:insertObject_atIndex(2, 0));
+  RUN_LUA_SAFE_CODE(v:insertObject_atIndex(2, 0));
   XCTAssertEqualObjects(weakval[0], @2);
   XCTAssertEqualObjects(weakval[1], @1);
   XCTAssertEqualObjects(weakval[2], @2);
   XCTAssertEqualObjects(weakval[3], @5);
 
-  RUN_LUA_CODE(v:insertObject_atIndex(3)); // if omit, default 0 or NULL
+  RUN_LUA_SAFE_CODE(v:insertObject_atIndex(3)); // if omit, default 0 or NULL
   XCTAssertEqualObjects(weakval[0], @3);
   XCTAssertEqualObjects(weakval[1], @2);
 
-  RUN_LUA_CODE(v:removeObjectAtIndex(1));
-  RUN_LUA_CODE(v:removeObjectAtIndex(1));
+  RUN_LUA_SAFE_CODE(v:removeObjectAtIndex(1));
+  RUN_LUA_SAFE_CODE(v:removeObjectAtIndex(1));
   XCTAssertEqual([weakval count], 3);
 
-  RUN_LUA_CODE(return oc.class.name(v));
+  RUN_LUA_SAFE_CODE(return oc.class.name(v));
   // 聚合类的实例是该类子类的一个实例
   XCTAssertTrue(strcmp(lua_tostring(L,-1), "__NSArrayM") == 0);
-  RUN_LUA_CODE(return oc.class.name(v.super));
+  RUN_LUA_SAFE_CODE(return oc.class.name(v.super));
   // 聚合类的实例是该类子类的一个实例
   XCTAssertTrue(strcmp(lua_tostring(L,-1), "NSMutableArray") == 0);
   lua_pop(L, 2);
 
   // copy obj retain by lua
-  RUN_LUA_CODE(v = v:mutableCopy() return v:retainCount());
+  RUN_LUA_SAFE_CODE(v = v:mutableCopy() return v:retainCount());
   XCTAssertEqual(lua_tonumber(L, -1), 1);
   lua_pop(L, 1);
 
@@ -412,45 +416,96 @@
 
 - (void)testOverride {
   lua_State* L = gLua_main_state;
-  RUN_LUA_CODE(return oc.class.aTestClass("proto1", function() aret=1 end));
+  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto1", function() aret=1 end));
   XCTAssertTrue(lua_toboolean(L, -1));
 
   aTestClass* obj = [[aTestClass new] autorelease];
   [obj proto1];
 
-  RUN_LUA_CODE(return aret);
+  RUN_LUA_SAFE_CODE(return aret);
   XCTAssertEqual(lua_tonumber(L, -1), 1);
 
-  RUN_LUA_CODE(return oc.class.aTestClass("proto2:", function(self,obj) return self == obj and self or obj end));
+  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto2:", function(self,obj) return self == obj and self or obj end));
   XCTAssertTrue(lua_toboolean(L, -1));
 
   XCTAssertEqual([obj proto2:NULL], NULL);
   XCTAssertEqual([obj proto2:obj], obj);
   XCTAssertEqual([obj proto2:[NSArray class]], [NSArray class]);
 
-  RUN_LUA_CODE(return oc.class.aTestClass("proto3:arg2:arg3:", function(self, obj, num, p) return num*2 end));
+  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto3:arg2:arg3:", function(self, obj, num, p) return num*2 end));
   XCTAssertTrue(lua_toboolean(L, -1));
 
   // XCTAssertEqual([obj proto3:obj arg2:44 arg3:CGPointMake(33,55)], 88);
 
-  RUN_LUA_CODE(oc.class.aTestClass("+ childProtoS:", function(cls, p) return p end));
+  RUN_LUA_SAFE_CODE(oc.class.aTestClass("+ childProtoS:", function(cls, p) return p end));
    CGPoint a = CGPointMake(44,55);
    a = [aTestClass childProtoS:a];
    XCTAssertEqual(a.x, 44);
    XCTAssertEqual(a.y, 55);
 
-  RUN_LUA_CODE(oc.class.aTestClass("protoFloat:a2:", function(self, f1, f2) return f1+f2 end));
+  RUN_LUA_SAFE_CODE(oc.class.aTestClass("protoFloat:a2:", function(self, f1, f2) return f1+f2 end));
   XCTAssertEqualWithAccuracy([obj protoFloat:1.2f a2:2], 3.2, 0.001);
 
-  RUN_LUA_CODE(oc.class.aTestClass("protoRect:flt:dbl:", function(self, rect, f1, f2) aret=f1*f2  return rect end));
+  RUN_LUA_SAFE_CODE(oc.class.aTestClass("protoRect:flt:dbl:", function(self, rect, f1, f2) aret=f1*f2  return rect end));
   CGRect b = CGRectMake(3,5,22,33);
   b = [obj protoRect:b flt:22 dbl:4];
   XCTAssertEqual(b.origin.x, 3);
   XCTAssertEqual(b.origin.y, 5);
   XCTAssertEqual(b.size.width, 22);
   XCTAssertEqual(b.size.height, 33);
-  RUN_LUA_CODE(return aret);
+  RUN_LUA_SAFE_CODE(return aret);
   XCTAssertEqual(lua_tonumber(L, -1), 88);
 }
 
+- (void)testStruct {
+  // create struct
+  RUN_LUA_SAFE_CODE( a = oc.struct.CGRect({33,44}, {55,66}); return a );
+  CGRect rect;
+  luaoc_tostruct(gLua_main_state, -1, &rect);
+  XCTAssertEqual(rect.origin.x, 33);
+  XCTAssertEqual(rect.origin.y, 44);
+  XCTAssertEqual(rect.size.width, 55);
+  XCTAssertEqual(rect.size.height, 66);
+
+  // index struct
+  RUN_LUA_SAFE_CODE( return a.x+a.y );
+  XCTAssertEqual(77, lua_tonumber(gLua_main_state, -1));
+
+  RUN_LUA_SAFE_CODE( return a.size.width + a.size.height );
+  XCTAssertEqual(121, lua_tonumber(gLua_main_state, -1));
+
+  // set struct value
+  RUN_LUA_SAFE_CODE( a.x = 10; a.width = 20; return a.x * a.width, a);
+  XCTAssertEqual(200, lua_tonumber(gLua_main_state, -2));
+
+  luaoc_tostruct(gLua_main_state, -1, &rect);
+  XCTAssertEqual(rect.origin.x, 10);
+  XCTAssertEqual(rect.size.width, 20);
+
+  // not work, a.size return a new CGSize struct, not the origin one
+  RUN_LUA_SAFE_CODE( a.size.height = 100; return a.size.height );
+  XCTAssertNotEqual(100, lua_tonumber(gLua_main_state, -1));
+
+  // index by offset, offset begin at 1
+  RUN_LUA_SAFE_CODE(return a[1][2] + a[2][2]);
+  XCTAssertEqual(110, lua_tonumber(gLua_main_state, -1));
+
+  RUN_LUA_SAFE_CODE(a[1] = {1,1}; return a[1]);
+  CGPoint p;
+  luaoc_tostruct(gLua_main_state, -1, &p);
+  XCTAssertEqual(1, p.x);
+  XCTAssertEqual(1, p.y);
+
+  lua_settop(gLua_main_state, 0);
+
+  /** REG NEW CUSTOM STRUCT, it's a block with given  */
+  RUN_LUA_SAFE_CODE( oc.struct.reg('p',
+              {'x', oc.encoding.CGFloat}, {'y', oc.encoding.CGFloat}) );
+  // RUN_LUA_SAFE_STR(" luaoc.struct.reg('p',"
+  //     "{'x', luaoc.encoding.CGFloat}, {'y', luaoc.encoding.CGFloat})");
+  RUN_LUA_SAFE_CODE( return oc.struct.p{33,44} );
+  luaoc_tostruct(gLua_main_state, -1, &p);
+  XCTAssertEqual(33, p.x);
+  XCTAssertEqual(44, p.y);
+}
 @end

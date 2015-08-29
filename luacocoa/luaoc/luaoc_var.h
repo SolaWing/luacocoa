@@ -29,3 +29,5 @@
 void luaoc_push_var(lua_State *L, const char* typeDescription, void* initRef);
 
 int luaopen_luaoc_var(lua_State *L);
+
+int luaopen_luaoc_encoding(lua_State *L);

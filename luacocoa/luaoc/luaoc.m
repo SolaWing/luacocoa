@@ -53,5 +53,8 @@ int luaopen_luaoc(lua_State *L){
   luaopen_luaoc_var(L);
   lua_setfield(L, -2, "var");
 
+  luaopen_luaoc_encoding(L);
+  lua_setfield(L, -2, "encoding");
+
   return 1;
 }

@@ -9,8 +9,10 @@
 #import "luaoc_var.h"
 #import "luaoc_helper.h"
 #import "lauxlib.h"
+#import "luaoc_struct.h"
 
 #import <Foundation/Foundation.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 void luaoc_push_var(lua_State *L, const char* typeDescription, void* initRef) {
   NSCParameterAssert(typeDescription);
@@ -106,9 +108,9 @@ static int __newindex(lua_State *L) {
 }
 
 static const luaL_Reg metaFuncs[] = {
-  {"__index",__index},
-  {"__newindex",__newindex},
-  {NULL, NULL},
+  {"__index",    __index},
+  {"__newindex", __newindex},
+  {NULL,         NULL},
 };
 
 int luaopen_luaoc_var(lua_State *L) {
@@ -123,6 +125,62 @@ int luaopen_luaoc_var(lua_State *L) {
   lua_rawsetfield(L, -2, "__type");
 
   lua_pop(L,1);
+
+  return 1;
+}
+
+static int encodingOfName(lua_State *L){
+  lua_pushcfunction(L, luaoc_encoding_of_named_struct);
+  lua_pushvalue(L, 2);
+  lua_call(L, 1, 1);
+  return 1;
+}
+
+static const luaL_Reg encodingFuncs[] = {
+  {"__index", encodingOfName},
+  {NULL,      NULL},
+};
+
+int luaopen_luaoc_encoding(lua_State *L) {
+  luaL_newlib(L, encodingFuncs);
+  lua_pushvalue(L, -1);
+  lua_setmetatable(L, -2); // set self as metaTable
+
+#define SET_ENCODING_OF_TYPE(name, type)                \
+  lua_pushstring(L, name);                              \
+  lua_pushstring(L, @encode(type));                     \
+  lua_rawset(L, -3);                                    \
+
+  SET_ENCODING_OF_TYPE("char",               char               );
+  SET_ENCODING_OF_TYPE("unsigned char",      unsigned char      );
+  SET_ENCODING_OF_TYPE("short",              short              );
+  SET_ENCODING_OF_TYPE("unsigned short",     unsigned short     );
+  SET_ENCODING_OF_TYPE("int",                int                );
+  SET_ENCODING_OF_TYPE("unsigned int",       unsigned int       );
+  SET_ENCODING_OF_TYPE("long",               long               );
+  SET_ENCODING_OF_TYPE("unsigned long",      unsigned long      );
+  SET_ENCODING_OF_TYPE("long long",          long long          );
+  SET_ENCODING_OF_TYPE("unsigned long long", unsigned long long );
+  SET_ENCODING_OF_TYPE("float",              float              );
+  SET_ENCODING_OF_TYPE("double",             double             );
+  SET_ENCODING_OF_TYPE("size_t",             size_t             );
+  SET_ENCODING_OF_TYPE("NSInteger",          NSInteger          );
+  SET_ENCODING_OF_TYPE("NSUInteger",         NSUInteger         );
+  SET_ENCODING_OF_TYPE("CGFloat",            CGFloat            );
+  SET_ENCODING_OF_TYPE("UInt8",              UInt8              );
+  SET_ENCODING_OF_TYPE("SInt8",              SInt8              );
+  SET_ENCODING_OF_TYPE("UInt16",             UInt16             );
+  SET_ENCODING_OF_TYPE("SInt16",             SInt16             );
+  SET_ENCODING_OF_TYPE("UInt32",             UInt32             );
+  SET_ENCODING_OF_TYPE("SInt32",             SInt32             );
+  SET_ENCODING_OF_TYPE("UInt64",             UInt64             );
+  SET_ENCODING_OF_TYPE("SInt64",             SInt64             );
+  SET_ENCODING_OF_TYPE("id",                 id                 );
+  SET_ENCODING_OF_TYPE("Class",              Class              );
+  SET_ENCODING_OF_TYPE("SEL",                SEL                );
+  SET_ENCODING_OF_TYPE("void",               void               );
+  SET_ENCODING_OF_TYPE("Ptr",                void*              );
+  SET_ENCODING_OF_TYPE("str",                char*              );
 
   return 1;
 }
