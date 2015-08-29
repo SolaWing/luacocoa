@@ -51,7 +51,7 @@ static const luaL_Reg varFuncs[] = {
   {NULL, NULL},
 };
 
-static int createVar(lua_State *L){
+static int create_var(lua_State *L){
   const char* typeDescription = luaL_checkstring(L, 2);
   if (lua_isnoneornil(L, 3)) luaoc_push_var(L, typeDescription, NULL);
   else {
@@ -63,7 +63,7 @@ static int createVar(lua_State *L){
 }
 
 static const luaL_Reg varMetaFuncs[] = {
-  {"__call", createVar},
+  {"__call", create_var},
   {NULL, NULL},
 };
 
@@ -129,7 +129,7 @@ int luaopen_luaoc_var(lua_State *L) {
   return 1;
 }
 
-static int encodingOfName(lua_State *L){
+static int encoding_of_name(lua_State *L){
   lua_pushcfunction(L, luaoc_encoding_of_named_struct);
   lua_pushvalue(L, 2);
   lua_call(L, 1, 1);
@@ -137,7 +137,7 @@ static int encodingOfName(lua_State *L){
 }
 
 static const luaL_Reg encodingFuncs[] = {
-  {"__index", encodingOfName},
+  {"__index", encoding_of_name},
   {NULL,      NULL},
 };
 

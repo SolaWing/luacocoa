@@ -31,22 +31,21 @@
 @protocol aTestSuperProtocol <NSObject>
 
 @optional
-- (void)proto1;
-- (id)proto2:(id)arg;
-- (BOOL)proto2:(id)arg arg2:(int)arg2;
-- (int)proto3:(id)arg arg2:(int)arg2 arg3:(CGPoint)p;
-- (CGFloat)protoFloat:(float)val a2:(double)val2;
-- (CGRect)protoRect:(CGRect)rect flt:(float)val dbl:(double)dbl;
+- (void)proto_void;
+- (id)id_proto2_id:(id)arg;
+- (BOOL)bool_proto2_id:(id)arg arg_int:(int)arg2;
+- (int)int_proto3_id:(id)arg arg_int:(int)arg2 arg_point:(CGPoint)p;
+- (CGFloat)flt_proto_flt:(float)val dbl:(double)val2;
+- (CGRect)rect_proto_rect:(CGRect)rect flt:(float)val dbl:(double)dbl;
 
 @end
 
 @protocol aTestChildProtocol <aTestSuperProtocol>
 
 @optional
-- (bool)childProto:(char)ss arg1:(bool)arg1 arg2:(void*)arg2;
-+ (int)childProto:(id*)outArg;
-+ (CGPoint)childProtoS:(CGPoint)p;
-- (float)test:(float)a;
+- (bool)bool_childProto_char:(char)ss bool:(bool)arg1 ptr:(void*)arg2;
++ (int)int_childProto_idPtr:(id*)outArg;
++ (CGPoint)point_childProto_point:(CGPoint)p;
 
 @end
 
@@ -240,7 +239,7 @@
   TEST_PUSH_AND_WRAP_STRUCT(CGRect, ((CGRect){33,44,37,24}))
 
   { // auto convert table to NSDictionary
-    luaL_dostring(gLua_main_state, LUA_CODE( return {5,6,{a=2,b=3},a=1,b=2,c=3} ));
+    RUN_LUA_SAFE_CODE( return {5,6,{a=2,b=3},a=1,b=2,c=3} );
     ref = luaoc_copy_toobjc(gLua_main_state, -1, "@", &outSize);
 
     XCTAssertEqual([(*(id*)ref) [@"a"]     intValue], 1);
@@ -255,7 +254,7 @@
   }
 
   { // auto convert table to NSArray
-    luaL_dostring(gLua_main_state, LUA_CODE( return {10,11,12, oc.class.NSArray, {1,2}, {a=3}} ));
+    RUN_LUA_SAFE_CODE( return {10,11,12, oc.class.NSArray, {1,2}, {a=3}} );
     ref = luaoc_copy_toobjc(gLua_main_state, -1, "@", &outSize);
 
     // when auto convert array , begin from 0. in lua, begin from 1
@@ -268,6 +267,10 @@
     XCTAssertEqual( (*(id*)ref)  [3]                , [NSArray class]);
 
     lua_pop(gLua_main_state, 1); free(ref);
+  }
+
+  { // auto convert table to struct
+    
   }
 
 }
@@ -300,15 +303,59 @@
   XCTAssertEqual(luaoc_toclass(gLua_main_state, startIndex+1), [NSArray class], "shouldn't break exist stack");
 
   /** LUA index CLASS */
-  luaL_dostring(gLua_main_state, "return oc.class.NSObject");
+  RUN_LUA_SAFE_STR( "return oc.class.NSObject");
   XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [NSObject class], "should return NSObject class userdata");
 
-  luaL_dostring(gLua_main_state, "return oc.class.UnknownClass");
+  RUN_LUA_SAFE_STR( "return oc.class.UnknownClass");
   XCTAssertTrue(lua_isnil(gLua_main_state, -1));
 
   /** LUA get class name */
-  luaL_dostring(gLua_main_state, "return oc.class.name(oc.class.NSArray)");
+  RUN_LUA_SAFE_STR( "return oc.class.name(oc.class.NSArray)");
   XCTAssertTrue(strcmp(lua_tostring(gLua_main_state, -1), "NSArray") == 0);
+  lua_settop(gLua_main_state, 0);
+}
+
+- (void)testOverride {
+  lua_State* L = gLua_main_state;
+  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto_void", function() aret=1 end));
+  XCTAssertTrue(lua_toboolean(L, -1));
+
+  aTestClass* obj = [[aTestClass new] autorelease];
+  [obj proto_void];
+
+  RUN_LUA_SAFE_CODE(return aret);
+  XCTAssertEqual(lua_tonumber(L, -1), 1);
+
+  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("id_proto2_id:", function(self,obj) return self == obj and self or obj end));
+  XCTAssertTrue(lua_toboolean(L, -1));
+
+  XCTAssertEqual([obj id_proto2_id:NULL], NULL);
+  XCTAssertEqual([obj id_proto2_id:obj], obj);
+  XCTAssertEqual([obj id_proto2_id:[NSArray class]], [NSArray class]);
+
+  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("int_proto3_id:arg_int:arg_point:", function(self, obj, num, p) return num*2 + p.x-p.y end));
+  XCTAssertTrue(lua_toboolean(L, -1));
+
+  XCTAssertEqual([obj int_proto3_id:obj arg_int:44 arg_point:CGPointMake(33,55)], 66);
+
+  RUN_LUA_SAFE_CODE(oc.class.aTestClass("+ point_childProto_point:", function(cls, p) return p end));
+  CGPoint a = CGPointMake(44,55);
+  a = [aTestClass point_childProto_point:a];
+  XCTAssertEqual(a.x, 44);
+  XCTAssertEqual(a.y, 55);
+
+  RUN_LUA_SAFE_CODE(oc.class.aTestClass("flt_proto_flt:dbl:", function(self, f1, f2) return f1+f2 end));
+  XCTAssertEqualWithAccuracy([obj flt_proto_flt:1.2f dbl:2], 3.2, 0.001);
+
+  RUN_LUA_SAFE_CODE(oc.class.aTestClass("rect_proto_rect:flt:dbl:", function(self, rect, f1, f2) aret=f1*f2  return rect end));
+  CGRect b = CGRectMake(3,5,22,33);
+  b = [obj rect_proto_rect:b flt:22 dbl:4];
+  XCTAssertEqual(b.origin.x, 3);
+  XCTAssertEqual(b.origin.y, 5);
+  XCTAssertEqual(b.size.width, 22);
+  XCTAssertEqual(b.size.height, 33);
+  RUN_LUA_SAFE_CODE(return aret);
+  XCTAssertEqual(lua_tonumber(L, -1), 88);
 }
 
 - (void)testMsgSend {
@@ -414,49 +461,6 @@
   lua_pop(L, 1);
 }
 
-- (void)testOverride {
-  lua_State* L = gLua_main_state;
-  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto1", function() aret=1 end));
-  XCTAssertTrue(lua_toboolean(L, -1));
-
-  aTestClass* obj = [[aTestClass new] autorelease];
-  [obj proto1];
-
-  RUN_LUA_SAFE_CODE(return aret);
-  XCTAssertEqual(lua_tonumber(L, -1), 1);
-
-  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto2:", function(self,obj) return self == obj and self or obj end));
-  XCTAssertTrue(lua_toboolean(L, -1));
-
-  XCTAssertEqual([obj proto2:NULL], NULL);
-  XCTAssertEqual([obj proto2:obj], obj);
-  XCTAssertEqual([obj proto2:[NSArray class]], [NSArray class]);
-
-  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto3:arg2:arg3:", function(self, obj, num, p) return num*2 end));
-  XCTAssertTrue(lua_toboolean(L, -1));
-
-  // XCTAssertEqual([obj proto3:obj arg2:44 arg3:CGPointMake(33,55)], 88);
-
-  RUN_LUA_SAFE_CODE(oc.class.aTestClass("+ childProtoS:", function(cls, p) return p end));
-   CGPoint a = CGPointMake(44,55);
-   a = [aTestClass childProtoS:a];
-   XCTAssertEqual(a.x, 44);
-   XCTAssertEqual(a.y, 55);
-
-  RUN_LUA_SAFE_CODE(oc.class.aTestClass("protoFloat:a2:", function(self, f1, f2) return f1+f2 end));
-  XCTAssertEqualWithAccuracy([obj protoFloat:1.2f a2:2], 3.2, 0.001);
-
-  RUN_LUA_SAFE_CODE(oc.class.aTestClass("protoRect:flt:dbl:", function(self, rect, f1, f2) aret=f1*f2  return rect end));
-  CGRect b = CGRectMake(3,5,22,33);
-  b = [obj protoRect:b flt:22 dbl:4];
-  XCTAssertEqual(b.origin.x, 3);
-  XCTAssertEqual(b.origin.y, 5);
-  XCTAssertEqual(b.size.width, 22);
-  XCTAssertEqual(b.size.height, 33);
-  RUN_LUA_SAFE_CODE(return aret);
-  XCTAssertEqual(lua_tonumber(L, -1), 88);
-}
-
 - (void)testStruct {
   // create struct
   RUN_LUA_SAFE_CODE( a = oc.struct.CGRect({33,44}, {55,66}); return a );
@@ -508,4 +512,5 @@
   XCTAssertEqual(33, p.x);
   XCTAssertEqual(44, p.y);
 }
+
 @end

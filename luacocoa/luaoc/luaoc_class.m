@@ -22,15 +22,18 @@
 #define kClassMethodIndex    "__cmsg"
 #define kInstanceMethodIndex "__imsg"
 
-static void luaoc_pushLuaFunc(lua_State *L, Class cls, SEL sel, bool isClassMethod);
-static void luaoc_setLuaFunc(lua_State *L, int clsIndex, const char* name, bool isClassMethod);
+/** push lua implement function according to parameter, or nil when not found */
+static void luaoc_push_lua_func(lua_State *L, Class cls, SEL sel, bool isClassMethod);
+
+/** cls.methodType[name] = func. func at the stack top. cls at the clsIndex. */
+static void luaoc_set_lua_func(lua_State *L, int clsIndex, const char* name, bool isClassMethod);
 
 //#define NO_USE_FFI
 #ifndef NO_USE_FFI
 #pragma mark - FFI MSG
 #import "ffi.h"
 
-// the following two dict used to cache generate closureFunc and ffi_type
+// the following two dict used to cache generated closureFunc and ffi_type
 static NSMutableDictionary* luaFuncDict; // encoding => closureFunc
 static NSMutableDictionary* luaStructFFIType; // encoding => ffi_type
 static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
@@ -43,7 +46,7 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
 
   Class cls = [self class];
   bool isClass = cls == self;
-  luaoc_pushLuaFunc(L, cls, _cmd, isClass);
+  luaoc_push_lua_func(L, cls, _cmd, isClass);
   if (lua_isnil(L, -1)) {DLOG("can't found lua func"); return;}
 
   if (isClass) luaoc_push_class(L, cls);
@@ -155,7 +158,7 @@ static ffi_type* ffi_type_for_one_encoding(const char* encoding, const char** st
   return NULL;
 }
 
-static IMP impForEncoding(const char* encoding){
+static IMP imp_for_encoding(const char* encoding){
   NSString *str = [NSString stringWithUTF8String:encoding];
   NSValue *imp = luaFuncDict[str];
   if (imp) return [imp pointerValue]; // return cached func pointer
@@ -233,7 +236,7 @@ static const char* luaoc_method_call(lua_State *L, id receiver, SEL _cmd, va_lis
 
   Class cls = [receiver class];
   bool isClass = cls == receiver;
-  luaoc_pushLuaFunc(L, cls, _cmd, isClass);
+  luaoc_push_lua_func(L, cls, _cmd, isClass);
   if (lua_isnil(L, -1)) return "can't found func!";
 
   if (isClass) luaoc_push_class(L, cls);
@@ -399,7 +402,7 @@ LUAOC_TYPE_CALL(CGRect)
 #define LUAOC_IMP_METHOD_NAME LUAOC_METHOD_NAME
 #endif
 
-static IMP impForEncoding(const char* encoding) {
+static IMP imp_for_encoding(const char* encoding) {
   while (*encoding){
     switch( *encoding ){
       case _C_BOOL:
@@ -499,7 +502,7 @@ Class luaoc_toclass(lua_State *L, int index) {
 }
 
 #pragma mark - class search table
-static int indexClassByName(lua_State *L){
+static int index_class_by_name(lua_State *L){
   const char *className = luaL_checkstring(L, 2);
   Class cls = objc_getClass(className);
   if (cls) {
@@ -512,8 +515,8 @@ static int indexClassByName(lua_State *L){
   return 1;
 }
 
-static int newClass(lua_State *L){
-  // TODO: newClass
+static int new_class(lua_State *L){
+  // TODO: new_class
   return 1;
 }
 
@@ -546,8 +549,8 @@ static int name(lua_State *L){
 
 static const luaL_Reg ClassTableMetaMethods[] = {
 
-  {"__index", indexClassByName},
-  {"__call", newClass},
+  {"__index", index_class_by_name},
+  {"__call", new_class},
   {NULL, NULL}
 };
 
@@ -557,7 +560,7 @@ static const luaL_Reg ClassTableMethods[] = {
 };
 
 #pragma mark - class meta func
-static const char* findOverrideMethodEncoding(Class cls, SEL selector, bool isClassMethod){
+static const char* find_override_method_encoding(Class cls, SEL selector, bool isClassMethod){
   Method m = isClassMethod ? class_getClassMethod(cls, selector)
                            : class_getInstanceMethod(cls, selector);
   if (m) return method_getTypeEncoding(m);
@@ -598,11 +601,11 @@ static bool override(Class cls, const char* selName, bool isClassMethod) {
   char* selBuffer = (char*)alloca(selLen + 3); // 2 for OC prefix
   SEL sel =  sel_getUid(selName);
 
-  const char *encoding = findOverrideMethodEncoding(cls, sel, isClassMethod);
+  const char *encoding = find_override_method_encoding(cls, sel, isClassMethod);
 
   if (NULL == encoding) return false;
 
-  IMP imp = impForEncoding(encoding);
+  IMP imp = imp_for_encoding(encoding);
   if (!imp) return false;
 
   Class add2Cls = isClassMethod ? object_getClass(cls) : cls;
@@ -618,7 +621,7 @@ static bool override(Class cls, const char* selName, bool isClassMethod) {
   return true;
 }
 
-static void luaoc_pushLuaFunc(lua_State *L, Class cls, SEL sel, bool isClassMethod) {
+static void luaoc_push_lua_func(lua_State *L, Class cls, SEL sel, bool isClassMethod) {
   LUA_PUSH_STACK(L);
 
   luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME);
@@ -649,8 +652,7 @@ pushLuaFuncEnd:
   LUA_POP_STACK(L, 1);
 }
 
-/** push lua func at top, set [name] = func */
-static void luaoc_setLuaFunc(lua_State *L, int clsIndex, const char* name, bool isClassMethod) {
+static void luaoc_set_lua_func(lua_State *L, int clsIndex, const char* name, bool isClassMethod) {
   LUA_PUSH_STACK(L);
 
   lua_getuservalue(L, clsIndex);
@@ -666,7 +668,7 @@ static void luaoc_setLuaFunc(lua_State *L, int clsIndex, const char* name, bool 
   LUA_POP_STACK(L, -1); // popup the func
 }
 
-int indexValueFromClass(lua_State *L, Class cls, int keyIndex) {
+int index_value_from_class(lua_State *L, Class cls, int keyIndex) {
   LUA_PUSH_STACK(L);
   luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME);
   lua_rawgetfield(L, -1, "loaded");
@@ -702,7 +704,7 @@ static int __index(lua_State *L){
     }
     if (lua_isnil(L, -1)) { // still nil
       // when not a oc msg, try to find value in super
-      indexValueFromClass(L, class_getSuperclass(*cls), 2);
+      index_value_from_class(L, class_getSuperclass(*cls), 2);
     }
   }
 
@@ -743,7 +745,7 @@ static int __call(lua_State *L) {
 
   if (override(*cls, name, isClassMethod)) {
     lua_pushvalue(L, 3);
-    luaoc_setLuaFunc(L, 1, name, isClassMethod);
+    luaoc_set_lua_func(L, 1, name, isClassMethod);
     lua_pushboolean(L, true);
   } else {
     DLOG("not found override method for name %s", name);

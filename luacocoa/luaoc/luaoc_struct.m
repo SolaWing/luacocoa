@@ -266,7 +266,7 @@ static int reg_struct(lua_State *L){
  * 
  *  @param upvalue 1: named_struct type
  */
-static int createStruct(lua_State *L){
+static int create_struct(lua_State *L){
   int structInfoTableIndex = lua_upvalueindex(1);
   int top = lua_gettop(L);
   lua_rawgetfield(L, structInfoTableIndex, "__encoding");
@@ -298,22 +298,22 @@ static int createStruct(lua_State *L){
   return 1;
 }
 
-static int indexStructByName(lua_State *L){
+static int index_struct_by_name(lua_State *L){
   luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
   lua_pushvalue(L, 2);
   if (lua_rawget(L, -2) != LUA_TNIL){ // push `named_struct[name]` to upvalue
-    lua_pushcclosure(L, createStruct, 1);
+    lua_pushcclosure(L, create_struct, 1);
   }
   return 1;
 }
 
 static const luaL_Reg structFunctions[] = {
   {"reg", reg_struct},
-  {"__index", indexStructByName},
+  {"__index", index_struct_by_name},
   {NULL, NULL},
 };
 
-/** reg named struct in table at top */
+/** reg named struct into table at stack top */
 static void reg_default_struct(lua_State *L){
   LUA_PUSH_STACK(L);
   char buf[256]; // used for get compiler struct info

@@ -30,7 +30,7 @@ int luaoc_tostruct_n(lua_State *L, int index, void* outStructRef, size_t n);
  * similar to `luaoc_tostruct`, but return a copyed struct ref.
  *
  * @param outSize: the struct size. can pass NULL
- * @return: copyed struct ref, or NULL in error. you are responsible to free it.
+ * @return: copyed struct ref, or NULL in error. you are responsible to *free* it.
  */
 void* luaoc_copystruct(lua_State *L, int index, size_t* outSize);
 

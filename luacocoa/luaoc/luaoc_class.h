@@ -16,7 +16,8 @@ int luaopen_luaoc_class(lua_State *L);
 void luaoc_push_class(lua_State *L, Class cls);
 Class luaoc_toclass(lua_State *L, int index);
 
-/** return lua value in cls and super cls,
- * if found, push to stack and return 1
- * else push nothing and return 0 */
-int indexValueFromClass(lua_State *L, Class cls, int keyIndex);
+/** return lua value in cls and super cls by key.
+ *
+ * @return push founded value and return 1. otherwise push nothing and return 0
+ */
+int index_value_from_class(lua_State *L, Class cls, int keyIndex);

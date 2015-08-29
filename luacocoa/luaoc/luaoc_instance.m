@@ -129,7 +129,7 @@ static int __index(lua_State *L){
     }
     if (lua_isnil(L, -1)){
       // when not a oc msg, try to find lua value in cls
-      indexValueFromClass(L, [*ud class], 2);
+      index_value_from_class(L, [*ud class], 2);
     }
   }
 
