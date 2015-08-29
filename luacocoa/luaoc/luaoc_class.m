@@ -515,8 +515,63 @@ static int index_class_by_name(lua_State *L){
   return 1;
 }
 
+/** add protocols to class
+ *
+ * @param 1: class or class name
+ * @param 2...: one or more protocol names
+ */
+static int add_protocol(lua_State *L){
+  Class cls = luaoc_toclass(L, 1);
+  if (!cls) cls = objc_getClass(luaL_checkstring(L, 1));
+  if (!cls) LUAOC_ARGERROR(1, "can't found class to add protocols");
+
+  for (int i = 2, top = lua_gettop(L); i <= top; ++i) {
+    Protocol *protocol = objc_getProtocol(luaL_checkstring(L, i));
+    if (!protocol) LUAOC_ARGERROR(i,
+        "can't found protocol. Hint: in oc file may need to use this protocol");
+    class_addProtocol(cls, protocol);
+  }
+
+  return 0;
+}
+
+/** define a new class.
+ *
+ * @param 1: class name
+ * @param 2: super class or super class name. default to NSObject
+ * @param 3...: zero or more protocol names
+ * @return new class userdata
+ */
 static int new_class(lua_State *L){
   // TODO: new_class
+  const char * className = luaL_checkstring(L, 2);
+  Class cls = objc_getClass(className);
+  if (!cls) {
+    Class superClass;
+    switch( lua_type(L, 3) ){
+      case LUA_TUSERDATA: {
+        superClass = luaoc_toclass(L, 3);
+        break;
+      }
+      case LUA_TSTRING: {superClass = objc_getClass(lua_tostring(L, 3)); break;}
+      default: {
+        superClass = [NSObject class];
+        break;
+      }
+    }
+    if (!superClass) LUAOC_ARGERROR(3, "can't convert to class");
+
+    cls = objc_allocateClassPair(superClass, className, 0);
+    objc_registerClassPair(cls);
+  }
+  luaoc_push_class(L, cls);
+  if (lua_gettop(L) > 4) { // have protocols
+    lua_pushcfunction(L, add_protocol);
+    lua_pushvalue(L, -2);
+    lua_rotate(L, 4, 3); // push cls func cls before protocols
+    // call add_protocol with cls and protocols, left cls at top
+    lua_call(L, lua_gettop(L) - 5, 0);
+  }
   return 1;
 }
 
@@ -556,6 +611,7 @@ static const luaL_Reg ClassTableMetaMethods[] = {
 
 static const luaL_Reg ClassTableMethods[] = {
   {"name", name},
+  {"addProtocol", add_protocol},
   {NULL, NULL}
 };
 
@@ -748,6 +804,7 @@ static int __call(lua_State *L) {
     luaoc_set_lua_func(L, 1, name, isClassMethod);
     lua_pushboolean(L, true);
   } else {
+    // TODO: add method by function encoding
     DLOG("not found override method for name %s", name);
     lua_pushboolean(L, false);
   }
