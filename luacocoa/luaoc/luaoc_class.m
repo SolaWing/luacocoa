@@ -28,6 +28,11 @@ static void luaoc_push_lua_func(lua_State *L, Class cls, SEL sel, bool isClassMe
 /** cls.methodType[name] = func. func at the stack top. cls at the clsIndex. */
 static void luaoc_set_lua_func(lua_State *L, int clsIndex, const char* name, bool isClassMethod);
 
+// in 32bit iphone_simulator, my libffi can't compile. so disable it.
+#if TARGET_IPHONE_SIMULATOR && !defined(__LP64__)
+#define NO_USE_FFI
+#endif
+
 //#define NO_USE_FFI
 #ifndef NO_USE_FFI
 #pragma mark - FFI MSG
@@ -102,13 +107,9 @@ static ffi_type* ffi_type_for_one_encoding(const char* encoding, const char** st
       case _C_SEL:
       case _C_CHARPTR: ADVANCE_AND_RETURN(ffi_type_pointer);
       case _C_PTR: // ptr have one type following
-        luaoc_get_one_typesize(++(*stopPos), stopPos, NULL);
-        return &ffi_type_pointer;
       case _C_ARY_B:
-        size = (int)strtol(++(*stopPos), (char**)stopPos, 10); // array count
-        size *= luaoc_get_one_typesize(*stopPos, stopPos, NULL);
-        // FIXME: may need to check array end
-        ADVANCE_AND_RETURN(ffi_type_pointer);
+        *stopPos = NSGetSizeAndAlignment(*stopPos, NULL, NULL);
+        return &ffi_type_pointer;
       case _C_STRUCT_B: {
         char* eqpos = strchr(*stopPos, '=');
         if (NULL == eqpos){
@@ -169,7 +170,7 @@ static IMP imp_for_encoding(const char* encoding){
   while (*stopPos) {
     // skip one type, encoding like v16@0:8, which have offset in encoding,
     // may not end with \0, so need to judge it
-    if (luaoc_get_one_typesize(stopPos, &stopPos, NULL)>=0)
+    if (luaoc_get_one_typesize(stopPos, &stopPos, NULL) != NSNotFound)
       ++typeNumber;
   }
 
@@ -226,7 +227,7 @@ static IMP imp_for_encoding(const char* encoding){
  *  test in x64, there has a xmm register, and float type even not
  *    get pass for cast-call!! it seem to unpossible except write a assemble func.
  *    struct contain float can even wrose!
- *    so now haven't supportted float relevant func
+ *    so now float relevant func may have bugs
  */
 static const char* luaoc_method_call(lua_State *L, id receiver, SEL _cmd, va_list ap, void* retBuf, size_t bufLen) {
   if (![NSThread isMainThread])
@@ -286,9 +287,9 @@ static const char* luaoc_method_call(lua_State *L, id receiver, SEL _cmd, va_lis
         case _C_ARY_B:
           VAR_TYPE(id);
         case _C_STRUCT_B:
-          // in x64, copyt float to stack is jump over. I don't know why. try ffi later.
           // HACK, float and other save in different register. so for struct
           // need to get each primitive field
+          // NOTE this method may have bug. recommand use ffi version.
           buffer = alloca(luaoc_get_one_typesize(encoding, NULL, NULL));
           void* bufferPtr = buffer;
 
@@ -433,7 +434,7 @@ static IMP imp_for_encoding(const char* encoding) {
       case _C_STRUCT_B: {
 #ifdef __LP64__
         char* structName;
-        int returnTypeSize = luaoc_get_one_typesize(encoding, NULL, &structName);
+        NSUInteger returnTypeSize = luaoc_get_one_typesize(encoding, NULL, &structName);
         IMP imp = NULL;
         if (strcmp(structName, "CGPoint") == 0) imp = LUAOC_IMP_METHOD_NAME(CGPoint);
         else if (strcmp(structName, "CGSize") == 0) imp = LUAOC_IMP_METHOD_NAME(CGPoint);
@@ -442,7 +443,7 @@ static IMP imp_for_encoding(const char* encoding) {
         free(structName);
         if (imp) return imp;
 #else
-        int returnTypeSize = luaoc_get_one_typesize(encoding, NULL, NULL);
+        NSUInteger returnTypeSize = luaoc_get_one_typesize(encoding, NULL, NULL);
 #endif
         if (returnTypeSize<=8) return (IMP)LUAOC_IMP_METHOD_NAME(_buf_8);
         else if (returnTypeSize <= 16) return (IMP)LUAOC_IMP_METHOD_NAME(_buf_16);

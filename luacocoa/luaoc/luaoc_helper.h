@@ -6,7 +6,7 @@
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 
-#import <stdbool.h>
+#import <Foundation/Foundation.h>
 #import "lua.h"
 
 enum luaoc_userdata_type {
@@ -82,7 +82,30 @@ void  luaoc_push_obj(lua_State *L, const char *typeDescription, void* objRef);
  *      can pass NULL
  * @return : the typesize
  */
-int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, char** copyTypeName);
+NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, char** copyTypeName);
+
+
+#define PP_STR(...) #__VA_ARGS__
+#define PP_EXPAND_STR(...) PP_STR(__VA_ARGS__)
+
+#define LUAOC_ERROR(...) {                                        \
+  luaL_error(L, __FILE__ PP_EXPAND_STR(__LINE__) __VA_ARGS__);    \
+  assert(false);}                                                   // mark for analyzer, no continue;
+
+#define LUAOC_ARGERROR(index, msg) {luaL_argerror(L, index, msg); assert(false);}
+
+#define LUAOC_CHECK(assert) \
+    if ( __builtin_expect(!(assert), 0) ) { LUAOC_ERROR( #assert "fail" ); }
+
+#ifndef likely
+    #define likely(x)   __builtin_expect(!!(x), 1)
+    #define unlikely(x) __builtin_expect(!!(x), 0)
+#endif
+
+static inline void luaoc_align_offset(NSUInteger* offset, NSUInteger align){
+    NSUInteger alignOffset = *offset % align;
+    if (unlikely(alignOffset > 0)) {*offset += align - alignOffset;}
+}
 
 #pragma mark - DEBUG METHOD
 /** generic print method, used for debug */
@@ -100,11 +123,3 @@ void luaoc_dump_stack(lua_State* L);
   #endif
 #endif
 
-#define PP_STR(...) #__VA_ARGS__
-#define PP_EXPAND_STR(...) PP_STR(__VA_ARGS__)
-
-#define LUAOC_ERROR(...) {                                        \
-  luaL_error(L, __FILE__ PP_EXPAND_STR(__LINE__) __VA_ARGS__);    \
-  assert(false);}                                                   // mark for analyzer, no continue;
-
-#define LUAOC_ARGERROR(index, msg) {luaL_argerror(L, index, msg); assert(false);}

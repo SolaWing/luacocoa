@@ -298,7 +298,7 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
 
           void* buf = lua_touserdata(L, index);
           lua_getfield(L, index, "__encoding");
-          int sizeBuf = luaoc_get_one_typesize(lua_tostring(L, -1), NULL, NULL);
+          size_t sizeBuf = luaoc_get_one_typesize(lua_tostring(L, -1), NULL, NULL);
           lua_pop(L, 1);
           if (sizeBuf == *outSize) {
             memcpy(value, buf, sizeBuf);
@@ -330,26 +330,29 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
       *outSize = luaoc_get_one_typesize(typeencoding, NULL, NULL);
       value = calloc(1, *outSize);
 
-      const char* encodingPointer = strchr(typeencoding, '=');
-      if (encodingPointer++ == NULL) return value;
+      const char* encodingIt = strchr(typeencoding, '=');
+      if (encodingIt++ == NULL) return value;
 
-      void* attrPointer = value;
+      size_t attrOffset = 0;
 
       index = lua_absindex(L, index);
       int i = 1;
       size_t typeSize;
+      NSUInteger align;
       void* attr;
       while (lua_geti(L, index, i++) != LUA_TNIL &&
-             *encodingPointer != _C_STRUCT_E)
+             *encodingIt != _C_STRUCT_E)
       {
-        // TODO consider struct align, and flatten primitive table
-        attr = luaoc_copy_toobjc(L, -1, encodingPointer, &typeSize);
-        if (NULL == attr) LUAOC_ERROR( "invalid typeencoding:%s", typeencoding);
-        memcpy(attrPointer, attr, typeSize);
+        attr = luaoc_copy_toobjc(L, -1, encodingIt, &typeSize);
+        LUAOC_CHECK(attr);
+
+        encodingIt = NSGetSizeAndAlignment(encodingIt, NULL, &align);
+        luaoc_align_offset(&attrOffset, align);
+
+        memcpy(&value[attrOffset], attr, typeSize);
 
         free(attr);
-        attrPointer += typeSize;
-        luaoc_get_one_typesize(encodingPointer, &encodingPointer, NULL);
+        attrOffset += typeSize;
         lua_pop(L, 1); // pop table[i]
       }
       // TODO support key-value assign
@@ -407,7 +410,8 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
       case _C_PTR: {
          // FIXME: when convert to ptr, pass the userdata addr, just like pass by ref
          // var type is designed for this purpose, it's store value is safe to change.
-         // other type change inner value may unsafe.
+         // other type change inner value may unsafe
+         // (mainly id type, may break retain count).
         *outSize = sizeof(void*); value = calloc(sizeof(void*), 1);
         switch( lua_type(L, index) ){
           case LUA_TLIGHTUSERDATA:
@@ -526,7 +530,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
   lua_pushnil(L);
 }
 
-int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, char** copyTypeName) {
+NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, char** copyTypeName) {
 
   #define CASE_SIZE(encoding, type) case encoding: ++(*stopPos); return sizeof(type);
 
@@ -534,7 +538,7 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
     stopPos = (const char**)alloca(sizeof(const char*));
   }
   *stopPos = typeDescription;
-  int size = -1;
+  NSUInteger size = NSNotFound;
   int a; // tmp value
   size_t len;
   do {
@@ -557,19 +561,15 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
       CASE_SIZE(_C_DBL     , double)
       CASE_SIZE(_C_BOOL    , BOOL)
       // FIXME: may need to deal error
-      case _C_BFLD: return ((int)strtol(++(*stopPos), (char**)stopPos, 10)+7)/8;
+      case _C_BFLD:
+        // every 8 bit consider one byte
+        return ((int)strtol( ++(*stopPos), (char**)stopPos, 10 )+7)/8;
       case _C_VOID: ++(*stopPos); return 0;
       case _C_UNDEF: ++(*stopPos); return 0; // ^? function pointer, @? block, FIXME but @? is one type, there may treat two type
-      case _C_PTR: {
-        luaoc_get_one_typesize(++(*stopPos), stopPos, NULL); // set stopPos after ptr type
-        return sizeof(void*);
-      }
+      case _C_PTR:
       case _C_ARY_B: {
-        size = (int)strtol(++(*stopPos), (char**)stopPos, 10); // array count
-        size *= luaoc_get_one_typesize(*stopPos, stopPos, NULL);
-        // FIXME: may need to check array end
-        ++(*stopPos); // skip array end
-        return size;
+          *stopPos = NSGetSizeAndAlignment(*stopPos, &size, NULL);
+          return size;
       }
       case _C_STRUCT_B:
       case _C_UNION_B: {
@@ -594,21 +594,7 @@ int luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, ch
           (*copyTypeName)[len] = '\0';
         }
 
-        if (**stopPos == _C_UNION_B) {
-          *stopPos = eqpos+1; // set pos after =, assuming it exist
-          while(**stopPos != _C_UNION_E){ // union get the max element size
-            a = luaoc_get_one_typesize(*stopPos, stopPos, NULL);
-            if (a > size) size = a;
-          }
-        } else { // struct
-          // TODO apply align rule
-          *stopPos = eqpos + 1;
-          size = 0;
-          while (**stopPos != _C_STRUCT_E){ // struct get all element size
-            size += luaoc_get_one_typesize(*stopPos, stopPos, NULL);
-          }
-        }
-        ++(*stopPos); // skip end
+        *stopPos = NSGetSizeAndAlignment(*stopPos, &size, NULL);
         return size;
       }
       case '\0': return size; // reach string end

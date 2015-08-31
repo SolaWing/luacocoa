@@ -19,9 +19,13 @@ void luaoc_push_var(lua_State *L, const char* typeDescription, void* initRef) {
 
   char *structName = NULL;
   const char *endPos;
-  int size = luaoc_get_one_typesize(typeDescription, &endPos, &structName);
+  NSUInteger size = luaoc_get_one_typesize(typeDescription, &endPos, &structName);
 
-  if (size == 0) {DLOG("empty var size!!"); lua_pushnil(L); return;}
+  if ( unlikely( size == 0 )) {
+      DLOG( "empty var size!!" );
+      lua_pushnil( L );
+      return;
+  }
 
   void* ud = lua_newuserdata(L, size);
   if (initRef) memcpy(ud, initRef, size);

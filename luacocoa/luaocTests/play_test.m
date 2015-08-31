@@ -57,13 +57,44 @@ float floatFunc(id self, SEL _cmd, ...) {
 }
 
 void asmFunc(){
-    __asm__("popq %rbp\n\t"
-            "jmp _floatFunc");
+//    __asm__("popq %rbp\n\t"
+//            "jmp _floatFunc");
 //    goto floatFunc;
 //    ((void(*)(void))floatFunc)();
 }
 
-- (void)testVa_float {
+struct atestStructB {
+    short a;
+    double_t b;
+    float c;
+};
+
+struct atestStruct {
+    bool a;
+    struct atestStructB b;
+    bool c;
+};
+
+- (void)testGetSizeAndAlignment {
+    NSUInteger size, align;
+    const char* ret;
+    ret = NSGetSizeAndAlignment(@encode(struct atestStruct), &size, &align);
+    NSLog(@"atestStruct ret:%s size:%lu, align:%lu", ret, (unsigned long)size, (unsigned long)align);
+
+    ret = "cislqCISLQfdBv*@#:[4c]{rect={point=ff}{size=ff}}{point=ff}^v^{size=ff}(u=cisl)@?{s=@}";
+    while (*ret != '\0') {
+        NSLog(@"%s", ret);
+        // `?b` not support
+        ret = NSGetSizeAndAlignment(ret, &size, &align);
+        NSLog(@"size:%lu, align:%lu", (unsigned long)size, (unsigned long)align);
+    }
+    ret = "c";
+    NSLog(@"%s", ret);
+    ret = NSGetSizeAndAlignment(ret, NULL, NULL);
+    NSLog(@"%s", ret);
+}
+
+- (void)atestVa_float {
     id obj = [[NSArray new] autorelease];
     SEL sel = sel_getUid("test:");
     float d;
@@ -83,7 +114,7 @@ void asmFunc(){
     d = ((float(*)(id,SEL,float, float))asmFunc)(obj, sel, 33.0, 23.0);
 }
 
-- (void)testExample {
+- (void)atestExample {
   // luaL_dostring(gLua_main_state, "a = 123; print(a); _ENV={print=print,a=333}; print(22,a)");
   luaL_dostring(gLua_main_state, "a=function (b) end print(a) a.name = 'ss' print(a.name, ' is') return a");
   NSLog(@"%s", lua_tostring(gLua_main_state, -1)); // error, function can't use as table

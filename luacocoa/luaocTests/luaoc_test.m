@@ -270,7 +270,11 @@
   }
 
   { // auto convert table to struct
-    
+    RUN_LUA_SAFE_CODE( return {{30, 40}, {50, 60}} );
+    ref = luaoc_copy_toobjc(gLua_main_state, -1, @encode(CGRect), &outSize);
+    CGRect rect = {30,40,50,60};
+    XCTAssertTrue( memcmp(ref, &rect, sizeof(CGRect)) == 0 );
+    lua_settop(gLua_main_state, 0); free(ref);
   }
 
 }
@@ -505,8 +509,6 @@
   /** REG NEW CUSTOM STRUCT, it's a block with given  */
   RUN_LUA_SAFE_CODE( oc.struct.reg('p',
               {'x', oc.encoding.CGFloat}, {'y', oc.encoding.CGFloat}) );
-  // RUN_LUA_SAFE_STR(" luaoc.struct.reg('p',"
-  //     "{'x', luaoc.encoding.CGFloat}, {'y', luaoc.encoding.CGFloat})");
   RUN_LUA_SAFE_CODE( return oc.struct.p{33,44} );
   luaoc_tostruct(gLua_main_state, -1, &p);
   XCTAssertEqual(33, p.x);

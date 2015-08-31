@@ -30,9 +30,13 @@ typedef struct struct_attr_info {
 void luaoc_push_struct(lua_State *L, const char* typeDescription, void* structRef) {
   char *structName = NULL;
   const char *endPos;
-  int size = luaoc_get_one_typesize(typeDescription, &endPos, &structName);
+  NSUInteger size = luaoc_get_one_typesize(typeDescription, &endPos, &structName);
 
-  if (size == 0) {DLOG("empty struct size!!"); lua_pushnil(L); return;}
+  if ( unlikely( size == 0 )) {
+      DLOG( "empty struct size!!" );
+      lua_pushnil( L );
+      return;
+  }
 
   void* ud = lua_newuserdata(L, size);
   if (structRef) memcpy(ud, structRef, size);
@@ -105,16 +109,23 @@ static int __index(lua_State *L){
       encoding = strchr(encoding, '=');
       if (NULL == encoding++) LUAOC_ERROR( "can't get encoding of struct!");
 
-      void* attrPointer = lua_touserdata(L, 1);
+      size_t attrOffset = 0;
+      void* structRef = lua_touserdata(L, 1);
+      NSUInteger align;
+      NSUInteger typesize;
       while(index > 1) {
-        int typesize = luaoc_get_one_typesize(encoding, &encoding, NULL);
-        if (typesize <= 0)
-            LUAOC_ERROR( "index offset error!");
+          encoding = NSGetSizeAndAlignment(encoding, &typesize, &align);
 
-        attrPointer += typesize;
-        --index;
+          luaoc_align_offset(&attrOffset, align);
+
+          attrOffset += typesize;
+
+          --index;
       }
-      luaoc_push_obj(L, encoding, attrPointer);
+      NSGetSizeAndAlignment(encoding, NULL, &align);
+      luaoc_align_offset(&attrOffset, align);
+
+      luaoc_push_obj(L, encoding, &structRef[attrOffset]);
     } else { // index by keyname
       luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
       lua_rawgetfield(L, -3, "__name");     // uv[__name]
@@ -146,17 +157,25 @@ static int __newindex(lua_State *L){
       encoding = strchr(encoding, '=');
       if (NULL == encoding++) LUAOC_ERROR( "can't get encoding of struct!");
 
-      void* attrPointer = lua_touserdata(L,1);
+      void* structRef = lua_touserdata(L,1);
+      size_t offset = 0;
+      NSUInteger align;
+      NSUInteger typesize;
       while(index > 1) {
-        int typesize = luaoc_get_one_typesize(encoding, &encoding, NULL);
-        if (typesize <= 0)
-          LUAOC_ERROR( "newindex offset error!");
-        attrPointer += typesize;
-        --index;
+          encoding = NSGetSizeAndAlignment(encoding, &typesize, &align);
+
+          luaoc_align_offset(&offset, align);
+
+          offset += typesize;
+
+          --index;
       }
+      NSGetSizeAndAlignment(encoding, NULL, &align);
+      luaoc_align_offset(&offset, align);
+
       size_t outSize;
       void* v = luaoc_copy_toobjc(L, 3, encoding, &outSize);
-      memcpy(attrPointer,v,outSize);
+      memcpy( &structRef[offset], v, outSize );
       free(v);
       return 0;
     } else {
@@ -236,12 +255,14 @@ static int reg_struct(lua_State *L){
       lua_geti(L, i, 2); // type encoding
       lua_geti(L, i, 1); // name
       struct_attr_info* sai = lua_newuserdata(L, sizeof(struct_attr_info));
-      sai->offset = (int)offset;
       size_t encodingLen;
       sai->encoding = luaL_checklstring(L, -3, &encodingLen);
-      // TODO: consider struct align
-      int typesize = luaoc_get_one_typesize(sai->encoding, NULL, NULL);
-      if (typesize < 0) LUAOC_ERROR( "[reg struct] %d invalid encoding", i);
+
+      NSUInteger typesize, align;
+      // TODO user invalid encoding may cause error, catch and convert to lua error
+      NSGetSizeAndAlignment(sai->encoding, &typesize, &align);
+      luaoc_align_offset(&offset, align);
+      sai->offset = (int)offset;
 
       offset += typesize;
       lua_rawset(L, -4); // structTable[name] = struct_attr_info
