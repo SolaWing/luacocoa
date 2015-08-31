@@ -94,8 +94,11 @@ NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stop
 
 #define LUAOC_ARGERROR(index, msg) {luaL_argerror(L, index, msg); assert(false);}
 
-#define LUAOC_CHECK(assert) \
+#define LUAOC_ASSERT(assert) \
     if ( __builtin_expect(!(assert), 0) ) { LUAOC_ERROR( #assert "fail" ); }
+
+#define LUAOC_ASSERT_MSG(assert, ...) \
+    if ( __builtin_expect(!(assert), 0) ) { LUAOC_ERROR( __VA_ARGS__ ); }
 
 #ifndef likely
     #define likely(x)   __builtin_expect(!!(x), 1)

@@ -75,7 +75,7 @@ struct atestStruct {
     bool c;
 };
 
-- (void)testGetSizeAndAlignment {
+- (void)atestGetSizeAndAlignment {
     NSUInteger size, align;
     const char* ret;
     ret = NSGetSizeAndAlignment(@encode(struct atestStruct), &size, &align);

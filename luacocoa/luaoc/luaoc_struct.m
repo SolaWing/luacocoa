@@ -107,7 +107,8 @@ static int __index(lua_State *L){
       lua_rawgetfield(L, -2, "__encoding");
       const char* encoding = lua_tostring(L, -1);
       encoding = strchr(encoding, '=');
-      if (NULL == encoding++) LUAOC_ERROR( "can't get encoding of struct!");
+      LUAOC_ASSERT(encoding);
+      ++encoding;
 
       size_t attrOffset = 0;
       void* structRef = lua_touserdata(L, 1);
@@ -155,7 +156,8 @@ static int __newindex(lua_State *L){
       lua_rawgetfield(L, -1, "__encoding");
       const char* encoding = lua_tostring(L, -1);
       encoding = strchr(encoding, '=');
-      if (NULL == encoding++) LUAOC_ERROR( "can't get encoding of struct!");
+      LUAOC_ASSERT(encoding);
+      ++encoding;
 
       void* structRef = lua_touserdata(L,1);
       size_t offset = 0;
@@ -292,7 +294,7 @@ static int create_struct(lua_State *L){
   int top = lua_gettop(L);
   lua_rawgetfield(L, structInfoTableIndex, "__encoding");
   const char* encoding = lua_tostring(L, -1);
-  if (NULL == encoding) LUAOC_ERROR( "unreg struct type!");
+  LUAOC_ASSERT(encoding);
 
   void* value;
   if (top == 0) luaoc_push_struct(L, encoding, NULL); // empty struct

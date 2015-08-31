@@ -69,10 +69,8 @@ static int _msg_send(lua_State* L, SEL selector) {
   id target = *(id*)lua_touserdata(L, 1);
   // for vararg, the signature only treat it as first arg
   NSMethodSignature* sign = [target methodSignatureForSelector: selector];
-  if (!sign){
-    LUAOC_ERROR( "'%s' has no method '%s'",
-        object_getClassName(target), sel_getName(selector));
-  }
+  LUAOC_ASSERT_MSG(sign, "'%s' has no method '%s'",
+          object_getClassName(target), sel_getName(selector));
 
   NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:sign];
   [invocation setTarget:target];
@@ -98,12 +96,10 @@ static int _msg_send(lua_State* L, SEL selector) {
     free(arguements[i]);
   }
 
-  if (err) { // luaL_error will do a long jmp, so do clean up first
-    LUAOC_ERROR( "Error invoking '%s''s method '%s'. reason is:\n%s",
-        object_getClassName(target),
-        sel_getName(selector),
-        [[err reason] UTF8String]);
-  }
+  LUAOC_ASSERT_MSG(!err, "Error invoking '%s''s method '%s'. reason is:\n%s",
+          object_getClassName(target),
+          sel_getName(selector),
+          [[err reason] UTF8String]);
 
   NSUInteger retLen = [sign methodReturnLength];
   if (retLen > 0){
@@ -139,11 +135,11 @@ static int protect_super_call(lua_State* L) {
 int luaoc_msg_send(lua_State* L){
   id* ud = (id*)lua_touserdata(L, 1);
 
-  if (!ud) { LUAOC_ARGERROR( 1, "msg receiver must be objc object!"); }
+  if ( unlikely( !ud )) { LUAOC_ARGERROR( 1, "msg receiver must be objc object!" ); }
 
-  if (luaL_getmetafield(L, 1, "__type") != LUA_TNUMBER) {
-    LUAOC_ERROR( "can't found metaTable!");
-  }
+  LUAOC_ASSERT_MSG( luaL_getmetafield(L, 1, "__type") == LUA_TNUMBER,
+          "can't found metaTable!");
+
   LUA_INTEGER tt = lua_tointeger(L, -1);
   lua_pop(L, 1);
 
@@ -151,8 +147,8 @@ int luaoc_msg_send(lua_State* L){
 
   if (tt == luaoc_super_type){
     Method selfMethod = class_getInstanceMethod([*ud class], selector);
-    if (NULL == selfMethod)
-      LUAOC_ERROR( "unknown selector %s", sel_getName(selector));
+    LUAOC_ASSERT_MSG(selfMethod, "unknown selector %s", sel_getName(selector));
+
     Method superMethod = class_getInstanceMethod(*(ud+1), selector);
     if (superMethod && superMethod != selfMethod){
       IMP selfMethodIMP = method_getImplementation(selfMethod);
@@ -328,6 +324,8 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
     }
     case LUA_TTABLE: {
       *outSize = luaoc_get_one_typesize(typeencoding, NULL, NULL);
+      LUAOC_ASSERT(*outSize > 0);
+
       value = calloc(1, *outSize);
 
       const char* encodingIt = strchr(typeencoding, '=');
@@ -344,7 +342,7 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
              *encodingIt != _C_STRUCT_E)
       {
         attr = luaoc_copy_toobjc(L, -1, encodingIt, &typeSize);
-        LUAOC_CHECK(attr);
+        LUAOC_ASSERT(attr);
 
         encodingIt = NSGetSizeAndAlignment(encodingIt, NULL, &align);
         luaoc_align_offset(&attrOffset, align);
@@ -445,6 +443,7 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
         // value = luaoc_copystruct(L, index, outSize);
         if (!value) { // not a struct userdata at index, return a empty struct
           *outSize = luaoc_get_one_typesize(typeDescription+i, NULL, NULL);
+          LUAOC_ASSERT(*outSize > 0);
           value = calloc(1,*outSize);
         }
         return value;

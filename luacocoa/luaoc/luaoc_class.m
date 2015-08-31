@@ -524,11 +524,13 @@ static int index_class_by_name(lua_State *L){
 static int add_protocol(lua_State *L){
   Class cls = luaoc_toclass(L, 1);
   if (!cls) cls = objc_getClass(luaL_checkstring(L, 1));
-  if (!cls) LUAOC_ARGERROR(1, "can't found class to add protocols");
+  if ( unlikely( !cls )) {
+      LUAOC_ARGERROR( 1, "can't found class to add protocols" );
+  }
 
   for (int i = 2, top = lua_gettop(L); i <= top; ++i) {
     Protocol *protocol = objc_getProtocol(luaL_checkstring(L, i));
-    if (!protocol) LUAOC_ARGERROR(i,
+    if ( unlikely( !protocol )) LUAOC_ARGERROR( i,
         "can't found protocol. Hint: in oc file may need to use this protocol");
     class_addProtocol(cls, protocol);
   }
@@ -560,7 +562,7 @@ static int new_class(lua_State *L){
         break;
       }
     }
-    if (!superClass) LUAOC_ARGERROR(3, "can't convert to class");
+    if ( unlikely( !superClass )) LUAOC_ARGERROR( 3, "can't convert to class" );
 
     cls = objc_allocateClassPair(superClass, className, 0);
     objc_registerClassPair(cls);
