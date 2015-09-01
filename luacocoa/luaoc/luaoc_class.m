@@ -546,7 +546,6 @@ static int add_protocol(lua_State *L){
  * @return new class userdata
  */
 static int new_class(lua_State *L){
-  // TODO: new_class
   const char * className = luaL_checkstring(L, 2);
   Class cls = objc_getClass(className);
   if (!cls) {

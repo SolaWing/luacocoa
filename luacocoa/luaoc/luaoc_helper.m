@@ -424,7 +424,7 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
           }
         }
       }
-      case _C_CLASS:
+      case _C_CLASS: // not support auto convert from string to class
       case _C_ID: {
         *outSize = sizeof(id); value = calloc(sizeof(id), 1);
         *(id*)value = luaoc_convert_toid(L, index);

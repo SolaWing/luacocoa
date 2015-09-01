@@ -360,6 +360,14 @@
   XCTAssertEqual(b.size.height, 33);
   RUN_LUA_SAFE_CODE(return aret);
   XCTAssertEqual(lua_tonumber(L, -1), 88);
+  lua_settop(gLua_main_state, 0);
+
+  /// create new class
+  RUN_LUA_SAFE_CODE( return oc.class("luaClass") );
+  Class cls = luaoc_toclass(gLua_main_state, -1);
+  XCTAssertEqualObjects(NSStringFromClass(cls), @"luaClass");
+  RUN_LUA_SAFE_CODE(oc.class.luaClass("setValue:forUndefinedKey:", function(self, val, key) self[key] = val end));
+  RUN_LUA_SAFE_CODE(oc.class.luaClass("valueForUndefinedKey:", function(self, key) end));
 }
 
 - (void)testMsgSend {
