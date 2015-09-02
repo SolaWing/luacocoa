@@ -155,6 +155,7 @@ int luaopen_luaoc_encoding(lua_State *L) {
   lua_pushstring(L, @encode(type));                     \
   lua_rawset(L, -3);                                    \
 
+  SET_ENCODING_OF_TYPE("bool",               bool               );
   SET_ENCODING_OF_TYPE("char",               char               );
   SET_ENCODING_OF_TYPE("unsigned char",      unsigned char      );
   SET_ENCODING_OF_TYPE("short",              short              );
@@ -168,6 +169,7 @@ int luaopen_luaoc_encoding(lua_State *L) {
   SET_ENCODING_OF_TYPE("float",              float              );
   SET_ENCODING_OF_TYPE("double",             double             );
   SET_ENCODING_OF_TYPE("size_t",             size_t             );
+  SET_ENCODING_OF_TYPE("BOOL",               BOOL               );
   SET_ENCODING_OF_TYPE("NSInteger",          NSInteger          );
   SET_ENCODING_OF_TYPE("NSUInteger",         NSUInteger         );
   SET_ENCODING_OF_TYPE("CGFloat",            CGFloat            );

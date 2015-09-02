@@ -111,14 +111,18 @@ static int tolua(lua_State *L) {
                     case luaoc_instance_type: {
                         id val = *(id*)lua_touserdata(L, i);
                         push_instance_tolua(L, val);
+                        break;
                     }
                     case luaoc_struct_type: {
                         void* structRef = lua_touserdata(L, i);
                         lua_getfield(L, i, "__encoding");
                         const char* encoding = lua_tostring(L, -1);
                         lua_pop(L,1);
+
                         push_struct_tolua(L, structRef, encoding);
+                        break;
                     }
+                    // don't convert for other type
                     default: { break; }
                 }
             } else { lua_pop(L, 1); } // pop nil

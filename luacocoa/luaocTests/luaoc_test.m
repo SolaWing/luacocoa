@@ -24,7 +24,7 @@
 #define RUN_LUA_CODE(...) luaL_dostring(gLua_main_state, LUA_CODE(__VA_ARGS__))
 #define RUN_LUA_SAFE_CODE(...) RUN_LUA_SAFE_STR(LUA_CODE(__VA_ARGS__))
 
-// RUN_LUA_SAFE_CODE's code may be convert by macro. so use RUN_LUA_STR to avoid it
+// RUN_LUA_SAFE_CODE's code may be convert by macro. so use str to avoid it
 #define RUN_LUA_SAFE_STR(str) if (luaL_dostring(gLua_main_state, str)) \
     { printf("%s\n", lua_tostring(gLua_main_state, -1)); lua_pop(gLua_main_state, 1); }
 
@@ -33,7 +33,7 @@
 @optional
 - (void)proto_void;
 - (id)id_proto2_id:(id)arg;
-- (BOOL)bool_proto2_id:(id)arg arg_int:(int)arg2;
+- (BOOL)BOOL_proto2_id:(id)arg arg_int:(int)arg2;
 - (int)int_proto3_id:(id)arg arg_int:(int)arg2 arg_point:(CGPoint)p;
 - (CGFloat)flt_proto_flt:(float)val dbl:(double)val2;
 - (CGRect)rect_proto_rect:(CGRect)rect flt:(float)val dbl:(double)dbl;
@@ -366,8 +366,41 @@
   RUN_LUA_SAFE_CODE( return oc.class("luaClass") );
   Class cls = luaoc_toclass(gLua_main_state, -1);
   XCTAssertEqualObjects(NSStringFromClass(cls), @"luaClass");
-  RUN_LUA_SAFE_CODE(oc.class.luaClass("setValue:forUndefinedKey:", function(self, val, key) self[key] = val end));
-  RUN_LUA_SAFE_CODE(oc.class.luaClass("valueForUndefinedKey:", function(self, key) end));
+  XCTAssertEqualObjects([cls superclass], [NSObject class]);
+
+  RUN_LUA_SAFE_CODE( oc.class.luaClass("setValue:forUndefinedKey:",
+              function(self, val, key) self[oc.tolua(key)] = val end));
+  RUN_LUA_SAFE_CODE( oc.class.luaClass("valueForUndefinedKey:",
+              function(self, key) return self[oc.tolua(key)] end));
+  RUN_LUA_SAFE_CODE(return oc.class.luaClass:new());
+  id instance = luaoc_toinstance(L, -1);
+  [instance setValue:@3 forKey:@"attr1"];
+  XCTAssertEqualObjects(@3, [instance valueForKey:@"attr1"]);
+
+  RUN_LUA_SAFE_CODE(oc.class.addProtocol("luaClass", "aTestChildProtocol", "aTestSuperProtocol"));
+  RUN_LUA_SAFE_CODE(oc.class.luaClass("BOOL_proto2_id:arg_int:",
+              function(self, arg, val) print("bool_proto2:",val, val%2==0) return (val%2)==0 end));
+  XCTAssertTrue([instance
+          respondsToSelector: @selector(BOOL_proto2_id:arg_int:)]);
+  XCTAssertTrue([instance BOOL_proto2_id:nil arg_int:2]);
+  lua_settop(gLua_main_state, 0);
+
+  /// create new class and add protocols
+  RUN_LUA_SAFE_CODE( return oc.class("derivedClass", "aTestClass",
+              "aTestChildProtocol", "aTestSuperProtocol") );
+  XCTAssertNotNil( luaoc_toclass(gLua_main_state, -1) );
+  RUN_LUA_SAFE_CODE( return oc.class("derivedClass1", oc.class.aTestClass,
+              "aTestSuperProtocol") );
+  XCTAssertNotNil( luaoc_toclass(gLua_main_state, -1) );
+  XCTAssertFalse( [luaoc_toclass(gLua_main_state, -1)
+          conformsToProtocol: @protocol(aTestChildProtocol)] );
+
+  // create same name class return same class, but add protocols
+  RUN_LUA_SAFE_CODE( return oc.class("derivedClass1", oc.class.aTestClass,
+              "aTestChildProtocol", "aTestSuperProtocol") );
+  XCTAssertTrue( lua_rawequal(L, -1, -2) );
+  XCTAssertTrue( [luaoc_toclass(gLua_main_state, -1)
+          conformsToProtocol: @protocol(aTestChildProtocol)] );
 }
 
 - (void)testMsgSend {
@@ -521,6 +554,24 @@
   luaoc_tostruct(gLua_main_state, -1, &p);
   XCTAssertEqual(33, p.x);
   XCTAssertEqual(44, p.y);
+
+  /** REG NEW CUSTOM STRUCT WITH NEED ALIGN DATA */
+  RUN_LUA_SAFE_STR( "oc.struct.reg('s1',"
+     "{'a', oc.encoding.bool},  "
+     "{'b', oc.encoding.double},"
+     "{'c', oc.encoding.bool} ) ");
+  RUN_LUA_SAFE_STR( "a = oc.struct.s1 {true, 33.3, false} return a" );
+  size_t size;
+  void* structRef = luaoc_copystruct(gLua_main_state, -1, &size);
+  XCTAssertEqual(size, sizeof(double)*3); // after align size;
+  XCTAssertEqual(33.3, *(double*)&structRef[sizeof(double)]);
+  XCTAssertEqual(true, *(bool*)&structRef[0]);
+  XCTAssertEqual(false, *(bool*)&structRef[sizeof(double)*2]);
+  free(structRef);
+  RUN_LUA_SAFE_CODE( return a.b );
+  XCTAssertEqual(33.3, lua_tonumber(gLua_main_state, -1));
+  RUN_LUA_SAFE_CODE( a.b = 20 return a.b );
+  XCTAssertEqual(20, lua_tonumber(gLua_main_state, -1));
 }
 
 @end

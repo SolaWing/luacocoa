@@ -381,13 +381,25 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
   *outSize = sizeof(type); value = malloc(sizeof(type)); \
   *((type *)value) = (type)lua_func(L, index)
 
-#define INTEGER_CASE(encoding, type) case encoding: { CONVERT_TO_TYPE(type, lua_tointeger); return value; }
+#define INTEGER_CASE(encoding, type) case encoding: {           \
+    *outSize = sizeof(type); value = malloc(sizeof(type));      \
+    if (lua_isinteger(L, index))                                \
+        *((type*)value) = (type)lua_tointeger(L, index);        \
+    else /* convert to integer from float when possible */      \
+        *((type*)value) = (type)lua_tonumber(L, index);         \
+}
 #define NUMBER_CASE(encoding, type)  case encoding: { CONVERT_TO_TYPE(type, lua_tonumber); return value; }
 #define BOOL_CASE(encoding, type)    case encoding: { CONVERT_TO_TYPE(type, lua_toboolean); return value; }
 
   while ( typeDescription[i] ) {
     switch( typeDescription[i] ){
-      INTEGER_CASE(_C_CHR, char)
+      case _C_CHR: { // treat true, false, as 0,1
+          *outSize = sizeof(char); value = malloc(sizeof(char));
+          if (lua_isboolean(L, index)) *(char*)value = lua_toboolean(L, index);
+          else if (lua_isinteger(L, index)) *(char*)value = lua_tointeger(L, index);
+          else *(char*)value = lua_tonumber(L, index);
+          return value;
+      }
       INTEGER_CASE(_C_UCHR, unsigned char)
       INTEGER_CASE(_C_SHT, short)
       INTEGER_CASE(_C_USHT, unsigned short)
@@ -498,7 +510,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       PUSH_NUMBER(_C_DBL , double)
       PUSH_POINTER(_C_ID, id, luaoc_push_instance)  // FIXME: if need to bind lua types?
       PUSH_POINTER(_C_CLASS, Class, luaoc_push_class)
-      PUSH_POINTER(_C_PTR, void*, lua_pushlightuserdata)
+      PUSH_POINTER(_C_PTR, void*, lua_pushlightuserdata) // FIXME: pointer deref and address function
       PUSH_POINTER(_C_CHARPTR, char*, lua_pushstring)
       case _C_SEL:
         if (*(SEL*)buffer == NULL) lua_pushnil(L);
