@@ -59,6 +59,15 @@
 
 @implementation aTestClass
 
+- (void)dealloc {
+    [super dealloc];
+}
+
+- (instancetype)init {
+    // NSLog(@"init %p count:%zu", self, (size_t)[self retainCount]);
+    return [super init];
+}
+
 @end
 
 @interface luaoc_test : XCTestCase
@@ -321,86 +330,117 @@
 
 - (void)testOverride {
   lua_State* L = gLua_main_state;
-  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto_void", function() aret=1 end));
-  XCTAssertTrue(lua_toboolean(L, -1));
+  id obj;
+  {
+      RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto_void", function() aret=1 end));
+      XCTAssertTrue(lua_toboolean(L, -1));
 
-  aTestClass* obj = [[aTestClass new] autorelease];
-  [obj proto_void];
+      obj = [[aTestClass new] autorelease];
+      [obj proto_void];
 
-  RUN_LUA_SAFE_CODE(return aret);
-  XCTAssertEqual(lua_tonumber(L, -1), 1);
+      RUN_LUA_SAFE_CODE(return aret);
+      XCTAssertEqual(lua_tonumber(L, -1), 1);
+  }
 
-  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("id_proto2_id:", function(self,obj) return self == obj and self or obj end));
-  XCTAssertTrue(lua_toboolean(L, -1));
+  {
+      RUN_LUA_SAFE_CODE(return oc.class.aTestClass("id_proto2_id:", function(self,obj) return self == obj and self or obj end));
+      XCTAssertTrue(lua_toboolean(L, -1));
 
-  XCTAssertEqual([obj id_proto2_id:NULL], NULL);
-  XCTAssertEqual([obj id_proto2_id:obj], obj);
-  XCTAssertEqual([obj id_proto2_id:[NSArray class]], [NSArray class]);
+      XCTAssertEqual([obj id_proto2_id:NULL], NULL);
+      XCTAssertEqual([obj id_proto2_id:obj], obj);
+      XCTAssertEqual([obj id_proto2_id:[NSArray class]], [NSArray class]);
+  }
 
-  RUN_LUA_SAFE_CODE(return oc.class.aTestClass("int_proto3_id:arg_int:arg_point:", function(self, obj, num, p) return num*2 + p.x-p.y end));
-  XCTAssertTrue(lua_toboolean(L, -1));
+  {
+      RUN_LUA_SAFE_CODE(return oc.class.aTestClass("int_proto3_id:arg_int:arg_point:", function(self, obj, num, p) return num*2 + p.x-p.y end));
+      XCTAssertTrue(lua_toboolean(L, -1));
 
-  XCTAssertEqual([obj int_proto3_id:obj arg_int:44 arg_point:CGPointMake(33,55)], 66);
+      XCTAssertEqual([obj int_proto3_id:obj arg_int:44 arg_point:CGPointMake(33,55)], 66);
+  }
 
-  RUN_LUA_SAFE_CODE(oc.class.aTestClass("+ point_childProto_point:", function(cls, p) return p end));
-  CGPoint a = CGPointMake(44,55);
-  a = [aTestClass point_childProto_point:a];
-  XCTAssertEqual(a.x, 44);
-  XCTAssertEqual(a.y, 55);
+  {
+      RUN_LUA_SAFE_CODE(oc.class.aTestClass("+ point_childProto_point:", function(cls, p) return p end));
+      CGPoint a = CGPointMake(44,55);
+      a = [aTestClass point_childProto_point:a];
+      XCTAssertEqual(a.x, 44);
+      XCTAssertEqual(a.y, 55);
+  }
 
-  RUN_LUA_SAFE_CODE(oc.class.aTestClass("flt_proto_flt:dbl:", function(self, f1, f2) return f1+f2 end));
-  XCTAssertEqualWithAccuracy([obj flt_proto_flt:1.2f dbl:2], 3.2, 0.001);
+  {
+      RUN_LUA_SAFE_CODE(oc.class.aTestClass("flt_proto_flt:dbl:", function(self, f1, f2) return f1+f2 end));
+      XCTAssertEqualWithAccuracy([obj flt_proto_flt:1.2f dbl:2], 3.2, 0.001);
+  }
 
-  RUN_LUA_SAFE_CODE(oc.class.aTestClass("rect_proto_rect:flt:dbl:", function(self, rect, f1, f2) aret=f1*f2  return rect end));
-  CGRect b = CGRectMake(3,5,22,33);
-  b = [obj rect_proto_rect:b flt:22 dbl:4];
-  XCTAssertEqual(b.origin.x, 3);
-  XCTAssertEqual(b.origin.y, 5);
-  XCTAssertEqual(b.size.width, 22);
-  XCTAssertEqual(b.size.height, 33);
-  RUN_LUA_SAFE_CODE(return aret);
-  XCTAssertEqual(lua_tonumber(L, -1), 88);
+  {
+      RUN_LUA_SAFE_CODE(oc.class.aTestClass("rect_proto_rect:flt:dbl:", function(self, rect, f1, f2) aret=f1*f2  return rect end));
+      CGRect b = CGRectMake(3,5,22,33);
+      b = [obj rect_proto_rect:b flt:22 dbl:4];
+      XCTAssertEqual(b.origin.x, 3);
+      XCTAssertEqual(b.origin.y, 5);
+      XCTAssertEqual(b.size.width, 22);
+      XCTAssertEqual(b.size.height, 33);
+      RUN_LUA_SAFE_CODE(return aret);
+      XCTAssertEqual(lua_tonumber(L, -1), 88);
+  }
   lua_settop(gLua_main_state, 0);
 
-  /// create new class
-  RUN_LUA_SAFE_CODE( return oc.class("luaClass") );
-  Class cls = luaoc_toclass(gLua_main_state, -1);
-  XCTAssertEqualObjects(NSStringFromClass(cls), @"luaClass");
-  XCTAssertEqualObjects([cls superclass], [NSObject class]);
+  { /// create new class
+      RUN_LUA_SAFE_CODE( return oc.class("luaClass") );
+      Class cls = luaoc_toclass(gLua_main_state, -1);
+      XCTAssertEqualObjects(NSStringFromClass(cls), @"luaClass");
+      XCTAssertEqualObjects([cls superclass], [NSObject class]);
 
-  RUN_LUA_SAFE_CODE( oc.class.luaClass("setValue:forUndefinedKey:",
-              function(self, val, key) self[oc.tolua(key)] = val end));
-  RUN_LUA_SAFE_CODE( oc.class.luaClass("valueForUndefinedKey:",
-              function(self, key) return self[oc.tolua(key)] end));
-  RUN_LUA_SAFE_CODE(return oc.class.luaClass:new());
-  id instance = luaoc_toinstance(L, -1);
-  [instance setValue:@3 forKey:@"attr1"];
-  XCTAssertEqualObjects(@3, [instance valueForKey:@"attr1"]);
+      /// override super method
+      RUN_LUA_SAFE_CODE( oc.class.luaClass("setValue:forUndefinedKey:",
+                  function(self, val, key) self[oc.tolua(key)] = val end));
+      RUN_LUA_SAFE_CODE( oc.class.luaClass("valueForUndefinedKey:",
+                  function(self, key) return self[oc.tolua(key)] end));
+      RUN_LUA_SAFE_CODE(return oc.class.luaClass:new());
+      obj = luaoc_toinstance(L, -1);
+      [obj setValue:@3 forKey:@"attr1"];
+      XCTAssertEqualObjects(@3, [obj valueForKey:@"attr1"]);
 
-  RUN_LUA_SAFE_CODE(oc.class.addProtocol("luaClass", "aTestChildProtocol", "aTestSuperProtocol"));
-  RUN_LUA_SAFE_CODE(oc.class.luaClass("BOOL_proto2_id:arg_int:",
-              function(self, arg, val) print("bool_proto2:",val, val%2==0) return (val%2)==0 end));
-  XCTAssertTrue([instance
-          respondsToSelector: @selector(BOOL_proto2_id:arg_int:)]);
-  XCTAssertTrue([instance BOOL_proto2_id:nil arg_int:2]);
+      /// add protocol
+      RUN_LUA_SAFE_CODE(oc.class.addProtocol("luaClass", "aTestChildProtocol", "aTestSuperProtocol"));
+      RUN_LUA_SAFE_CODE(oc.class.luaClass("BOOL_proto2_id:arg_int:",
+              function(self, arg, val) return (val%2)==0 end));
+      XCTAssertTrue([obj
+              respondsToSelector: @selector(BOOL_proto2_id:arg_int:)]);
+      XCTAssertTrue([obj BOOL_proto2_id:nil arg_int:2]);
+  }
   lua_settop(gLua_main_state, 0);
 
-  /// create new class and add protocols
-  RUN_LUA_SAFE_CODE( return oc.class("derivedClass", "aTestClass",
-              "aTestChildProtocol", "aTestSuperProtocol") );
-  XCTAssertNotNil( luaoc_toclass(gLua_main_state, -1) );
-  RUN_LUA_SAFE_CODE( return oc.class("derivedClass1", oc.class.aTestClass,
-              "aTestSuperProtocol") );
-  XCTAssertNotNil( luaoc_toclass(gLua_main_state, -1) );
-  XCTAssertFalse( [luaoc_toclass(gLua_main_state, -1)
-          conformsToProtocol: @protocol(aTestChildProtocol)] );
+  { /// create new class and add protocols
+      RUN_LUA_SAFE_STR( "return oc.class('derivedClass1', nil,"
+                  "'aTestSuperProtocol')");
+      XCTAssertNotNil( luaoc_toclass(gLua_main_state, -1) );
+      XCTAssertFalse( [luaoc_toclass(gLua_main_state, -1)
+              conformsToProtocol: @protocol(aTestChildProtocol)] );
 
-  // create same name class return same class, but add protocols
-  RUN_LUA_SAFE_CODE( return oc.class("derivedClass1", oc.class.aTestClass,
-              "aTestChildProtocol", "aTestSuperProtocol") );
-  XCTAssertTrue( lua_rawequal(L, -1, -2) );
-  XCTAssertTrue( [luaoc_toclass(gLua_main_state, -1)
-          conformsToProtocol: @protocol(aTestChildProtocol)] );
+      // create same name class should return same class, but add protocols
+      RUN_LUA_SAFE_STR( "return oc.class('derivedClass1', nil,"
+                  "'aTestChildProtocol', 'aTestSuperProtocol')" );
+      XCTAssertTrue( lua_rawequal(L, -1, -2) );
+      XCTAssertTrue( [luaoc_toclass(gLua_main_state, -1)
+              conformsToProtocol: @protocol(aTestChildProtocol)] );
+
+      RUN_LUA_SAFE_CODE( return oc.class("derivedClass", "aTestClass",
+                                         "aTestChildProtocol", "aTestSuperProtocol") );
+      XCTAssertNotNil( luaoc_toclass(gLua_main_state, -1) );
+      /// test create rule msg. eg: init
+      RUN_LUA_SAFE_CODE( oc.class.derivedClass("init",
+                  function(self) return self.super:init() end) );
+      RUN_LUA_SAFE_CODE( return oc.class.derivedClass:new() );
+      obj = luaoc_toinstance(gLua_main_state, -1);
+      // super will have one retainCount. use gc to release it.
+      lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
+      XCTAssertEqual([obj retainCount], 1, "should have one retainCount hold by lua");
+
+      obj = [NSClassFromString(@"derivedClass") new];
+      // super and lua retained self will be gc and release.
+      lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
+      XCTAssertEqual([obj retainCount], 1, "oc call should have 1 retainCount. owned by caller.");
+  }
 }
 
 - (void)testMsgSend {
@@ -572,6 +612,18 @@
   XCTAssertEqual(33.3, lua_tonumber(gLua_main_state, -1));
   RUN_LUA_SAFE_CODE( a.b = 20 return a.b );
   XCTAssertEqual(20, lua_tonumber(gLua_main_state, -1));
+}
+
+- (void)testDealloc {
+    RUN_LUA_SAFE_CODE( return oc.class("derivedClass", "aTestClass") );
+    // don't forget call super at last. it's not ARC!
+    RUN_LUA_SAFE_CODE( oc.class.derivedClass("dealloc", function(self) a = 22 self:class() self.super:dealloc() end) );
+    RUN_LUA_SAFE_CODE( return oc.class.derivedClass:new() ); // return +0 obj. hold by lua
+    aTestClass* obj = luaoc_toinstance(gLua_main_state, -1);
+    lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
+    XCTAssertEqual( [obj retainCount], 1 ); // one retain by lua.
+    lua_settop(gLua_main_state, 0);
+    lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
 }
 
 @end

@@ -105,8 +105,9 @@ static int _msg_send(lua_State* L, SEL selector) {
   if (retLen > 0){
     void* buf = alloca(retLen);
     [invocation getReturnValue:buf];
-    luaoc_push_obj(L, [sign methodReturnType], buf);
-    if ( strcmp([sign methodReturnType], "@") == 0) {
+    const char* retType = [sign methodReturnType];
+    luaoc_push_obj(L, retType, buf);
+    if ( strcmp(retType, "@") == 0 && *(id*)buf != NULL) {
       const char * selName = sel_getName(selector);
       int n;
       if ( ((n = 4, strncmp(selName, "init", 4) == 0) ||
@@ -115,8 +116,9 @@ static int _msg_send(lua_State* L, SEL selector) {
             (n = 11, strncmp(selName, "mutableCopy", n) == 0)) &&
           !islower(selName[n]) ) {
         // according to oc owner rule, this object is owned by caller. so lua
-        // own it. push obj already retain, so release it
+        // own it. lua already retain it. change +1 object to +0.
         [*(id*)buf release];
+        // DLOG("%s release %p: %lld", selName, *(id*)buf, (UInt64)[*(id*)buf retainCount]);
       }
     }
   } else{
@@ -387,6 +389,7 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
         *((type*)value) = (type)lua_tointeger(L, index);        \
     else /* convert to integer from float when possible */      \
         *((type*)value) = (type)lua_tonumber(L, index);         \
+    return value;                                               \
 }
 #define NUMBER_CASE(encoding, type)  case encoding: { CONVERT_TO_TYPE(type, lua_tonumber); return value; }
 #define BOOL_CASE(encoding, type)    case encoding: { CONVERT_TO_TYPE(type, lua_toboolean); return value; }

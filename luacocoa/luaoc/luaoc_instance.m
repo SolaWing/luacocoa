@@ -117,6 +117,8 @@ static int __index(lua_State *L){
     if (lua_type(L,2) == LUA_TSTRING) {
       const char* key = lua_tostring(L, 2);
       if ( strcmp( key, "super" ) == 0 ){
+          // TODO when called in a super method, pass to method is instance, not the super representation.
+          // seem can't get super super method in a super method
         luaoc_push_super(L, 1);
         return 1;
       } else {
@@ -149,9 +151,14 @@ static int __newindex(lua_State *L){
 static int __gc(lua_State *L){
   id* ud = (id*)lua_touserdata(L, 1);
   if (!ud) DLOG("gc not instance type?");
-  else [*ud release];
+  else {
+      [*ud release];
+  }
 
   // TODO: need to test dealloc in gc, and call lua method
+  // when dealloc, lua dealloc method may re push obj.
+  // after dealloc, gc new pushed obj may crash!
+  // and dealloc may begin at oc side, after this gc call.
 
   return 0;
 }

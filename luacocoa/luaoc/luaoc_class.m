@@ -52,7 +52,10 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
   Class cls = [self class];
   bool isClass = cls == self;
   luaoc_push_lua_func(L, cls, _cmd, isClass);
-  if (lua_isnil(L, -1)) {DLOG("can't found lua func"); return;}
+  if (lua_isnil(L, -1)) {
+      lua_pop(L, 1);
+      DLOG("can't found lua func"); return;
+  }
 
   if (isClass) luaoc_push_class(L, cls);
   else luaoc_push_instance(L, self);
@@ -70,9 +73,23 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
         class_getName(cls), sel_getName(_cmd), lua_tostring(L, -1) );
     lua_pop(L,1);
   } else if (retLen>0) {
-    void* buf = luaoc_copy_toobjc(L, -1, [sign methodReturnType], &retLen);
+    const char* retType = [sign methodReturnType];
+    void* buf = luaoc_copy_toobjc(L, -1, retType, &retLen);
     memcpy(ret, buf, retLen);
-    // TODO: May apply create retain rule on return object.
+    if ( strcmp(retType, "@") == 0 && *(id*)buf != NULL) {
+      const char * selName = sel_getName(_cmd);
+      int n;
+      if ( ((n = 4, strncmp(selName, "init", 4) == 0) ||
+                    strncmp(selName, "copy", 4) == 0  ||
+            (n = 3, strncmp(selName, "new",  3) == 0) ||
+            (n = 11, strncmp(selName, "mutableCopy", n) == 0)) &&
+          !islower(selName[n]) ) {
+        // according to oc owner rule, this object is owned by caller. so lua
+        // don't own it. lua will return a +0 object. so retain it.
+        [*(id*)buf retain];
+        // DLOG("%s retain %p: %lld", selName, *(id*)buf, (UInt64)[*(id*)buf retainCount]);
+      }
+    }
 
     free(buf);
     lua_pop(L,1);
@@ -669,11 +686,13 @@ static bool override(Class cls, const char* selName, bool isClassMethod) {
   Class add2Cls = isClassMethod ? object_getClass(cls) : cls;
   IMP oldIMP = class_replaceMethod(add2Cls, sel, imp, encoding);
 
-  memcpy(selBuffer, "OC", 2); // add OC prefix
-  memcpy(selBuffer+2, selName, selLen+1); // include \0 end
-  sel = sel_getUid(selBuffer);
-  if (!class_respondsToSelector(add2Cls, sel)){ // first override, set OC imp
-    class_addMethod(add2Cls, sel, oldIMP, encoding);
+  if (oldIMP) {
+      memcpy(selBuffer, "OC", 2); // add OC prefix
+      memcpy(selBuffer+2, selName, selLen+1); // include \0 end
+      sel = sel_getUid(selBuffer);
+      if (!class_respondsToSelector(add2Cls, sel)){ // first override, set OC imp
+          class_addMethod(add2Cls, sel, oldIMP, encoding);
+      }
   }
 
   return true;
