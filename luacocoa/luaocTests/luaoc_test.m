@@ -91,48 +91,60 @@
 }
 
 - (void)testPushobj {
+  lua_State *L = gLua_main_state;
   /** push obj */
-  NSObject *view = [[NSObject new] autorelease];
+  NSObject *view = [NSObject new];
   XCTAssertEqual([view retainCount], 1);
 
-  luaoc_push_obj(gLua_main_state, "@", &view);
-  XCTAssertEqual([view retainCount], 2, "lua should retain the pushed obj");
+  luaoc_push_obj(L, "@", &view);
+  XCTAssertEqual([view retainCount], 1, "lua shouldn't retain the pushed obj");
 
-  luaoc_push_obj(gLua_main_state, "@", &view);
-  XCTAssertEqual([view retainCount], 2, "lua should only retain same obj once");
+  LUAOC_RETAIN(L, -1);
+  XCTAssertEqual([view retainCount], 2, "lua should retain the obj after call LUAOC_RETAIN");
 
-  XCTAssertTrue(lua_rawequal(gLua_main_state, -1, -2), "same obj is same userdata");
-  XCTAssertEqual(*(id*)lua_touserdata(gLua_main_state, -1), view, "userdata should ref to pushed obj");
+  LUAOC_RETAIN(L, -1);
+  LUAOC_RELEASE(L, -1);
+  LUAOC_RELEASE(L, -1);
+  XCTAssertEqual([view retainCount], 1, "lua should release the obj after call LUAOC_RELEASE");
 
-  lua_pop(gLua_main_state, 2);
-  lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
+  LUAOC_TAKE_OWNERSHIP(L, -1);
+  XCTAssertEqual([view retainCount], 1, "lua will release the obj in gc after call LUAOC_TAKE_OWNERSHIP");
+
+  luaoc_push_obj(L, "@", &view);
+  XCTAssertTrue(lua_rawequal(L, -1, -2), "same obj is same userdata");
+  XCTAssertEqual(*(id*)lua_touserdata(L, -1), view, "userdata should ref to pushed obj");
+
+  [view retain]; LUAOC_TAKE_OWNERSHIP(L, -2);
+  [[view retain] autorelease];
+  lua_pop(L, 2);
+  lua_gc(L, LUA_GCCOLLECT, 0);
   XCTAssertEqual([view retainCount], 1, "after full gc, lua should release retained obj");
 
 #define TEST_PUSH(encoding, type, val, ...)                             \
   {                                                                     \
     char encodingStr[] = encoding;                                      \
     type v = val;                                                       \
-    luaoc_push_obj(gLua_main_state, encodingStr, &v);                   \
+    luaoc_push_obj(L, encodingStr, &v);                   \
     __VA_ARGS__                                                         \
-    lua_pop(gLua_main_state, 1);                                        \
+    lua_pop(L, 1);                                        \
   }
 
 #define TEST_PUSH_SINGLE(encoding, ...) TEST_PUSH(PP_IDENTITY({encoding, 0}), __VA_ARGS__)
 #define TEST_PUSH_VALUE(lua_func, encoding, type, val, ...)                       \
   TEST_PUSH_SINGLE(encoding, type, val,                                           \
-      XCTAssertEqual(lua_func(gLua_main_state, -1), val, #type "test push fail"); \
+      XCTAssertEqual(lua_func(L, -1), val, #type "test push fail"); \
       __VA_ARGS__ )
 
 #define TEST_PUSH_BOOL(val) TEST_PUSH_VALUE(lua_toboolean, _C_BOOL, bool, val, \
-    XCTAssertTrue(lua_isboolean(gLua_main_state, -1), "should push bool type"); )
+    XCTAssertTrue(lua_isboolean(L, -1), "should push bool type"); )
 #define TEST_PUSH_INTEGER(encoding, type, val) TEST_PUSH_VALUE(lua_tointeger, encoding, type, val)
 #define TEST_PUSH_NUMBER(encoding, type, val) TEST_PUSH_VALUE(lua_tonumber, encoding, type, val)
 #define TEST_PUSH_CHARPTR(val) TEST_PUSH_SINGLE(_C_CHARPTR, const char*, val, \
-    XCTAssertTrue(strcmp(lua_tostring(gLua_main_state,-1), val) == 0); )
+    XCTAssertTrue(strcmp(lua_tostring(L,-1), val) == 0); )
 #define TEST_PUSH_SEL(val) TEST_PUSH_SINGLE(_C_SEL, SEL, @selector(val), \
-    XCTAssertTrue(strcmp(lua_tostring(gLua_main_state, -1), #val) == 0); )
+    XCTAssertTrue(strcmp(lua_tostring(L, -1), #val) == 0); )
 #define TEST_PUSH_STRUCT(type, val) TEST_PUSH(@encode(type), type, val,   \
-    XCTAssertTrue(memcmp(luaoc_getstruct(gLua_main_state, -1), (void*)&v, sizeof(type)) == 0 ); )
+    XCTAssertTrue(memcmp(luaoc_getstruct(L, -1), (void*)&v, sizeof(type)) == 0 ); )
 
   TEST_PUSH_BOOL   (false)
   TEST_PUSH_BOOL   (true)
@@ -166,6 +178,7 @@
 }
 
 - (void)testFromLuaObj {
+  lua_State *L = gLua_main_state;
   size_t outSize;
   void* ref;
   NSObject *obj = [[NSObject new] autorelease];
@@ -174,11 +187,11 @@
   {                                                                              \
     char encoding[] = @encode(type);                                             \
     type v = val;                                                                \
-    luaoc_push_obj(gLua_main_state, encoding, &v);                               \
-    ref = luaoc_copy_toobjc(gLua_main_state, -1, copy2ID?"@":encoding,&outSize); \
+    luaoc_push_obj(L, encoding, &v);                               \
+    ref = luaoc_copy_toobjc(L, -1, copy2ID?"@":encoding,&outSize); \
     __VA_ARGS__                                                                  \
     free(ref);                                                                   \
-    lua_pop(gLua_main_state, 1);                                                 \
+    lua_pop(L, 1);                                                 \
   }
 #define TEST_PUSH_AND_COPY_VALUE(type, val, ...) TEST_PUSH_AND_COPY(type, val, 0, \
     XCTAssertEqual(outSize, sizeof(type), #type " size should be equal");         \
@@ -249,7 +262,7 @@
 
   { // auto convert table to NSDictionary
     RUN_LUA_SAFE_CODE( return {5,6,{a=2,b=3},a=1,b=2,c=3} );
-    ref = luaoc_copy_toobjc(gLua_main_state, -1, "@", &outSize);
+    ref = luaoc_copy_toobjc(L, -1, "@", &outSize);
 
     XCTAssertEqual([(*(id*)ref) [@"a"]     intValue], 1);
     XCTAssertEqual([(*(id*)ref) [@"b"]     intValue], 2);
@@ -259,12 +272,12 @@
     XCTAssertEqual([(*(id*)ref) [@3][@"a"] intValue], 2);
     XCTAssertEqual([(*(id*)ref) [@3][@"b"] intValue], 3);
 
-    lua_pop(gLua_main_state, 1); free(ref);
+    lua_pop(L, 1); free(ref);
   }
 
   { // auto convert table to NSArray
     RUN_LUA_SAFE_CODE( return {10,11,12, oc.class.NSArray, {1,2}, {a=3}} );
-    ref = luaoc_copy_toobjc(gLua_main_state, -1, "@", &outSize);
+    ref = luaoc_copy_toobjc(L, -1, "@", &outSize);
 
     // when auto convert array , begin from 0. in lua, begin from 1
     XCTAssertEqual( [(*(id*)ref) [0]       intValue], 10);
@@ -275,57 +288,58 @@
     XCTAssertEqual( [(*(id*)ref) [5][@"a"] intValue], 3);
     XCTAssertEqual( (*(id*)ref)  [3]                , [NSArray class]);
 
-    lua_pop(gLua_main_state, 1); free(ref);
+    lua_pop(L, 1); free(ref);
   }
 
   { // auto convert table to struct
     RUN_LUA_SAFE_CODE( return {{30, 40}, {50, 60}} );
-    ref = luaoc_copy_toobjc(gLua_main_state, -1, @encode(CGRect), &outSize);
+    ref = luaoc_copy_toobjc(L, -1, @encode(CGRect), &outSize);
     CGRect rect = {30,40,50,60};
     XCTAssertTrue( memcmp(ref, &rect, sizeof(CGRect)) == 0 );
-    lua_settop(gLua_main_state, 0); free(ref);
+    lua_settop(L, 0); free(ref);
   }
 
 }
 
 - (void)testClass {
+  lua_State *L = gLua_main_state;
   // print_register_class();
   // need to use class, or link UIKit. or objc_getClass return nil
-  XCTAssertEqual(lua_gettop(gLua_main_state), 0);
+  XCTAssertEqual(lua_gettop(L), 0);
 
   /** PUSH CLASS */
-  int startIndex = lua_gettop(gLua_main_state);
-  luaoc_push_class(gLua_main_state, [NSArray class]);
-  XCTAssertEqual(startIndex+1, lua_gettop(gLua_main_state), "stack should only add 1");
+  int startIndex = lua_gettop(L);
+  luaoc_push_class(L, [NSArray class]);
+  XCTAssertEqual(startIndex+1, lua_gettop(L), "stack should only add 1");
 
-  XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [NSArray class], "should be NSArray class ptr");
+  XCTAssertEqual(luaoc_toclass(L, -1), [NSArray class], "should be NSArray class ptr");
 
-  luaoc_push_class(gLua_main_state, [NSArray class]);
-  XCTAssertEqual(startIndex+2, lua_gettop(gLua_main_state), "stack should only add 1");
-  XCTAssertTrue(lua_rawequal(gLua_main_state, -1, -2), "some class should have some userdata");
+  luaoc_push_class(L, [NSArray class]);
+  XCTAssertEqual(startIndex+2, lua_gettop(L), "stack should only add 1");
+  XCTAssertTrue(lua_rawequal(L, -1, -2), "some class should have some userdata");
 
-  luaoc_push_class(gLua_main_state, nil);
-  XCTAssertEqual(startIndex+3, lua_gettop(gLua_main_state), "stack should only add 1");
-  XCTAssertTrue(lua_isnil(gLua_main_state, -1), "nil class should return nil");
+  luaoc_push_class(L, nil);
+  XCTAssertEqual(startIndex+3, lua_gettop(L), "stack should only add 1");
+  XCTAssertTrue(lua_isnil(L, -1), "nil class should return nil");
 
-  luaoc_push_class(gLua_main_state, [NSObject class]);
-  XCTAssertEqual(startIndex+4, lua_gettop(gLua_main_state), "stack should only add 1");
-  XCTAssertFalse(lua_rawequal(gLua_main_state, -1, -2), "different class should have different userdata");
-  XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [NSObject class], "should be NSObject ptr");
+  luaoc_push_class(L, [NSObject class]);
+  XCTAssertEqual(startIndex+4, lua_gettop(L), "stack should only add 1");
+  XCTAssertFalse(lua_rawequal(L, -1, -2), "different class should have different userdata");
+  XCTAssertEqual(luaoc_toclass(L, -1), [NSObject class], "should be NSObject ptr");
 
-  XCTAssertEqual(luaoc_toclass(gLua_main_state, startIndex+1), [NSArray class], "shouldn't break exist stack");
+  XCTAssertEqual(luaoc_toclass(L, startIndex+1), [NSArray class], "shouldn't break exist stack");
 
   /** LUA index CLASS */
   RUN_LUA_SAFE_STR( "return oc.class.NSObject");
-  XCTAssertEqual(luaoc_toclass(gLua_main_state, -1), [NSObject class], "should return NSObject class userdata");
+  XCTAssertEqual(luaoc_toclass(L, -1), [NSObject class], "should return NSObject class userdata");
 
   RUN_LUA_SAFE_STR( "return oc.class.UnknownClass");
-  XCTAssertTrue(lua_isnil(gLua_main_state, -1));
+  XCTAssertTrue(lua_isnil(L, -1));
 
   /** LUA get class name */
   RUN_LUA_SAFE_STR( "return oc.class.name(oc.class.NSArray)");
-  XCTAssertTrue(strcmp(lua_tostring(gLua_main_state, -1), "NSArray") == 0);
-  lua_settop(gLua_main_state, 0);
+  XCTAssertTrue(strcmp(lua_tostring(L, -1), "NSArray") == 0);
+  lua_settop(L, 0);
 }
 
 - (void)testOverride {
@@ -382,11 +396,11 @@
       RUN_LUA_SAFE_CODE(return aret);
       XCTAssertEqual(lua_tonumber(L, -1), 88);
   }
-  lua_settop(gLua_main_state, 0);
+  lua_settop(L, 0);
 
   { /// create new class
       RUN_LUA_SAFE_CODE( return oc.class("luaClass") );
-      Class cls = luaoc_toclass(gLua_main_state, -1);
+      Class cls = luaoc_toclass(L, -1);
       XCTAssertEqualObjects(NSStringFromClass(cls), @"luaClass");
       XCTAssertEqualObjects([cls superclass], [NSObject class]);
 
@@ -408,37 +422,37 @@
               respondsToSelector: @selector(BOOL_proto2_id:arg_int:)]);
       XCTAssertTrue([obj BOOL_proto2_id:nil arg_int:2]);
   }
-  lua_settop(gLua_main_state, 0);
+  lua_settop(L, 0);
 
   { /// create new class and add protocols
       RUN_LUA_SAFE_STR( "return oc.class('derivedClass1', nil,"
                   "'aTestSuperProtocol')");
-      XCTAssertNotNil( luaoc_toclass(gLua_main_state, -1) );
-      XCTAssertFalse( [luaoc_toclass(gLua_main_state, -1)
+      XCTAssertNotNil( luaoc_toclass(L, -1) );
+      XCTAssertFalse( [luaoc_toclass(L, -1)
               conformsToProtocol: @protocol(aTestChildProtocol)] );
 
       // create same name class should return same class, but add protocols
       RUN_LUA_SAFE_STR( "return oc.class('derivedClass1', nil,"
                   "'aTestChildProtocol', 'aTestSuperProtocol')" );
       XCTAssertTrue( lua_rawequal(L, -1, -2) );
-      XCTAssertTrue( [luaoc_toclass(gLua_main_state, -1)
+      XCTAssertTrue( [luaoc_toclass(L, -1)
               conformsToProtocol: @protocol(aTestChildProtocol)] );
 
       RUN_LUA_SAFE_CODE( return oc.class("derivedClass", "aTestClass",
                                          "aTestChildProtocol", "aTestSuperProtocol") );
-      XCTAssertNotNil( luaoc_toclass(gLua_main_state, -1) );
+      XCTAssertNotNil( luaoc_toclass(L, -1) );
       /// test create rule msg. eg: init
       RUN_LUA_SAFE_CODE( oc.class.derivedClass("init",
                   function(self) return self.super:init() end) );
       RUN_LUA_SAFE_CODE( return oc.class.derivedClass:new() );
-      obj = luaoc_toinstance(gLua_main_state, -1);
+      obj = luaoc_toinstance(L, -1);
       // super will have one retainCount. use gc to release it.
-      lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
+      lua_gc(L, LUA_GCCOLLECT, 0);
       XCTAssertEqual([obj retainCount], 1, "should have one retainCount hold by lua");
 
       obj = [NSClassFromString(@"derivedClass") new];
       // super and lua retained self will be gc and release.
-      lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
+      lua_gc(L, LUA_GCCOLLECT, 0);
       XCTAssertEqual([obj retainCount], 1, "oc call should have 1 retainCount. owned by caller.");
   }
 }
@@ -523,7 +537,7 @@
   XCTAssertEqual(lua_tonumber(L, -1), 1);
   lua_pop(L, 1);
 
-  lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
+  lua_gc(L, LUA_GCCOLLECT, 0);
   XCTAssertTrue(weakval == NULL, "after reassign v, weakval should be collect");
 
   /// test error deal
@@ -547,10 +561,11 @@
 }
 
 - (void)testStruct {
+  lua_State* L = gLua_main_state;
   // create struct
   RUN_LUA_SAFE_CODE( a = oc.struct.CGRect({33,44}, {55,66}); return a );
   CGRect rect;
-  luaoc_tostruct(gLua_main_state, -1, &rect);
+  luaoc_tostruct(L, -1, &rect);
   XCTAssertEqual(rect.origin.x, 33);
   XCTAssertEqual(rect.origin.y, 44);
   XCTAssertEqual(rect.size.width, 55);
@@ -558,40 +573,40 @@
 
   // index struct
   RUN_LUA_SAFE_CODE( return a.x+a.y );
-  XCTAssertEqual(77, lua_tonumber(gLua_main_state, -1));
+  XCTAssertEqual(77, lua_tonumber(L, -1));
 
   RUN_LUA_SAFE_CODE( return a.size.width + a.size.height );
-  XCTAssertEqual(121, lua_tonumber(gLua_main_state, -1));
+  XCTAssertEqual(121, lua_tonumber(L, -1));
 
   // set struct value
   RUN_LUA_SAFE_CODE( a.x = 10; a.width = 20; return a.x * a.width, a);
-  XCTAssertEqual(200, lua_tonumber(gLua_main_state, -2));
+  XCTAssertEqual(200, lua_tonumber(L, -2));
 
-  luaoc_tostruct(gLua_main_state, -1, &rect);
+  luaoc_tostruct(L, -1, &rect);
   XCTAssertEqual(rect.origin.x, 10);
   XCTAssertEqual(rect.size.width, 20);
 
   // not work, a.size return a new CGSize struct, not the origin one
   RUN_LUA_SAFE_CODE( a.size.height = 100; return a.size.height );
-  XCTAssertNotEqual(100, lua_tonumber(gLua_main_state, -1));
+  XCTAssertNotEqual(100, lua_tonumber(L, -1));
 
   // index by offset, offset begin at 1
   RUN_LUA_SAFE_CODE(return a[1][2] + a[2][2]);
-  XCTAssertEqual(110, lua_tonumber(gLua_main_state, -1));
+  XCTAssertEqual(110, lua_tonumber(L, -1));
 
   RUN_LUA_SAFE_CODE(a[1] = {1,1}; return a[1]);
   CGPoint p;
-  luaoc_tostruct(gLua_main_state, -1, &p);
+  luaoc_tostruct(L, -1, &p);
   XCTAssertEqual(1, p.x);
   XCTAssertEqual(1, p.y);
 
-  lua_settop(gLua_main_state, 0);
+  lua_settop(L, 0);
 
   /** REG NEW CUSTOM STRUCT, it's a block with given  */
   RUN_LUA_SAFE_CODE( oc.struct.reg('p',
               {'x', oc.encoding.CGFloat}, {'y', oc.encoding.CGFloat}) );
   RUN_LUA_SAFE_CODE( return oc.struct.p{33,44} );
-  luaoc_tostruct(gLua_main_state, -1, &p);
+  luaoc_tostruct(L, -1, &p);
   XCTAssertEqual(33, p.x);
   XCTAssertEqual(44, p.y);
 
@@ -602,28 +617,33 @@
      "{'c', oc.encoding.bool} ) ");
   RUN_LUA_SAFE_STR( "a = oc.struct.s1 {true, 33.3, false} return a" );
   size_t size;
-  void* structRef = luaoc_copystruct(gLua_main_state, -1, &size);
+  void* structRef = luaoc_copystruct(L, -1, &size);
   XCTAssertEqual(size, sizeof(double)*3); // after align size;
   XCTAssertEqual(33.3, *(double*)&structRef[sizeof(double)]);
   XCTAssertEqual(true, *(bool*)&structRef[0]);
   XCTAssertEqual(false, *(bool*)&structRef[sizeof(double)*2]);
   free(structRef);
   RUN_LUA_SAFE_CODE( return a.b );
-  XCTAssertEqual(33.3, lua_tonumber(gLua_main_state, -1));
+  XCTAssertEqual(33.3, lua_tonumber(L, -1));
   RUN_LUA_SAFE_CODE( a.b = 20 return a.b );
-  XCTAssertEqual(20, lua_tonumber(gLua_main_state, -1));
+  XCTAssertEqual(20, lua_tonumber(L, -1));
 }
 
 - (void)testDealloc {
+    lua_State* L = gLua_main_state;
     RUN_LUA_SAFE_CODE( return oc.class("derivedClass", "aTestClass") );
-    // don't forget call super at last. it's not ARC!
-    RUN_LUA_SAFE_CODE( oc.class.derivedClass("dealloc", function(self) a = 22 self:class() self.super:dealloc() end) );
+    // here dealloc should directly set to class
+    RUN_LUA_SAFE_CODE( function oc.class.derivedClass:dealloc() a = 22 self:class() end);
     RUN_LUA_SAFE_CODE( return oc.class.derivedClass:new() ); // return +0 obj. hold by lua
-    aTestClass* obj = luaoc_toinstance(gLua_main_state, -1);
-    lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
-    XCTAssertEqual( [obj retainCount], 1 ); // one retain by lua.
-    lua_settop(gLua_main_state, 0);
-    lua_gc(gLua_main_state, LUA_GCCOLLECT, 0);
+    aTestClass* weakval; objc_storeWeak(&weakval, luaoc_toinstance(L, -1));
+
+    lua_gc(L, LUA_GCCOLLECT, 0);
+    XCTAssertEqual( [weakval retainCount], 1 ); // one retain by lua.
+    lua_settop(L, 0);
+    lua_gc(L, LUA_GCCOLLECT, 0);
+    XCTAssertNil(weakval);
+    RUN_LUA_SAFE_CODE( return a );
+    XCTAssertEqual(lua_tointeger(L, -1), 22);
 }
 
 @end

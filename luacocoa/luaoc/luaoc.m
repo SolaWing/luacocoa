@@ -134,11 +134,31 @@ static int tolua(lua_State *L) {
     return top;
 }
 
+/** add 1 retainCount by lua, compare to objc retain, the retainCount add by
+ * this method will autorelease when gc
+ *
+ * @param 1: instance object
+ */
+static int lua_retain(lua_State *L) {
+    LUAOC_RETAIN(L, 1);
+    lua_pushvalue(L, 1);
+
+    return 1; // return pass in obj
+}
+
+/** release obj immediately, transfer out ownership */
+static int lua_release(lua_State *L) {
+    LUAOC_RELEASE(L, 1);
+    return 0;
+}
+
 static const luaL_Reg luaoc_funcs[] = {
-    {"tolua", tolua },
+    {"tolua",       tolua },
     // will autoconvert to oc type when needed
     // {"tooc",  tooc  },
-    {NULL,    NULL  },
+    {"retain",      lua_retain},
+    {"release",     lua_release},
+    {NULL,          NULL  },
 };
 
 int luaopen_luaoc(lua_State *L){

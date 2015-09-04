@@ -533,6 +533,48 @@ static int index_class_by_name(lua_State *L){
   return 1;
 }
 
+static void luaclass_dealloc(id self, SEL _cmd) {
+
+    // [super dealloc], this method is the rootLuaClass dealloc method.
+    SEL sel = sel_getUid("rootLuaClass");
+    Class superClass = ((Class(*)(id,SEL))(class_getMethodImplementation([self class], sel)))(self, sel);
+    superClass = [superClass superclass];
+
+    // call lua side dealloc. ensure execute on main thread
+    dispatch_block_t luaDealloc = ^{
+        Class cls = [self class];
+        lua_State* L = gLua_main_state;
+        luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME);
+        lua_rawgetfield(L, -1, "loaded");
+        int top = lua_gettop(L);
+        do {
+            if (lua_rawgetp(L, -1, cls) == LUA_TUSERDATA){
+                lua_getuservalue(L, -1);
+                if (lua_rawgetfield(L, -1, "dealloc") == LUA_TFUNCTION){
+                    luaoc_push_instance(L, self);
+                    if (lua_pcall(L, 1, 0, 0) != 0) {
+                        DLOG("%s call lua func dealloc error:\n  %s",
+                                class_getName(cls), lua_tostring(L, -1) );
+                        lua_pop(L,1);
+                    }
+                }
+            }
+            cls = [cls superclass];
+            lua_settop(L, top);
+        }while (cls != superClass);
+        lua_pop(L, 2);
+    };
+    if ([NSThread isMainThread]) luaDealloc();
+    else {
+        dispatch_sync(dispatch_get_main_queue(), luaDealloc);
+    }
+
+
+    IMP superDealloc = class_getMethodImplementation(
+            superClass, @selector(dealloc));
+    ((void(*)(id,SEL))superDealloc)(self, _cmd);
+}
+
 /** add protocols to class
  *
  * @param 1: class or class name
@@ -581,6 +623,16 @@ static int new_class(lua_State *L){
     if ( unlikely( !superClass )) LUAOC_ARGERROR( 3, "can't convert to class" );
 
     cls = objc_allocateClassPair(superClass, className, 0);
+
+
+    IMP superDealloc = class_getMethodImplementation(superClass, @selector(dealloc));
+    if (superDealloc != (IMP)luaclass_dealloc) {
+        class_addMethod(cls, @selector(dealloc), (IMP)luaclass_dealloc, "v@:");
+        class_addMethod(cls, sel_getUid("rootLuaClass"), imp_implementationWithBlock(^Class(id self){
+            return cls;
+        }), "#@:");
+    }
+
     objc_registerClassPair(cls);
   }
   luaoc_push_class(L, cls);
@@ -790,9 +842,6 @@ static int __index(lua_State *L){
 
 static int __newindex(lua_State *L){
   luaL_checkudata(L, 1, LUAOC_CLASS_METATABLE_NAME);
-  if (lua_type(L, 3) == LUA_TFUNCTION){
-    // TODO: override func
-  }
 
   lua_getuservalue(L, 1);
   lua_insert(L, 2);

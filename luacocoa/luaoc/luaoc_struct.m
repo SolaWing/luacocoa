@@ -102,7 +102,7 @@ static int __index(lua_State *L){
   lua_getuservalue(L, 1);       // uv
   lua_pushvalue(L, 2);
   if (lua_rawget(L, -2) == LUA_TNIL) { // uv nil
-    if ( lua_isinteger(L, 2) ) { // index by offset, TODO consider struct alignment
+    if ( lua_isinteger(L, 2) ) {
       LUA_INTEGER index = lua_tointeger(L, 2);
       lua_rawgetfield(L, -2, "__encoding");
       const char* encoding = lua_tostring(L, -1);

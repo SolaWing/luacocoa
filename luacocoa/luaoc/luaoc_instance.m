@@ -31,6 +31,13 @@ void luaoc_push_instance(lua_State *L, id v){
   lua_pushstring(L, "loaded");
   lua_rawget(L, -2);                            // :meta loaded
 
+  // TODO: should check if the obj is in deallocing! don't use it in gc after deallocing
+  // deallocing obj can call lua when :
+  //    lua override deallocing
+  //    lua callback or msg when some obj deallocing
+  //    
+  // loaded table need cleanup immediately. because index pointer may be reuse
+  // by other data.
   if (lua_rawgetp(L, -1, v) == LUA_TNIL){
     // bind new ud
     *(id*)lua_newuserdata(L, sizeof(id)) = v;
@@ -44,7 +51,10 @@ void luaoc_push_instance(lua_State *L, id v){
     lua_pushvalue(L, -1);                               // copy ud
     lua_rawsetp(L, LUA_START_INDEX(L)+2, v);            // loaded[p] = ud
 
-    [v retain];                                         // retain when create and release in gc
+    // now don't auto retain the obj.
+    // if the retained obj is in deallocing, it's always be free after
+    // deallocing. and thus release in gc cause bad_acesss.
+    // [v retain];                                         // retain when create and release in gc
   }
   LUA_POP_STACK(L, 1);
   return;
@@ -83,11 +93,11 @@ void luaoc_push_super(lua_State *L, int index) {
   luaL_getmetatable(L, LUAOC_SUPER_METATABLE_NAME);
   lua_setmetatable(L, -2);
 
-  // use some uservalue
+  // use same uservalue
   lua_getuservalue(L, index);
   lua_setuservalue(L, -2);
 
-  [*ud retain]; // retain it and release it in gc
+  // [*ud retain]; // retain it and release it in gc
 
   LUA_POP_STACK(L, 1); // + su
 }
@@ -105,6 +115,21 @@ id luaoc_toinstance(lua_State *L, int index) {
   return NULL;
 }
 
+LUA_INTEGER luaoc_change_lua_retain_count(lua_State *L, int index, LUA_INTEGER change) {
+    lua_getuservalue(L, index);
+    LUA_INTEGER count = 0;
+    if (lua_rawgetfield(L, -1, "__retainCount") == LUA_TNUMBER) {
+        count = lua_tointeger(L, -1);
+    }
+    count = count + change;
+    if (count < 1) lua_pushnil(L);
+    else lua_pushinteger(L, count);
+    lua_rawsetfield(L, -3, "__retainCount");
+
+    lua_pop(L, 2); // - uv, __retainCount
+
+    return count;
+}
 #pragma mark - Meta Funcs
 static int __index(lua_State *L){
   id* ud = (id*)lua_touserdata(L, 1);
@@ -149,16 +174,23 @@ static int __newindex(lua_State *L){
 }
 
 static int __gc(lua_State *L){
-  id* ud = (id*)lua_touserdata(L, 1);
-  if (!ud) DLOG("gc not instance type?");
-  else {
-      [*ud release];
+  id* ud = luaL_testudata(L, 1, LUAOC_INSTANCE_METATABLE_NAME);
+  if (ud) {
+      // get lua retain count. release it in gc
+      lua_getuservalue(L, 1);
+      if (lua_rawgetfield(L, -1, "__retainCount") == LUA_TNUMBER &&
+          lua_tointeger(L, -1) > 0)
+      {
+          /** NOTE: when lua retain a deallocing obj. the gc call normally after
+           * freeing the deallocing obj. this will cause bad_acesss.
+           *
+           * the deallocing obj will call lua code by dealloc method or other
+           * callback, msg etc. user should ensure when dealloc return, lua is no
+           * retainCount left */
+          [*ud release];
+      }
   }
-
-  // TODO: need to test dealloc in gc, and call lua method
-  // when dealloc, lua dealloc method may re push obj.
-  // after dealloc, gc new pushed obj may crash!
-  // and dealloc may begin at oc side, after this gc call.
+  // else is super type
 
   return 0;
 }
@@ -171,7 +203,6 @@ static int __add(lua_State *L){
 static const luaL_Reg metaFunctions[] = {
   {"__index", __index},
   {"__newindex", __newindex},
-  {"__gc", __gc},
   {NULL, NULL}
 };
 
@@ -185,9 +216,12 @@ int luaopen_luaoc_instance(lua_State* L) {
   lua_pushinteger(L, luaoc_super_type);
   lua_rawset(L, -3);
 
+
   luaL_newmetatable(L, LUAOC_INSTANCE_METATABLE_NAME);
   luaL_setfuncs(L, metaFunctions, 0);
 
+  lua_pushcfunction(L, __gc);
+  lua_rawsetfield(L, -2, "__gc");
   lua_pushstring(L, "__type");
   lua_pushinteger(L, luaoc_instance_type);
   lua_rawset(L, -3);                        // meta.type = "id"
