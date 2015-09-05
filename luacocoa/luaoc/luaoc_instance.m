@@ -60,20 +60,18 @@ void luaoc_push_instance(lua_State *L, id v){
   return;
 }
 
-void luaoc_push_super(lua_State *L, int index) {
-  // NOTE: if use outside, may need type check
+void luaoc_push_super(lua_State *L, int index, Class cls) {
   LUA_PUSH_STACK(L);
 
-  if (IS_RELATIVE_INDEX(index)) index = LUA_START_INDEX(L) + index + 1;
+  index = lua_absindex(L, index);
 
   id* ud = (id*)lua_touserdata(L, index);
-  Class cls = NULL;
-  if (luaL_getmetafield(L, index, "__type") == LUA_TNUMBER){
+  if ( NULL == cls && luaL_getmetafield(L, index, "__type") == LUA_TNUMBER){
     LUA_INTEGER tt = lua_tointeger(L, -1);
     if (tt == luaoc_instance_type) cls = object_getClass(*ud);
     else if (tt == luaoc_super_type) cls = *(ud+1);
   }
-  if (NULL == cls){
+  if (unlikely(NULL == cls)){
     DLOG("ERROR: invalid instance type!");
     lua_pushnil(L);
     LUA_POP_STACK(L, 1);
@@ -81,7 +79,7 @@ void luaoc_push_super(lua_State *L, int index) {
   }
 
   cls = class_getSuperclass(cls);
-  if (cls == nil){
+  if (unlikely(NULL == cls)){
     lua_pushnil(L);
     LUA_POP_STACK(L, 1);
     return;
@@ -130,6 +128,7 @@ LUA_INTEGER luaoc_change_lua_retain_count(lua_State *L, int index, LUA_INTEGER c
 
     return count;
 }
+
 #pragma mark - Meta Funcs
 static int __index(lua_State *L){
   id* ud = (id*)lua_touserdata(L, 1);
@@ -141,17 +140,9 @@ static int __index(lua_State *L){
   if (lua_rawget(L, -2) == LUA_TNIL) {
     if (lua_type(L,2) == LUA_TSTRING) {
       const char* key = lua_tostring(L, 2);
-      if ( strcmp( key, "super" ) == 0 ){
-          // TODO when called in a super method, pass to method is instance, not the super representation.
-          // seem can't get super super method in a super method
-        luaoc_push_super(L, 1);
-        return 1;
-      } else {
-        // is nil and key is string , try return message wrapper
-        SEL sel = luaoc_find_SEL_byname(*ud, key);
-        if (sel){
+      SEL sel = luaoc_find_SEL_byname(*ud, key);
+      if (sel){
           luaoc_push_msg_send(L, sel);
-        }
       }
     }
     if (lua_isnil(L, -1)){

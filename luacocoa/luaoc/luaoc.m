@@ -152,12 +152,36 @@ static int lua_release(lua_State *L) {
     return 0;
 }
 
+/** get instance super.
+ *
+ * @param 1: instance or super userdata.
+ * @param 2: class userdata or class name. or nil to use param 1's class
+ * @return   super userdata, or nil when not get or fail
+ * */
+static int get_super(lua_State *L) {
+    Class cls = NULL;
+    switch( lua_type(L, 2) ) {
+        case LUA_TUSERDATA: {
+            cls = luaL_testudata(L, 2, LUAOC_CLASS_METATABLE_NAME);
+            break;
+        }
+        case LUA_TSTRING: {
+            cls = objc_getClass(lua_tostring(L, 2));
+            break;
+        }
+        default: { break; }
+    }
+    luaoc_push_super(L, 1, cls);
+    return 1;
+}
+
 static const luaL_Reg luaoc_funcs[] = {
     {"tolua",       tolua },
     // will autoconvert to oc type when needed
     // {"tooc",  tooc  },
     {"retain",      lua_retain},
     {"release",     lua_release},
+    {"super",       get_super},
     {NULL,          NULL  },
 };
 

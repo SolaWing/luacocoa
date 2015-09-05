@@ -443,7 +443,7 @@
       XCTAssertNotNil( luaoc_toclass(L, -1) );
       /// test create rule msg. eg: init
       RUN_LUA_SAFE_CODE( oc.class.derivedClass("init",
-                  function(self) return self.super:init() end) );
+                  function(self) return oc.super(self, derivedClass):init() end) );
       RUN_LUA_SAFE_CODE( return oc.class.derivedClass:new() );
       obj = luaoc_toinstance(L, -1);
       // super will have one retainCount. use gc to release it.
@@ -527,7 +527,7 @@
   RUN_LUA_SAFE_CODE(return oc.class.name(v));
   // 聚合类的实例是该类子类的一个实例
   XCTAssertTrue(strcmp(lua_tostring(L,-1), "__NSArrayM") == 0);
-  RUN_LUA_SAFE_CODE(return oc.class.name(v.super));
+  RUN_LUA_SAFE_CODE(return oc.class.name(oc.super(v)));
   // 聚合类的实例是该类子类的一个实例
   XCTAssertTrue(strcmp(lua_tostring(L,-1), "NSMutableArray") == 0);
   lua_pop(L, 2);

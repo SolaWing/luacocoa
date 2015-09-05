@@ -42,8 +42,14 @@ static void luaoc_set_lua_func(lua_State *L, int clsIndex, const char* name, boo
 static NSMutableDictionary* luaFuncDict; // encoding => closureFunc
 static NSMutableDictionary* luaStructFFIType; // encoding => ffi_type
 static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
-  if (![NSThread isMainThread])
-    NSLog(@"[WARN] call lua method on non-main thread!!");
+  if (![NSThread isMainThread]) {
+      NSLog(@"[WARN] call lua method on non-main thread!!\n"
+             "now dispatch to main thread.");
+      dispatch_sync( dispatch_get_main_queue(), ^{
+          luaoc_msg_from_oc(cif, ret, args, ud);
+      });
+      return ;
+  }
 
   id self = *(id*)args[0];
   SEL _cmd = *(SEL*)args[1];

@@ -115,7 +115,7 @@ struct atestStruct {
 }
 
 - (void)atestExample {
-  // luaL_dostring(gLua_main_state, "a = 123; print(a); _ENV={print=print,a=333}; print(22,a)");
+  luaL_dostring(gLua_main_state, "a = 123; print(a,_G); _ENV={_G=_G, print=print,a=334}; print(22,a) print(_ENV, _G)");
   luaL_dostring(gLua_main_state, "a=function (b) end print(a) a.name = 'ss' print(a.name, ' is') return a");
   NSLog(@"%s", lua_tostring(gLua_main_state, -1)); // error, function can't use as table
 
