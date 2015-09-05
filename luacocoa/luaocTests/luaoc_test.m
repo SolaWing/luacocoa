@@ -443,7 +443,7 @@
       XCTAssertNotNil( luaoc_toclass(L, -1) );
       /// test create rule msg. eg: init
       RUN_LUA_SAFE_CODE( oc.class.derivedClass("init",
-                  function(self) return oc.super(self, derivedClass):init() end) );
+                  function(self) a = 1; return oc.super(self, 'derivedClass'):init() end) );
       RUN_LUA_SAFE_CODE( return oc.class.derivedClass:new() );
       obj = luaoc_toinstance(L, -1);
       // super will have one retainCount. use gc to release it.
@@ -454,6 +454,15 @@
       // super and lua retained self will be gc and release.
       lua_gc(L, LUA_GCCOLLECT, 0);
       XCTAssertEqual([obj retainCount], 1, "oc call should have 1 retainCount. owned by caller.");
+
+      // TODO will stack overflow. super:init still send to self:init. because in
+      // lua override func, pass in is id type, super info lost!
+//      RUN_LUA_SAFE_CODE( return oc.class('derivedClass2', 'derivedClass') );
+//      RUN_LUA_SAFE_CODE( oc.class.derivedClass2('init', function(self) a = 2 return oc.super(self, 'derivedClass2'):init() end) );
+//      RUN_LUA_SAFE_CODE( return oc.class('derivedClass3', 'derivedClass2') );
+//      RUN_LUA_SAFE_CODE( oc.class.derivedClass3('init', function(self) a = 3 return oc.super(self, 'derivedClass3'):init() end) );
+//      RUN_LUA_SAFE_CODE( oc.class.derivedClass3:new() return a);
+//      XCTAssertEqual(lua_tointeger(L, -1), 1);
   }
 }
 

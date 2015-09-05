@@ -185,8 +185,32 @@ static const luaL_Reg luaoc_funcs[] = {
     {NULL,          NULL  },
 };
 
+static int __index(lua_State *L) {
+    // index class
+    lua_rawgetfield(L, 1, "class");
+    lua_pushvalue(L, 2);
+    if ( lua_gettable(L, -2) != LUA_TNIL ) return 1;
+    lua_pop(L, 2);
+
+    // index struct
+    lua_rawgetfield(L, 1, "struct");
+    lua_pushvalue(L, 2);
+    if ( lua_gettable(L, -2) != LUA_TNIL ) return 1;
+    lua_pop(L, 2);
+
+    lua_pushnil(L);
+    return 1;
+}
+
+static const luaL_Reg luaoc_metafuncs[] = {
+    {"__index", __index},
+    {NULL, NULL},
+};
+
 int luaopen_luaoc(lua_State *L){
-  lua_newtable(L);
+  luaL_newlib(L, luaoc_funcs);
+  luaL_newlib(L, luaoc_metafuncs);
+  lua_setmetatable(L, -2);
 
   luaopen_luaoc_class(L);
   lua_setfield(L, -2, "class");
@@ -202,8 +226,6 @@ int luaopen_luaoc(lua_State *L){
 
   luaopen_luaoc_encoding(L);
   lua_setfield(L, -2, "encoding");
-
-  luaL_setfuncs(L, luaoc_funcs, 0);
 
   return 1;
 }
