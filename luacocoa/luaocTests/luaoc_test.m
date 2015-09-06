@@ -398,16 +398,17 @@
       XCTAssertEqual(lua_tonumber(L, -1), 88);
   }
   { /// add method to exist class
-      RUN_LUA_SAFE_CODE( oc.class.aTestClass("abcd:ef:",
-                  function(self, rect, f1, f2) aret = f1*f2 rect[1]=33 rect[2]=44 return rect end,
-                  "{a=dddd}@:{a=dddd}id") );
-      RUN_LUA_SAFE_CODE( a = oc.aTestClass:new() a = a:abcd_ef({22,33,11,12}, 3.3, 2.2) return a, aret );
+      // override SEL can be any valid C functionName! not limit to Objc name
+      // style. but for compatible, recommand use : to mark param
+      RUN_LUA_SAFE_CODE( oc.class.aTestClass("abcd",
+                  function(self, rect, f1, f2) aret = f1*f2 rect.x=33 rect.y=44 return rect end,
+                  oc.encoding('CGRect', 'id', 'SEL', 'CGRect', 'NSInteger', 'CGFloat')));
+      RUN_LUA_SAFE_CODE( a = oc.aTestClass:new() a = a:abcd({{22,33},{11,12}}, 3.3, 2.2) return a, aret );
       luaoc_tostruct(L, -2, buf);
-      struct aa { double d[4]; } *structRef = (struct aa*)buf;
-      XCTAssertEqual( 33, structRef->d[0] );
-      XCTAssertEqual( 44, structRef->d[1] );
-      XCTAssertEqual( 11, structRef->d[2] );
-      XCTAssertEqual( 12, structRef->d[3] );
+      XCTAssertEqual( 33, ((CGRect*)buf)->origin.x );
+      XCTAssertEqual( 44, ((CGRect*)buf)->origin.y );
+      XCTAssertEqual( 11, ((CGRect*)buf)->size.width);
+      XCTAssertEqual( 12, ((CGRect*)buf)->size.height);
       XCTAssertEqualWithAccuracy( 6.6, lua_tonumber(L, -1), 0.001); // int(3.3) * 2.2
   }
   lua_settop(L, 0);
@@ -474,7 +475,9 @@
       RUN_LUA_SAFE_CODE( oc.class.derivedClass2('init', function(self) a = 2 return oc.super(self, 'derivedClass2'):init() end) );
       RUN_LUA_SAFE_CODE( return oc.class('derivedClass3', 'derivedClass2') );
       RUN_LUA_SAFE_CODE( oc.class.derivedClass3('init', function(self) a = 3 return oc.super(self, 'derivedClass3'):init() end) );
-      RUN_LUA_SAFE_CODE( oc.class.derivedClass3:new() return a);
+      RUN_LUA_SAFE_CODE( a=6 oc.class.derivedClass3:new() return a);
+      XCTAssertEqual(lua_tointeger(L, -1), 1);
+      RUN_LUA_SAFE_CODE( a=5 oc.class.derivedClass3:new() return a);
       XCTAssertEqual(lua_tointeger(L, -1), 1);
   }
   lua_settop(L, 0);
