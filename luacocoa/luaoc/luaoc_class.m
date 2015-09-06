@@ -55,16 +55,30 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
   SEL _cmd = *(SEL*)args[1];
   lua_State *L = gLua_main_state;
 
+  LUA_PUSH_STACK(L);
+
   Class cls = [self class];
   bool isClass = cls == self;
-  luaoc_push_lua_func(L, cls, _cmd, isClass);
-  if (lua_isnil(L, -1)) {
-      lua_pop(L, 1);
-      DLOG("can't found lua func"); return;
+  if (isClass) {
+      luaoc_push_class(L, cls);
+  }
+  else {
+      luaoc_push_instance(L, self);
+      lua_getuservalue(L, -1);
+      if ( lua_rawgetfield(L, -1, "__superinfo") == LUA_TTABLE &&
+           lua_rawgetfield(L, -1, sel_getName(_cmd)) == LUA_TUSERDATA )
+      { // find super call info. use the super class to search method
+          cls = *( ((id*)lua_touserdata(L, -1))+1 );
+      }
+      lua_settop(L, LUA_START_INDEX(L) + 1); // keep instance
   }
 
-  if (isClass) luaoc_push_class(L, cls);
-  else luaoc_push_instance(L, self);
+  luaoc_push_lua_func(L, cls, _cmd, isClass);
+  if (lua_isnil(L, -1)) {
+      LUA_POP_STACK(L, 0);
+      DLOG("can't found lua func"); return;
+  }
+  lua_insert(L, -2);
 
   NSMethodSignature* sign = [self methodSignatureForSelector:_cmd];
   int argCount = (int)[sign numberOfArguments];
@@ -77,7 +91,6 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
   if (lua_pcall(L, argCount-1, retLen>0?1:0, 0) != 0) {
     DLOG("%s call lua func %s error:\n  %s",
         class_getName(cls), sel_getName(_cmd), lua_tostring(L, -1) );
-    lua_pop(L,1);
   } else if (retLen>0) {
     const char* retType = [sign methodReturnType];
     void* buf = luaoc_copy_toobjc(L, -1, retType, &retLen);
@@ -98,8 +111,8 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
     }
 
     free(buf);
-    lua_pop(L,1);
   }
+  LUA_POP_STACK(L, 0);
 }
 
 static ffi_type* ffi_type_for_one_encoding(const char* encoding, const char** stopPos) {
@@ -234,6 +247,7 @@ static IMP imp_for_encoding(const char* encoding){
 
 #else
 #pragma mark - NON-FFI MSG float struct not work in x64
+// NOTE: NOW CONVERT TO USE FFI IMP, NON-FFI SIDE MAY NOT MAINTAIN
 #ifdef __LP64__
     #define _ASM_WRAP(name) static void a##name () {\
       __asm__("movb $1, %al \n\t popq %rbp\n\t jmp " PP_STR(_##name)); } // HACK, now x64 can save xmm value in stack

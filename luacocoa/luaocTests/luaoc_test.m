@@ -457,12 +457,12 @@
 
       // TODO will stack overflow. super:init still send to self:init. because in
       // lua override func, pass in is id type, super info lost!
-//      RUN_LUA_SAFE_CODE( return oc.class('derivedClass2', 'derivedClass') );
-//      RUN_LUA_SAFE_CODE( oc.class.derivedClass2('init', function(self) a = 2 return oc.super(self, 'derivedClass2'):init() end) );
-//      RUN_LUA_SAFE_CODE( return oc.class('derivedClass3', 'derivedClass2') );
-//      RUN_LUA_SAFE_CODE( oc.class.derivedClass3('init', function(self) a = 3 return oc.super(self, 'derivedClass3'):init() end) );
-//      RUN_LUA_SAFE_CODE( oc.class.derivedClass3:new() return a);
-//      XCTAssertEqual(lua_tointeger(L, -1), 1);
+      RUN_LUA_SAFE_CODE( return oc.class('derivedClass2', 'derivedClass') );
+      RUN_LUA_SAFE_CODE( oc.class.derivedClass2('init', function(self) a = 2 return oc.super(self, 'derivedClass2'):init() end) );
+      RUN_LUA_SAFE_CODE( return oc.class('derivedClass3', 'derivedClass2') );
+      RUN_LUA_SAFE_CODE( oc.class.derivedClass3('init', function(self) a = 3 return oc.super(self, 'derivedClass3'):init() end) );
+      RUN_LUA_SAFE_CODE( oc.class.derivedClass3:new() return a);
+      XCTAssertEqual(lua_tointeger(L, -1), 1);
   }
 }
 

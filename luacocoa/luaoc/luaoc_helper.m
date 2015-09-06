@@ -148,30 +148,78 @@ int luaoc_msg_send(lua_State* L){
   SEL selector = (SEL)lua_touserdata(L, lua_upvalueindex(1));
 
   if (tt == luaoc_super_type){
+    // push super call info to uservalue.
+    lua_getuservalue(L, 1);
+    if ( lua_rawgetfield(L, -1, "__superinfo") == LUA_TNIL ) {
+        lua_pop(L, 1);
+        lua_newtable(L);
+
+        lua_newtable(L);
+        lua_pushstring(L, "__mode");              // use weak table, so superinfo can clear when exception and gc
+        lua_pushstring(L, "v");
+        lua_rawset(L, -3);
+
+        lua_setmetatable(L, -2);                  // :uv {}
+
+        lua_pushvalue(L, -1);
+        lua_rawsetfield(L, -3, "__superinfo"); // uv[__superinfo] = {} __mode=v; left: {}
+    }
+    lua_remove(L, -2);                              // - uv
+
+    lua_pushstring(L, sel_getName(selector));
+
+    lua_pushvalue(L, -1);
+    lua_rawget(L, -3);                              // + oldV = [selName] : {} selName oldV
+
+    lua_pushvalue(L, -2);
+    lua_pushvalue(L, 1);
+    lua_rawset(L, -5);                              // {}[selName] = super, : {} selName oldV
+
+    // invoke msg, push result on top and restore superinfo
+#define RESTORE_SUPER_INFO(retCount)                                        \
+    if (retCount > 0) {                                                     \
+        lua_rotate(L, -retCount-2, -2);  /* : {} retval... selName, oldV */ \
+    }                                                                       \
+    lua_rawset(L, -retCount-3);          /* {}[selName] = oldV */
+
+
+    int retCount = 0;
+
     Method selfMethod = class_getInstanceMethod([*ud class], selector);
     LUAOC_ASSERT_MSG(selfMethod, "unknown selector %s", sel_getName(selector));
 
     Method superMethod = class_getInstanceMethod(*(ud+1), selector);
-    if (superMethod && superMethod != selfMethod){
-      IMP selfMethodIMP = method_getImplementation(selfMethod);
-      IMP superMethodIMP = method_getImplementation(superMethod);
+    // for same lua override func, Method may not equal. IMP may equal
+    // so only exchange IMP when IMP not equal
+    IMP selfMethodIMP, superMethodIMP;
+    if (superMethod &&
+        (selfMethodIMP = method_getImplementation(selfMethod)) !=
+        (superMethodIMP = method_getImplementation(superMethod)))
+    {
       method_setImplementation(selfMethod, superMethodIMP);
       // call _msg_send in protect mode
       lua_pushlightuserdata(L, selector);
       lua_pushcclosure(L, protect_super_call, 1);
-      lua_insert(L, 1);
-      int ret = lua_pcall(L, lua_gettop(L) - 1, LUA_MULTRET, 0);
+
+      // rotate so new push value at bottom : {} selName, oldV, closure, 1, 2...
+      lua_rotate(L, 1, 4);
+
+      retCount = lua_pcall(L, lua_gettop(L) - 4, LUA_MULTRET, 0);
 
       method_setImplementation(selfMethod, selfMethodIMP); // restore
 
-      if (ret == 0)          // no error
-        ret = lua_gettop(L); // all arg be used and left result
+      if (retCount == 0)          // no error
+        retCount = lua_gettop(L) - 3; // left result on top
       else
         lua_error(L);        // re throw error;
-      return ret;
-    } else {
-      return _msg_send(L, selector);
     }
+    else
+    {
+      retCount = _msg_send(L, selector);
+    }
+
+    RESTORE_SUPER_INFO(retCount);
+    return retCount;
   } else if (tt == luaoc_class_type || tt == luaoc_instance_type ||
              tt == luaoc_var_type) { // var type should be the id or class container
     return _msg_send(L, selector);
@@ -390,7 +438,8 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
     else /* convert to integer from float when possible */      \
         *((type*)value) = (type)lua_tonumber(L, index);         \
     return value;                                               \
-}
+  }
+
 #define NUMBER_CASE(encoding, type)  case encoding: { CONVERT_TO_TYPE(type, lua_tonumber); return value; }
 #define BOOL_CASE(encoding, type)    case encoding: { CONVERT_TO_TYPE(type, lua_toboolean); return value; }
 
@@ -670,7 +719,6 @@ void luaoc_print(lua_State *L, int index) {
   _luaoc_print(L, index);
   printf("\n"); // when not print \n, print will not flush
 }
-
 
 void luaoc_print_table(lua_State* L, int index) {
   if (lua_type(L, index) == LUA_TTABLE) {
