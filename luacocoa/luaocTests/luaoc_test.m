@@ -345,7 +345,8 @@
 - (void)testOverride {
   lua_State* L = gLua_main_state;
   id obj;
-  {
+  char buf[32];
+  { // override protocol
       RUN_LUA_SAFE_CODE(return oc.class.aTestClass("proto_void", function() aret=1 end));
       XCTAssertTrue(lua_toboolean(L, -1));
 
@@ -356,7 +357,7 @@
       XCTAssertEqual(lua_tonumber(L, -1), 1);
   }
 
-  {
+  { // override protocol and have param
       RUN_LUA_SAFE_CODE(return oc.class.aTestClass("id_proto2_id:", function(self,obj) return self == obj and self or obj end));
       XCTAssertTrue(lua_toboolean(L, -1));
 
@@ -365,14 +366,14 @@
       XCTAssertEqual([obj id_proto2_id:[NSArray class]], [NSArray class]);
   }
 
-  {
+  { // override protocol and have struct param
       RUN_LUA_SAFE_CODE(return oc.class.aTestClass("int_proto3_id:arg_int:arg_point:", function(self, obj, num, p) return num*2 + p.x-p.y end));
       XCTAssertTrue(lua_toboolean(L, -1));
 
       XCTAssertEqual([obj int_proto3_id:obj arg_int:44 arg_point:CGPointMake(33,55)], 66);
   }
 
-  {
+  { // override protocol and return struct
       RUN_LUA_SAFE_CODE(oc.class.aTestClass("+ point_childProto_point:", function(cls, p) return p end));
       CGPoint a = CGPointMake(44,55);
       a = [aTestClass point_childProto_point:a];
@@ -380,12 +381,12 @@
       XCTAssertEqual(a.y, 55);
   }
 
-  {
+  { // override protocol and have float and double param, return float
       RUN_LUA_SAFE_CODE(oc.class.aTestClass("flt_proto_flt:dbl:", function(self, f1, f2) return f1+f2 end));
       XCTAssertEqualWithAccuracy([obj flt_proto_flt:1.2f dbl:2], 3.2, 0.001);
   }
 
-  {
+  { // override protocol, use struct float param, return struct
       RUN_LUA_SAFE_CODE(oc.class.aTestClass("rect_proto_rect:flt:dbl:", function(self, rect, f1, f2) aret=f1*f2  return rect end));
       CGRect b = CGRectMake(3,5,22,33);
       b = [obj rect_proto_rect:b flt:22 dbl:4];
@@ -395,6 +396,19 @@
       XCTAssertEqual(b.size.height, 33);
       RUN_LUA_SAFE_CODE(return aret);
       XCTAssertEqual(lua_tonumber(L, -1), 88);
+  }
+  { /// add method to exist class
+      RUN_LUA_SAFE_CODE( oc.class.aTestClass("abcd:ef:",
+                  function(self, rect, f1, f2) aret = f1*f2 rect[1]=33 rect[2]=44 return rect end,
+                  "{a=dddd}@:{a=dddd}id") );
+      RUN_LUA_SAFE_CODE( a = oc.aTestClass:new() a = a:abcd_ef({22,33,11,12}, 3.3, 2.2) return a, aret );
+      luaoc_tostruct(L, -2, buf);
+      struct aa { double d[4]; } *structRef = (struct aa*)buf;
+      XCTAssertEqual( 33, structRef->d[0] );
+      XCTAssertEqual( 44, structRef->d[1] );
+      XCTAssertEqual( 11, structRef->d[2] );
+      XCTAssertEqual( 12, structRef->d[3] );
+      XCTAssertEqualWithAccuracy( 6.6, lua_tonumber(L, -1), 0.001); // int(3.3) * 2.2
   }
   lua_settop(L, 0);
 
@@ -455,8 +469,7 @@
       lua_gc(L, LUA_GCCOLLECT, 0);
       XCTAssertEqual([obj retainCount], 1, "oc call should have 1 retainCount. owned by caller.");
 
-      // TODO will stack overflow. super:init still send to self:init. because in
-      // lua override func, pass in is id type, super info lost!
+      // multi super override, can call correctly
       RUN_LUA_SAFE_CODE( return oc.class('derivedClass2', 'derivedClass') );
       RUN_LUA_SAFE_CODE( oc.class.derivedClass2('init', function(self) a = 2 return oc.super(self, 'derivedClass2'):init() end) );
       RUN_LUA_SAFE_CODE( return oc.class('derivedClass3', 'derivedClass2') );
@@ -464,6 +477,7 @@
       RUN_LUA_SAFE_CODE( oc.class.derivedClass3:new() return a);
       XCTAssertEqual(lua_tointeger(L, -1), 1);
   }
+  lua_settop(L, 0);
 }
 
 - (void)testMsgSend {

@@ -740,17 +740,21 @@ static const char* find_override_method_encoding(Class cls, SEL selector, bool i
 /** just overwrite it, in imp, search for the cls luafunc with luaName
  *  OC old imp save in selector prefix with OC
  */
-static bool override(Class cls, const char* selName, bool isClassMethod) {
+static bool override(Class cls, const char* selName, bool isClassMethod, const char* addEncoding) {
   NSCParameterAssert(cls);
   NSCParameterAssert(selName);
 
-  size_t selLen = strlen(selName);
-  char* selBuffer = (char*)alloca(selLen + 3); // 2 for OC prefix
   SEL sel =  sel_getUid(selName);
 
   const char *encoding = find_override_method_encoding(cls, sel, isClassMethod);
 
-  if (NULL == encoding) return false;
+  if (NULL == encoding) {
+      if (addEncoding) {
+          encoding = addEncoding;
+      } else {
+          return false;
+      }
+  }
 
   IMP imp = imp_for_encoding(encoding);
   if (!imp) return false;
@@ -759,6 +763,8 @@ static bool override(Class cls, const char* selName, bool isClassMethod) {
   IMP oldIMP = class_replaceMethod(add2Cls, sel, imp, encoding);
 
   if (oldIMP) {
+      size_t selLen = strlen(selName);
+      char* selBuffer = (char*)alloca(selLen + 3); // 2 for OC prefix
       memcpy(selBuffer, "OC", 2); // add OC prefix
       memcpy(selBuffer+2, selName, selLen+1); // include \0 end
       sel = sel_getUid(selBuffer);
@@ -874,8 +880,9 @@ static int __newindex(lua_State *L){
  *
  *  @param 1: cls
  *  @param 2: methodname, first char can be +- to distinguish class method and
- *            instance method. default instancemethod
- *  @param 3: lua_func
+ *            instance method. default instance method
+ *  @param 3: lua_func, first param is Class or self, other param as you define.
+ *            don't have SEL as second param like oc
  *  @param 4: encoding, optional, if nil, only override method or imp protocol
  *  @return   true if success
  */
@@ -889,13 +896,14 @@ static int __call(lua_State *L) {
   else if (*name == '-') {isClassMethod = false; ++name;}
   while(isspace(*name)) ++name; // skip prefix space
 
-  if (override(*cls, name, isClassMethod)) {
+  if (override(*cls, name, isClassMethod,
+        (lua_type(L, 4) == LUA_TSTRING ? lua_tostring(L, 4) : NULL) ) )
+  {
     lua_pushvalue(L, 3);
     luaoc_set_lua_func(L, 1, name, isClassMethod);
     lua_pushboolean(L, true);
   } else {
-    // TODO: add method by function encoding
-    DLOG("not found override method for name %s", name);
+    DLOG("can't override method for name %s", name);
     lua_pushboolean(L, false);
   }
 
