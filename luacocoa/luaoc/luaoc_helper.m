@@ -10,6 +10,7 @@
 #import "luaoc_class.h"
 #import "luaoc_instance.h"
 #import "luaoc_struct.h"
+#import "luaoc_block.h"
 
 #import "lauxlib.h"
 
@@ -276,15 +277,10 @@ id luaoc_convert_toid(lua_State *L, int index) {
       BOOL dictionary = NO; // has any other method to test dic or array?
 
       lua_pushvalue(L, index); // Push the table reference on the top
-      lua_pushnil(L);  /* first key */
-      while (!dictionary && lua_next(L, -2)) {
-        if (lua_type(L, -2) != LUA_TNUMBER) {
-          dictionary = YES;
-          lua_pop(L, 2); // pop key and value off the stack
-        }
-        else {
-          lua_pop(L, 1);
-        }
+      lua_pushnil(L);  // use first key to determine array or dict
+      if (lua_next(L, -2)) {
+          dictionary = lua_type(L, -2) != LUA_TNUMBER;
+          lua_pop(L, 2);            // pop key and value
       }
 
       id value = NULL;
@@ -297,6 +293,7 @@ id luaoc_convert_toid(lua_State *L, int index) {
           id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
           if (*key && *object) // ignore NULL kv
             [value setObject:*object forKey:*key];
+
           lua_pop(L, 1); // Pop off the value
           free(key);
           free(object);
@@ -308,7 +305,11 @@ id luaoc_convert_toid(lua_State *L, int index) {
         for (size_t i = 1; i <= len; ++i) {
           lua_rawgeti(L, -1, i);
           id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
-          [value addObject:*object];
+          if (*object) {
+              [value addObject:*object];
+          } else {
+              [value addObject:[NSNull null]];
+          }
           free(object); lua_pop(L,1);
         }
       }
@@ -316,8 +317,12 @@ id luaoc_convert_toid(lua_State *L, int index) {
       lua_pop(L, 1); // Pop the table reference off
       return value;
     }
-    case LUA_TFUNCTION: // convert lua function to block obj
-        DLOG("block now unsupported");
+    case LUA_TFUNCTION:{ // convert lua function to block obj, use default encoding @@
+        lua_pushvalue(L, index);
+        lua_pushnil(L);
+        id value = luaoc_convert_copyto_block(L);
+        return [value autorelease];
+    }
     case LUA_TNIL:
     case LUA_TNONE:
     default: return NULL;
@@ -564,6 +569,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       PUSH_POINTER(_C_CLASS, Class, luaoc_push_class)
       PUSH_POINTER(_C_PTR, void*, lua_pushlightuserdata) // FIXME: pointer deref and address function
       PUSH_POINTER(_C_CHARPTR, char*, lua_pushstring)
+        
       case _C_SEL:
         if (*(SEL*)buffer == NULL) lua_pushnil(L);
         else lua_pushstring(L, sel_getName(*(SEL*)buffer));
@@ -671,6 +677,7 @@ NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stop
 int luaoc_pcall(lua_State *L, int nargs, int nresults) {
     return lua_pcall(L, nargs, nresults, 0);
 }
+
 #pragma mark - DEBUG
 static void _luaoc_print(lua_State* L, int index) {
   switch( lua_type(L, index) ){
