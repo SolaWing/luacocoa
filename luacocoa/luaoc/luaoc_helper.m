@@ -2,7 +2,7 @@
 //  luaoc_helper.m
 //  luaoc
 //
-//  Created by Wangxh on 15/7/28.
+//  Created by SolaWing on 15/7/28.
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 
@@ -606,8 +606,6 @@ NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stop
   size_t len;
   do {
     switch( **stopPos ){
-      CASE_SIZE(_C_ID      , id)
-      CASE_SIZE(_C_CLASS   , Class)
       CASE_SIZE(_C_SEL     , SEL)
       CASE_SIZE(_C_CHARPTR , char*)
       CASE_SIZE(_C_CHR     , char)
@@ -622,13 +620,15 @@ NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stop
       CASE_SIZE(_C_ULNG_LNG, unsigned long long)
       CASE_SIZE(_C_FLT     , float)
       CASE_SIZE(_C_DBL     , double)
-      CASE_SIZE(_C_BOOL    , BOOL)
+      CASE_SIZE(_C_BOOL    , bool)
       // FIXME: may need to deal error
       case _C_BFLD:
         // every 8 bit consider one byte
         return ((int)strtol( ++(*stopPos), (char**)stopPos, 10 )+7)/8;
       case _C_VOID: ++(*stopPos); return 0;
       case _C_UNDEF: ++(*stopPos); return 0; // ^? function pointer, @? block, FIXME but @? is one type, there may treat two type
+      case _C_CLASS:
+      case _C_ID:
       case _C_PTR:
       case _C_ARY_B: {
           *stopPos = NSGetSizeAndAlignment(*stopPos, &size, NULL);
@@ -668,6 +668,9 @@ NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stop
   return size;
 }
 
+int luaoc_pcall(lua_State *L, int nargs, int nresults) {
+    return lua_pcall(L, nargs, nresults, 0);
+}
 #pragma mark - DEBUG
 static void _luaoc_print(lua_State* L, int index) {
   switch( lua_type(L, index) ){

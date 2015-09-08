@@ -2,7 +2,7 @@
 //  luaoc_test.m
 //  luaoc
 //
-//  Created by Wangxh on 15/8/1.
+//  Created by SolaWing on 15/8/1.
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 
@@ -13,6 +13,7 @@
 #import "luaoc_instance.h"
 #import "luaoc_class.h"
 #import "luaoc_struct.h"
+#import "luaoc_block.h"
 #import <objc/runtime.h>
 #import <objc/message.h>
 #import <Foundation/Foundation.h>
@@ -672,4 +673,7 @@
     XCTAssertEqual(lua_tointeger(L, -1), 22);
 }
 
+- (void)testBlock {
+
+}
 @end

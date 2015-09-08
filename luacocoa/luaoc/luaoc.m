@@ -2,7 +2,7 @@
 //  luaoc.m
 //  luaoc
 //
-//  Created by Wangxh on 15/7/28.
+//  Created by SolaWing on 15/7/28.
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 
@@ -14,7 +14,12 @@
 #import "luaoc_struct.h"
 #import "luaoc_var.h"
 #import "luaoc_helper.h"
+#import "luaoc_block.h"
 #import <objc/runtime.h>
+
+#ifndef NO_USE_FFI
+#import "ffi_wrap.h"
+#endif
 
 lua_State *gLua_main_state = NULL;
 
@@ -208,24 +213,31 @@ static const luaL_Reg luaoc_metafuncs[] = {
 };
 
 int luaopen_luaoc(lua_State *L){
+#ifndef NO_USE_FFI
+  ffi_initialize();
+#endif
+
   luaL_newlib(L, luaoc_funcs);
   luaL_newlib(L, luaoc_metafuncs);
   lua_setmetatable(L, -2);
 
   luaopen_luaoc_class(L);
-  lua_setfield(L, -2, "class");
+  lua_rawsetfield(L, -2, "class");
 
   luaopen_luaoc_instance(L);
   lua_pop(L, 1);
 
   luaopen_luaoc_struct(L);
-  lua_setfield(L, -2, "struct");
+  lua_rawsetfield(L, -2, "struct");
 
   luaopen_luaoc_var(L);
-  lua_setfield(L, -2, "var");
+  lua_rawsetfield(L, -2, "var");
 
   luaopen_luaoc_encoding(L);
-  lua_setfield(L, -2, "encoding");
+  lua_rawsetfield(L, -2, "encoding");
+
+  luaopen_luaoc_block(L);
+  lua_rawsetfield(L, -2, "block");
 
   return 1;
 }

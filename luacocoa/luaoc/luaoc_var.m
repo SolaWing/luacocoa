@@ -2,7 +2,7 @@
 //  luaoc_var.m
 //  luaoc
 //
-//  Created by Wangxh on 15/8/3.
+//  Created by SolaWing on 15/8/3.
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 

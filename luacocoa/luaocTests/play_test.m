@@ -29,6 +29,55 @@ void print_register_class(){
 
 @end
 
+/** [blockABI](http://clang.llvm.org/docs/Block-ABI-Apple.html)
+ struct Block_literal_1 {
+ void *isa; // initialized to &_NSConcreteStackBlock or &_NSConcreteGlobalBlock
+ int flags;
+ int reserved;
+ void (*invoke)(void *, ...);
+ struct Block_descriptor_1 {
+ unsigned long int reserved;         // NULL
+ unsigned long int size;         // sizeof(struct Block_literal_1)
+ // optional helper functions
+ void (*copy_helper)(void *dst, void *src);     // IFF (1<<25)
+ void (*dispose_helper)(void *src);             // IFF (1<<25)
+ // required ABI.2010.3.16
+ const char *signature;                         // IFF (1<<30)
+ } *descriptor;
+ // imported variables
+ };
+
+ enum {
+ BLOCK_HAS_COPY_DISPOSE =  (1 << 25),
+ BLOCK_HAS_CTOR =          (1 << 26), // helpers have C++ code
+ BLOCK_IS_GLOBAL =         (1 << 28),
+ BLOCK_HAS_STRET =         (1 << 29), // IFF BLOCK_HAS_SIGNATURE
+ BLOCK_HAS_SIGNATURE =     (1 << 30),
+ };
+ */
+struct _blocktype {
+    void* isa;
+    int flags;
+    int reserved;
+    void(*invoke)(void* block);
+    void* descriptor;
+    id upvalue1;
+};
+
+void hackFunc(struct _blocktype* block){
+    NSLog(@"hack func call %@", block->upvalue1);
+}
+
+CGRect hackFuncID2R(struct _blocktype* block, id obj) {
+    NSLog(@"hack func call %@:%@", block->upvalue1, obj);
+    return CGRectMake(22,33,44,55);
+}
+
+id hackFuncDFI2ID(struct _blocktype*block, double a, float b, int c){
+    NSLog(@"hack func 3->1: %lf %f %d", a,b,c);
+    return block->upvalue1;
+}
+
 @implementation class_test
 
 - (void)setUp {
@@ -42,6 +91,70 @@ void print_register_class(){
     [super tearDown];
     luaoc_close();
 }
+
+
+
+- (void)testBlock {
+
+    NSString* encoding = @"v@@";
+    /* block 结构:
+     {
+        0:  isa
+        8:  0xFFFFFFFFC0000000 (flags?)
+        12: 0                  (reserved?)
+        16: func(block, ...)
+        24: ___block_descriptor_tmp*
+        32: upvalue 1
+        total: 40
+     }
+     */
+
+    dispatch_block_t block = ^{
+        // capture var save in a block_descriptor, which is the first paramter.
+        NSLog(@"%@", encoding);
+    };
+    void (^block2)() = ^{ NSLog(@"global block"); };
+    block();    // block self as first c param
+    block2();
+    block2 = Block_copy(block2);
+    block2();
+    void (^block3)(id obj) = ^(id obj){NSLog(@"global obj %@", obj);};
+    block3(nil);
+    id (^block4)(NSUInteger a, NSUInteger b) = ^id(NSUInteger a, NSUInteger b){
+        NSLog(@"block %@ %d %d", encoding, (int)a,(int)b);
+        return nil;
+    };
+    block4(1,2);
+
+    CGRect (^block5)(id aa) = ^(id aa){NSLog(@"block %@", encoding); return CGRectMake(1,0,0,0);};
+    block5(nil);
+    int (^block6)(CGRect aa) = ^(CGRect aa){return 33;};
+    block6(CGRectZero);
+
+
+
+    struct _blocktype* hackBlock1 = (struct _blocktype*)block;
+    hackBlock1->invoke = (void(*)(void*))hackFunc;
+    block();
+
+    hackBlock1 = (void*)block5;
+    hackBlock1->invoke = (void(*)(void*))hackFuncID2R;
+    CGRect rect = block5(@"hack id2r");
+    XCTAssertEqual(memcmp(&rect, &((CGRect){22,33,44,55}), sizeof(CGRect)), 0);
+
+    id(^block7)() = ^{ return [encoding stringByAppendingString:@"encoding"]; };
+    hackBlock1 = (void*)block7;
+    hackBlock1->invoke = (void(*)(void*))hackFuncDFI2ID;
+    id ret = ((id(^)(double,float, int))hackBlock1)(3.3, 4.4, 5);
+    XCTAssertEqualObjects(ret, encoding);
+
+    hackBlock1 = (void*)Block_copy(block7);
+    hackBlock1->invoke = (void(*)(void*))hackFuncDFI2ID;
+    ret = ((id(^)(double,float, int))hackBlock1)(3.3, 4.4, 5);
+    XCTAssertEqualObjects(ret, encoding);
+    Block_release((id)hackBlock1);
+}
+
 
 float floatFunc(id self, SEL _cmd, ...) {
     va_list ap;

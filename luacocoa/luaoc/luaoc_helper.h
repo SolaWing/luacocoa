@@ -2,7 +2,7 @@
 //  luaoc_helper.h
 //  luaoc
 //
-//  Created by Wangxh on 15/7/28.
+//  Created by SolaWing on 15/7/28.
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 
@@ -19,6 +19,32 @@ enum luaoc_userdata_type {
 };
 
 #pragma mark - macro and inline method
+
+#define PP_STR(...) #__VA_ARGS__
+#define PP_EXPAND_STR(...) PP_STR(__VA_ARGS__)
+
+#define LUAOC_ERROR(...) {                                        \
+  luaL_error(L, __FILE__ PP_EXPAND_STR(__LINE__) __VA_ARGS__);    \
+  assert(false);}                                                   // mark for analyzer, no continue;
+
+#define LUAOC_ARGERROR(index, msg) {luaL_argerror(L, index, msg); assert(false);}
+
+#define LUAOC_ASSERT(assert) \
+    if ( __builtin_expect(!(assert), 0) ) { LUAOC_ERROR( #assert "fail" ); }
+
+#define LUAOC_ASSERT_MSG(assert, ...) \
+    if ( __builtin_expect(!(assert), 0) ) { LUAOC_ERROR( __VA_ARGS__ ); }
+
+#ifndef likely
+    #define likely(x)   __builtin_expect(!!(x), 1)
+    #define unlikely(x) __builtin_expect(!!(x), 0)
+#endif
+
+static inline void luaoc_align_offset(NSUInteger* offset, NSUInteger align){
+    NSUInteger alignOffset = *offset % align;
+    if (unlikely(alignOffset > 0)) {*offset += align - alignOffset;}
+}
+
 /** register start index */
 #define LUA_START_INDEX(L) (__startStackIndex)
 #define LUA_PUSH_STACK(L) int __startStackIndex = lua_gettop(L)
@@ -84,31 +110,8 @@ void  luaoc_push_obj(lua_State *L, const char *typeDescription, void* objRef);
  */
 NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, char** copyTypeName);
 
-
-#define PP_STR(...) #__VA_ARGS__
-#define PP_EXPAND_STR(...) PP_STR(__VA_ARGS__)
-
-#define LUAOC_ERROR(...) {                                        \
-  luaL_error(L, __FILE__ PP_EXPAND_STR(__LINE__) __VA_ARGS__);    \
-  assert(false);}                                                   // mark for analyzer, no continue;
-
-#define LUAOC_ARGERROR(index, msg) {luaL_argerror(L, index, msg); assert(false);}
-
-#define LUAOC_ASSERT(assert) \
-    if ( __builtin_expect(!(assert), 0) ) { LUAOC_ERROR( #assert "fail" ); }
-
-#define LUAOC_ASSERT_MSG(assert, ...) \
-    if ( __builtin_expect(!(assert), 0) ) { LUAOC_ERROR( __VA_ARGS__ ); }
-
-#ifndef likely
-    #define likely(x)   __builtin_expect(!!(x), 1)
-    #define unlikely(x) __builtin_expect(!!(x), 0)
-#endif
-
-static inline void luaoc_align_offset(NSUInteger* offset, NSUInteger align){
-    NSUInteger alignOffset = *offset % align;
-    if (unlikely(alignOffset > 0)) {*offset += align - alignOffset;}
-}
+/** similar to lua_pcall, but with a default error dealler */
+int luaoc_pcall(lua_State *L, int nargs, int nresults);
 
 #pragma mark - DEBUG METHOD
 /** generic print method, used for debug */

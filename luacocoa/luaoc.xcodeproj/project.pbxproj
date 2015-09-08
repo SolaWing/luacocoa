@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		21576BB21B74F83900F132B1 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAD1B74F81D00F132B1 /* libffi.a */; };
+		216AEB691B9DD87C00F2E93D /* luaoc_block.h in Headers */ = {isa = PBXBuildFile; fileRef = 216AEB671B9DD87C00F2E93D /* luaoc_block.h */; };
+		216AEB6A1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
+		216AEB6B1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
 		216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */ = {isa = PBXBuildFile; fileRef = 216B4A361B690A180060DCA5 /* luaoc_struct.m */; };
 		216CE9A01B76516D006CA509 /* ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAF1B74F81D00F132B1 /* ffi.dylib */; };
 		216CE9A11B765438006CA509 /* ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAF1B74F81D00F132B1 /* ffi.dylib */; };
@@ -171,6 +174,9 @@
 		21AE0DB91B6754CF006FB83F /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
 		21B60B0D1B6F0AEA00C1FC19 /* luaoc_var.m in Sources */ = {isa = PBXBuildFile; fileRef = 21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */; };
 		21BFB3BB1B67686D00D45278 /* luaoc_instance.m in Sources */ = {isa = PBXBuildFile; fileRef = 21BFB3BA1B67686D00D45278 /* luaoc_instance.m */; };
+		21D817AD1B9EB42D009AD9AB /* ffi_wrap.h in Headers */ = {isa = PBXBuildFile; fileRef = 21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */; };
+		21D817AE1B9EB42D009AD9AB /* ffi_wrap.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */; };
+		21D817AF1B9EB42D009AD9AB /* ffi_wrap.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -296,7 +302,8 @@
 
 /* Begin PBXFileReference section */
 		21576BA71B74F81D00F132B1 /* libffi.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = libffi.xcodeproj; path = libffi/libffi.xcodeproj; sourceTree = "<group>"; };
-		21576BB31B74F86400F132B1 /* libffi.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libffi.dylib; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/usr/lib/libffi.dylib; sourceTree = DEVELOPER_DIR; };
+		216AEB671B9DD87C00F2E93D /* luaoc_block.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_block.h; sourceTree = "<group>"; };
+		216AEB681B9DD87C00F2E93D /* luaoc_block.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_block.m; sourceTree = "<group>"; };
 		216B4A351B690A180060DCA5 /* luaoc_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_struct.h; sourceTree = "<group>"; };
 		216B4A361B690A180060DCA5 /* luaoc_struct.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_struct.m; sourceTree = "<group>"; };
 		216CE9A61B76551E006CA509 /* example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = example.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -395,6 +402,8 @@
 		21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_var.m; sourceTree = "<group>"; };
 		21BFB3B91B67686D00D45278 /* luaoc_instance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_instance.h; sourceTree = "<group>"; };
 		21BFB3BA1B67686D00D45278 /* luaoc_instance.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_instance.m; sourceTree = "<group>"; };
+		21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ffi_wrap.h; sourceTree = "<group>"; };
+		21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ffi_wrap.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -520,7 +529,6 @@
 		21A36E1F1B71A3790094CF55 /* link */ = {
 			isa = PBXGroup;
 			children = (
-				21576BB31B74F86400F132B1 /* libffi.dylib */,
 				21A36E1D1B71A3640094CF55 /* libreadline.dylib */,
 			);
 			name = link;
@@ -594,8 +602,12 @@
 				216B4A361B690A180060DCA5 /* luaoc_struct.m */,
 				21B60B0B1B6F0AEA00C1FC19 /* luaoc_var.h */,
 				21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */,
+				216AEB671B9DD87C00F2E93D /* luaoc_block.h */,
+				216AEB681B9DD87C00F2E93D /* luaoc_block.m */,
 				21AE0DB31B67271F006FB83F /* luaoc_helper.h */,
 				21AE0DB41B67271F006FB83F /* luaoc_helper.m */,
+				21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */,
+				21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */,
 			);
 			path = luaoc;
 			sourceTree = "<group>";
@@ -773,6 +785,8 @@
 				21A36E421B71A4680094CF55 /* luaoc_struct.h in Headers */,
 				21A36E401B71A4680094CF55 /* luaoc_instance.h in Headers */,
 				21A36E3C1B71A4680094CF55 /* luaoc.h in Headers */,
+				216AEB691B9DD87C00F2E93D /* luaoc_block.h in Headers */,
+				21D817AD1B9EB42D009AD9AB /* ffi_wrap.h in Headers */,
 				21A36E441B71A4680094CF55 /* luaoc_var.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1111,9 +1125,11 @@
 				21A36E3D1B71A4680094CF55 /* luaoc.m in Sources */,
 				21A36E3F1B71A4680094CF55 /* luaoc_class.m in Sources */,
 				21A36E451B71A4680094CF55 /* luaoc_var.m in Sources */,
+				21D817AF1B9EB42D009AD9AB /* ffi_wrap.m in Sources */,
 				21A36E431B71A4680094CF55 /* luaoc_struct.m in Sources */,
 				21A36E471B71A4680094CF55 /* luaoc_helper.m in Sources */,
 				21A36E411B71A4680094CF55 /* luaoc_instance.m in Sources */,
+				216AEB6B1B9DD87C00F2E93D /* luaoc_block.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1133,9 +1149,11 @@
 				21AE0CF11B6711D1006FB83F /* luaoc.m in Sources */,
 				21AE0DB21B672552006FB83F /* luaoc_class.m in Sources */,
 				21B60B0D1B6F0AEA00C1FC19 /* luaoc_var.m in Sources */,
+				21D817AE1B9EB42D009AD9AB /* ffi_wrap.m in Sources */,
 				216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */,
 				21AE0DB51B67271F006FB83F /* luaoc_helper.m in Sources */,
 				21BFB3BB1B67686D00D45278 /* luaoc_instance.m in Sources */,
+				216AEB6A1B9DD87C00F2E93D /* luaoc_block.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

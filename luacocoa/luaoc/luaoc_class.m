@@ -2,7 +2,7 @@
 //  luaoc_class.m
 //  luaoc
 //
-//  Created by Wangxh on 15/7/28.
+//  Created by SolaWing on 15/7/28.
 //  Copyright (c) 2015年 sw. All rights reserved.
 //
 
@@ -37,10 +37,10 @@ static void luaoc_set_lua_func(lua_State *L, int clsIndex, const char* name, boo
 #ifndef NO_USE_FFI
 #pragma mark - FFI MSG
 #import "ffi.h"
+#import "ffi_wrap.h"
 
 // the following two dict used to cache generated closureFunc and ffi_type
 static NSMutableDictionary* luaFuncDict; // encoding => closureFunc
-static NSMutableDictionary* luaStructFFIType; // encoding => ffi_type
 static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
   if (![NSThread isMainThread]) {
       NSLog(@"[WARN] call lua method on non-main thread!!\n"
@@ -95,6 +95,7 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
     const char* retType = [sign methodReturnType];
     void* buf = luaoc_copy_toobjc(L, -1, retType, &retLen);
     memcpy(ret, buf, retLen);
+
     if ( strcmp(retType, "@") == 0 && *(id*)buf != NULL) {
       const char * selName = sel_getName(_cmd);
       int n;
@@ -115,134 +116,16 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
   LUA_POP_STACK(L, 0);
 }
 
-static ffi_type* ffi_type_for_one_encoding(const char* encoding, const char** stopPos) {
-  if (NULL == stopPos) stopPos = (const char**)alloca(sizeof(const char*));
-  *stopPos = encoding;
-  int size;
-
-#define ADVANCE_AND_RETURN(type) ++(*stopPos); return &type
-
-  do {
-    switch( **stopPos ){
-      case _C_BOOL:
-      case _C_CHR: ADVANCE_AND_RETURN(ffi_type_sint8);
-      case _C_UCHR: ADVANCE_AND_RETURN(ffi_type_uint8);
-      case _C_SHT: ADVANCE_AND_RETURN(ffi_type_sint16);
-      case _C_USHT: ADVANCE_AND_RETURN(ffi_type_uint16);
-      case _C_INT: ADVANCE_AND_RETURN(ffi_type_sint32);
-      case _C_UINT: ADVANCE_AND_RETURN(ffi_type_uint32);
-      case _C_LNG: ADVANCE_AND_RETURN(ffi_type_slong);
-      case _C_ULNG: ADVANCE_AND_RETURN(ffi_type_ulong);
-      case _C_LNG_LNG: ADVANCE_AND_RETURN(ffi_type_sint64);
-      case _C_ULNG_LNG: ADVANCE_AND_RETURN(ffi_type_uint64);
-      case _C_FLT: ADVANCE_AND_RETURN(ffi_type_float);
-      case _C_DBL: ADVANCE_AND_RETURN(ffi_type_double);
-      case _C_VOID: ADVANCE_AND_RETURN(ffi_type_void);
-      case _C_ID:
-      case _C_CLASS:
-      case _C_SEL:
-      case _C_CHARPTR: ADVANCE_AND_RETURN(ffi_type_pointer);
-      case _C_PTR: // ptr have one type following
-      case _C_ARY_B:
-        *stopPos = NSGetSizeAndAlignment(*stopPos, NULL, NULL);
-        return &ffi_type_pointer;
-      case _C_STRUCT_B: {
-        char* eqpos = strchr(*stopPos, '=');
-        if (NULL == eqpos){
-          DLOG("can't find = in struct!!"); return NULL;
-        }
-
-        *stopPos = eqpos + 1;
-        // cal struct arg number
-        size = 0;
-        while (**stopPos != _C_STRUCT_E){ // struct get all element size
-          luaoc_get_one_typesize(*stopPos, stopPos, NULL);
-          ++size;
-        }
-        NSString* structEncoding = [[[NSString alloc] initWithBytes:eqpos+1
-            length:*stopPos-eqpos-1 encoding:NSUTF8StringEncoding] autorelease];
-        NSValue* structEncodingType = luaStructFFIType[structEncoding];
-        if (structEncodingType){
-          ++(*stopPos); // skip end;
-          return [structEncodingType pointerValue];
-        }
-
-        ffi_type** elements = calloc(size+1, sizeof(ffi_type*)); // NULL terminated
-        ffi_type* struct_type = calloc(1, sizeof(ffi_type));
-        struct_type->type = FFI_TYPE_STRUCT;
-        struct_type->elements = elements;
-
-        *stopPos = eqpos + 1;
-        while (**stopPos != _C_STRUCT_E){
-          *(elements++) = ffi_type_for_one_encoding(*stopPos, stopPos);
-        }
-
-        structEncodingType = [NSValue valueWithPointer:struct_type];
-        luaStructFFIType[structEncoding] = structEncodingType;
-
-        ++(*stopPos); // skip _C_STRUCT_E
-
-        return struct_type;
-      }
-      case _C_UNION_B: DLOG("union type is unsupported!"); return NULL;
-      case '\0': DLOG("reach encoding end, unsupported type!"); return NULL;
-      default: break;
-    }
-
-    ++(*stopPos);
-  } while( true );
-
-  return NULL;
-}
-
 static IMP imp_for_encoding(const char* encoding){
   NSString *str = [NSString stringWithUTF8String:encoding];
   NSValue *imp = luaFuncDict[str];
   if (imp) return [imp pointerValue]; // return cached func pointer
 
-  // get type count in encoding
-  int typeNumber = 0;
-  const char* stopPos = encoding;
-  while (*stopPos) {
-    // skip one type, encoding like v16@0:8, which have offset in encoding,
-    // may not end with \0, so need to judge it
-    if (luaoc_get_one_typesize(stopPos, &stopPos, NULL) != NSNotFound)
-      ++typeNumber;
+  IMP code_ptr = create_imp_for_encoding(encoding, luaoc_msg_from_oc, NULL);
+  if (code_ptr) {
+      luaFuncDict[str] = [NSValue valueWithPointer:code_ptr];
   }
-
-  stopPos = encoding;
-  ffi_type* ret_type = ffi_type_for_one_encoding(stopPos, &stopPos);
-  if (NULL == ret_type) return NULL; // ERROR occur;
-
-  ffi_type** args = NULL;
-  if (typeNumber > 1) {             // fill arg types
-    args = calloc(typeNumber - 1, sizeof(ffi_type*)); // minus return type
-    ffi_type** args_it = args;
-    do{
-      if (!(*(args_it++) = ffi_type_for_one_encoding(stopPos, &stopPos))){
-        free(args); return NULL;
-      }
-    }while (args_it - args < typeNumber - 1);
-  }
-
-  void* code_ptr = NULL;
-  ffi_closure* closure = ffi_closure_alloc(sizeof(ffi_closure), &code_ptr);
-  if (closure) {
-    ffi_cif* cif = malloc(sizeof(ffi_cif));
-    if (ffi_prep_cif(cif, FFI_DEFAULT_ABI, typeNumber-1,
-          ret_type, args) == FFI_OK) {
-      if (ffi_prep_closure_loc(closure, cif, luaoc_msg_from_oc,
-            NULL, code_ptr) == FFI_OK)
-      {
-        luaFuncDict[str] = [NSValue valueWithPointer:code_ptr];
-        return (IMP)code_ptr;
-      }
-    }
-    free(cif);
-    ffi_closure_free(closure);
-  }
-  free(args);
-  return NULL;
+  return code_ptr;
 }
 
 #else
@@ -940,7 +823,6 @@ int luaopen_luaoc_class(lua_State *L) {
   #ifndef NO_USE_FFI
   if (!luaFuncDict){
     luaFuncDict = [[NSMutableDictionary alloc] init];
-    luaStructFFIType = [[NSMutableDictionary alloc] init];
   }
   #endif
 
