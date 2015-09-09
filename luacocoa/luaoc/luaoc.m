@@ -234,7 +234,7 @@ int luaopen_luaoc(lua_State *L){
   lua_rawsetfield(L, -2, "var");
 
   luaopen_luaoc_encoding(L);
-  lua_rawsetfield(L, -2, "encoding");
+  lua_rawsetfield(L, -2, "encode");
 
   luaopen_luaoc_block(L);
   lua_rawsetfield(L, -2, "block");

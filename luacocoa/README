@@ -1,1 +1,7 @@
-TODO: block implement
+TODO: weak instance
+FIX: retain cycle.
+    : luavalue->id
+         ^        \
+         |         \
+        luafunc <- block
+TODO: passin block invoke and save

@@ -54,6 +54,7 @@
 {
 }
 
+
 @end
 
 
@@ -67,6 +68,15 @@
 - (instancetype)init {
     // NSLog(@"init %p count:%zu", self, (size_t)[self retainCount]);
     return [super init];
+}
+
+
++ (void)testPassBlock:(void(^)(void))block {
+    block();
+}
+
++ (id)testPassBlock:(id(^)(id))block ID:(id)obj  {
+    return block(obj);
 }
 
 @end
@@ -261,17 +271,21 @@
   TEST_PUSH_AND_WRAP_STRUCT(CGPoint, ((CGPoint){33,44}))
   TEST_PUSH_AND_WRAP_STRUCT(CGRect, ((CGRect){33,44,37,24}))
 
+  // a table which has both key and num index will be converted to
+  // array or dict is undefined
+  // empty table will convert to nil obj
+  //
   { // auto convert table to NSDictionary
-    RUN_LUA_SAFE_CODE( return {5,6,{a=2,b=3},a=1,b=2,c=3} );
+    RUN_LUA_SAFE_CODE( return {a=1,b=2,c=3, d={1,2,3,{33,44}}} );
     ref = luaoc_copy_toobjc(L, -1, "@", &outSize);
 
     XCTAssertEqual([(*(id*)ref) [@"a"]     intValue], 1);
     XCTAssertEqual([(*(id*)ref) [@"b"]     intValue], 2);
     XCTAssertEqual([(*(id*)ref) [@"c"]     intValue], 3);
-    XCTAssertEqual([(*(id*)ref) [@1]       intValue], 5);
-    XCTAssertEqual([(*(id*)ref) [@2]       intValue], 6);
-    XCTAssertEqual([(*(id*)ref) [@3][@"a"] intValue], 2);
-    XCTAssertEqual([(*(id*)ref) [@3][@"b"] intValue], 3);
+    XCTAssertEqual([(*(id*)ref) [@"d"][0]  intValue], 1);
+    XCTAssertEqual([(*(id*)ref) [@"d"][1]  intValue], 2);
+    XCTAssertEqual([(*(id*)ref) [@"d"][2]  intValue], 3);
+    XCTAssertEqual([(*(id*)ref) [@"d"][3][1] intValue], 44);
 
     lua_pop(L, 1); free(ref);
   }
@@ -290,6 +304,13 @@
     XCTAssertEqual( (*(id*)ref)  [3]                , [NSArray class]);
 
     lua_pop(L, 1); free(ref);
+  }
+
+  { // empty table will convert to nil
+      RUN_LUA_SAFE_CODE( return {} );
+      ref = luaoc_copy_toobjc(L, -1, "@", &outSize);
+      XCTAssertNil(*(id*)ref);
+      free(ref);
   }
 
   { // auto convert table to struct
@@ -403,7 +424,7 @@
       // style. but for compatible, recommand use : to mark param
       RUN_LUA_SAFE_CODE( oc.class.aTestClass("abcd",
                   function(self, rect, f1, f2) aret = f1*f2 rect.x=33 rect.y=44 return rect end,
-                  oc.encoding('CGRect', 'id', 'SEL', 'CGRect', 'NSInteger', 'CGFloat')));
+                  oc.encode('CGRect', 'id', 'SEL', 'CGRect', 'NSInteger', 'CGFloat')));
       RUN_LUA_SAFE_CODE( a = oc.aTestClass:new() a = a:abcd({{22,33},{11,12}}, 3.3, 2.2) return a, aret );
       luaoc_tostruct(L, -2, buf);
       XCTAssertEqual( 33, ((CGRect*)buf)->origin.x );
@@ -631,7 +652,7 @@
 
   /** REG NEW CUSTOM STRUCT, it's a block with given  */
   RUN_LUA_SAFE_CODE( oc.struct.reg('p',
-              {'x', oc.encoding.CGFloat}, {'y', oc.encoding.CGFloat}) );
+              {'x', oc.encode.CGFloat}, {'y', oc.encode.CGFloat}) );
   RUN_LUA_SAFE_CODE( return oc.struct.p{33,44} );
   luaoc_tostruct(L, -1, &p);
   XCTAssertEqual(33, p.x);
@@ -639,9 +660,9 @@
 
   /** REG NEW CUSTOM STRUCT WITH NEED ALIGN DATA */
   RUN_LUA_SAFE_STR( "oc.struct.reg('s1',"
-     "{'a', oc.encoding.bool},  "
-     "{'b', oc.encoding.double},"
-     "{'c', oc.encoding.bool} ) ");
+     "{'a', oc.encode.bool},  "
+     "{'b', oc.encode.double},"
+     "{'c', oc.encode.bool} ) ");
   RUN_LUA_SAFE_STR( "a = oc.struct.s1 {true, 33.3, false} return a" );
   size_t size;
   void* structRef = luaoc_copystruct(L, -1, &size);
@@ -674,6 +695,55 @@
 }
 
 - (void)testBlock {
+    lua_State* L = gLua_main_state;
 
+    // test vv
+    RUN_LUA_SAFE_CODE( return oc.block( function() a=33 end ) );
+    dispatch_block_t block; objc_storeWeak((id*)&block, luaoc_toinstance(L, -1));
+    block();
+    RUN_LUA_SAFE_CODE( return a );
+    XCTAssertEqual(33, lua_tointeger(L, -1));
+    [block retain];
+    // retainCount seem always retain 1. it's no use.
+    // XCTAssertEqual([block retainCount], 2); // lua hold one, retain one.
+    @autoreleasepool {
+        [block autorelease];
+    }
+
+    lua_settop(L, 0);
+    lua_gc(L, LUA_GCCOLLECT, 0);
+    XCTAssertEqual(NULL, block);
+
+    // test @@
+    RUN_LUA_SAFE_CODE( return oc.block( function(obj) return obj:objectAtIndex(0) end) );
+    objc_storeWeak((id*)&block, luaoc_toinstance(L, -1));
+    id obj = ((id(^)(id))block)(@[@"123"]);
+    XCTAssertEqualObjects(@"123", obj);
+
+    // test {rect}{rect}df
+    RUN_LUA_SAFE_CODE( return oc.block( function(rect, dbl, flt)
+                rect.width = dbl rect.height=flt return rect
+                end, oc.encode('CGRect','CGRect','double','float') ) )
+    objc_storeWeak((id*)&block, luaoc_toinstance(L, -1));
+    CGRect rect = ((CGRect(^)(CGRect,double,float))block)(CGRectMake(1,2,3,4), 20,30);
+    XCTAssertTrue(memcmp(&rect, &((CGRect){1,2,20,30}), sizeof(CGRect)) == 0);
+
+    // test autoconvert to default block type
+    RUN_LUA_SAFE_CODE( return oc.aTestClass:testPassBlock( function() a=33 end ) );
+    XCTAssertTrue( lua_isnil(L, -1) );
+    lua_getglobal(L, "a");
+    XCTAssertEqual(lua_tointeger(L, -1), 33);
+
+    RUN_LUA_SAFE_CODE( return oc.aTestClass:testPassBlock_ID( function(obj)
+                if obj then return obj end return oc.NSObject end, 1) );
+    XCTAssertEqualObjects(@1, luaoc_toinstance(L, -1));
+    RUN_LUA_SAFE_STR( "return oc.aTestClass:testPassBlock_ID( function(obj)"
+                "if obj then return obj end return oc.NSObject end, nil) ");
+    XCTAssertEqualObjects([NSObject class], luaoc_toinstance(L, -1));
+
+    // weak var will auto zero when obj dealloc.
+    // but when exit weak var life scope before dealloc, need to cleanup.
+    objc_storeWeak((id*)&block, nil);
 }
+
 @end

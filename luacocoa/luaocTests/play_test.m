@@ -152,7 +152,13 @@ id hackFuncDFI2ID(struct _blocktype*block, double a, float b, int c){
     XCTAssertNotEqual((void*)block7, hackBlock1);
     XCTAssertEqual([(id)hackBlock1 retainCount], 1);
 
-    id copyBlock = [(id)hackBlock1 copy];
+    id copyBlock;
+//  equal...
+//    copyBlock = [block7 retain];
+//    XCTAssertNotEqual(copyBlock, (id)block7);
+//    XCTAssertEqual([copyBlock retainCount], 1);
+
+    copyBlock = [(id)hackBlock1 copy];
     XCTAssertEqual((void*)copyBlock, hackBlock1);
     copyBlock = (id)Block_copy(hackBlock1);
     XCTAssertEqual((void*)copyBlock, hackBlock1);

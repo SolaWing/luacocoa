@@ -233,7 +233,9 @@ int luaoc_msg_send(lua_State* L){
 id luaoc_convert_toid(lua_State *L, int index) {
   switch (lua_type(L, index)){
     case LUA_TLIGHTUSERDATA:
-      return (id)lua_touserdata(L, index); // assume the ptr is convert from id
+        // NOTE assume the ptr is convert from id
+        // different with convert id to ptr, where pass by ref as id*
+        return (id)lua_touserdata(L, index);
     case LUA_TUSERDATA: {
       id value = NULL;
       if (luaL_getmetafield(L, index, "__type") != LUA_TNIL){
@@ -270,7 +272,11 @@ id luaoc_convert_toid(lua_State *L, int index) {
     case LUA_TBOOLEAN:
         return [NSNumber numberWithBool:lua_toboolean(L, index)];
     case LUA_TNUMBER:
-        return [NSNumber numberWithDouble:lua_tonumber(L, index)];
+        if (lua_isinteger(L, index)) {
+            return [NSNumber numberWithInteger:lua_tointeger(L, index)];
+        } else {
+            return [NSNumber numberWithDouble:lua_tonumber(L, index)];
+        }
     case LUA_TSTRING:
         return [NSString stringWithUTF8String:lua_tostring(L, index)];
     case LUA_TTABLE:{
@@ -281,6 +287,9 @@ id luaoc_convert_toid(lua_State *L, int index) {
       if (lua_next(L, -2)) {
           dictionary = lua_type(L, -2) != LUA_TNUMBER;
           lua_pop(L, 2);            // pop key and value
+      } else {
+          lua_pop(L, 1);
+          return NULL; // empty table convert to NULL
       }
 
       id value = NULL;

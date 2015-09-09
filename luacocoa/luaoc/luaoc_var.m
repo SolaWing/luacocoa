@@ -133,6 +133,7 @@ int luaopen_luaoc_var(lua_State *L) {
   return 1;
 }
 
+#pragma mark - encoding
 static int encoding_of_name(lua_State *L){
   lua_pushcfunction(L, luaoc_encoding_of_named_struct);
   lua_pushvalue(L, 2);

@@ -147,11 +147,11 @@ id luaoc_convert_copyto_block(lua_State* L) {
         func.encoding = [NSString stringWithUTF8String:encoding];
     } else {
         // NOTE default @@, if actually not @@, but other compatible encoding.
-        // invoke func may pass garbage value to lua.
+        // like vv or v@, invoke func may pass garbage value to lua.
         // this garbage can't be use, even in push function.
         // otherwise, may crash.
         //
-        // recommend specifiy encoding specifically
+        // recommend pass encoding specifically
         func.encoding = @"@@";
     }
     lua_pop(L, 1);
@@ -164,15 +164,16 @@ id luaoc_convert_copyto_block(lua_State* L) {
         return NULL;
     }
 
-    dispatch_block_t block = ^{
+    // return block should be alloc on heap to ensure exist
+    dispatch_block_t block = Block_copy(^{
         NSLog(@"use %@ to hold LUAFunction, shouldn't be call", func);
-    };
+    });
 
     struct OCBlockStruct* hackblock = (void*)block;
     hackblock->invoke = (void*)imp;
 
     [func release];
-    return Block_copy(block); // MRC should return a heap block
+    return block; // MRC should return a heap block
 }
 
 /** LUA_TFUNCTION, return created block
@@ -185,6 +186,7 @@ static int luaoc_block(lua_State *L) {
     lua_settop(L, 2);
     id block = luaoc_convert_copyto_block(L);
     luaoc_push_obj(L, @encode(id), &block);
+    // malloc_block is id type, can use retain and release
     LUAOC_TAKE_OWNERSHIP(L, -1);
 
     return 1;
