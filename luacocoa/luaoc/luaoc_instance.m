@@ -57,7 +57,6 @@ void luaoc_push_instance(lua_State *L, id v){
     // [v retain];                                         // retain when create and release in gc
   }
   LUA_POP_STACK(L, 1);
-  return;
 }
 
 void luaoc_push_super(lua_State *L, int index, Class cls) {

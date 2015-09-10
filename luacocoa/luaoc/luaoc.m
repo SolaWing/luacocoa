@@ -45,6 +45,7 @@ void luaoc_close() {
   }
 }
 
+/** convert id type to lua primitive type */
 static void push_instance_tolua(lua_State *L, id val) {
     if ( [val isKindOfClass:[NSString class]] ) {
         lua_pushstring(L, [val UTF8String]);
@@ -140,7 +141,9 @@ static int tolua(lua_State *L) {
 }
 
 /** add 1 retainCount by lua, compare to objc retain, the retainCount add by
- * this method will autorelease when gc
+ * this method will autorelease when gc.
+ *
+ * NOTE: if retain a dealloc obj, autorelease in gc may crash.
  *
  * @param 1: instance object
  */
@@ -180,6 +183,39 @@ static int get_super(lua_State *L) {
     return 1;
 }
 
+/** convert multiple value to weakvar type, do the convert to id if needed */
+static int weakvar(lua_State *L){
+    int top = lua_gettop(L);
+    for (int i = 1; i <= top; ++i) {
+        void *v = luaoc_copy_toobjc(L, i, "@", NULL);
+        luaoc_push_var(L, "@", v, luaoc_var_weak);
+        free(v);
+        lua_replace(L, i);
+    }
+    return top;
+}
+
+/** get multiple values from multiple var type value. */
+static int getvar(lua_State *L) {
+    int top = lua_gettop(L);
+    for (int i=1; i <= top; ++i){
+        luaoc_get_var(L, i);
+        lua_replace(L, i);
+    }
+    return top;
+}
+
+/** set new values to var type value.
+ *
+ * @param 1: var type value.
+ * @param 2: new value, can do auto convert to var store type.
+ * */
+static int setvar(lua_State *L) {
+    lua_settop(L, 2);
+    luaoc_set_var(L, 1);
+    return 1;
+}
+
 static const luaL_Reg luaoc_funcs[] = {
     {"tolua",       tolua },
     // will autoconvert to oc type when needed
@@ -187,6 +223,9 @@ static const luaL_Reg luaoc_funcs[] = {
     {"retain",      lua_retain},
     {"release",     lua_release},
     {"super",       get_super},
+    {"weakvar",     weakvar},
+    {"getvar",      getvar},
+    {"setvar",      setvar},
     {NULL,          NULL  },
 };
 

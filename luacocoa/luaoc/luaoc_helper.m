@@ -11,6 +11,7 @@
 #import "luaoc_instance.h"
 #import "luaoc_struct.h"
 #import "luaoc_block.h"
+#import "luaoc_var.h"
 
 #import "lauxlib.h"
 
@@ -257,7 +258,7 @@ id luaoc_convert_toid(lua_State *L, int index) {
           }else {
             lua_pop(L, 1);
 
-            lua_getfield(L, index, "v");
+            luaoc_get_var(L, index);
             value = luaoc_convert_toid(L, -1);
             lua_pop(L, 1);
           }

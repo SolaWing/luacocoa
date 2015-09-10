@@ -13,8 +13,46 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>
+#import "objc/runtime.h"
 
-void luaoc_push_var(lua_State *L, const char* typeDescription, void* initRef) {
+static inline char get_encoding_type(const char* encoding) {
+    do {
+        switch( *encoding ){
+            case _C_ID:
+            case _C_CLASS:
+            case _C_SEL:
+            case _C_CHR:
+            case _C_UCHR:
+            case _C_SHT:
+            case _C_USHT:
+            case _C_INT:
+            case _C_UINT:
+            case _C_LNG:
+            case _C_ULNG:
+            case _C_LNG_LNG:
+            case _C_ULNG_LNG:
+            case _C_FLT:
+            case _C_DBL:
+            case _C_BFLD:
+            case _C_BOOL:
+            case _C_VOID:
+            case _C_UNDEF:
+            case _C_PTR:
+            case _C_CHARPTR:
+            case _C_ATOM:
+            case _C_ARY_B:
+            case _C_UNION_B:
+            case _C_STRUCT_B:
+            case _C_VECTOR:
+            case '\0':
+                return *encoding;
+            default: break;
+        }
+        ++encoding;
+    } while(true);
+}
+
+void luaoc_push_var(lua_State *L, const char* typeDescription, void* initRef, int flags) {
   NSCParameterAssert(typeDescription);
 
   char *structName = NULL;
@@ -27,9 +65,14 @@ void luaoc_push_var(lua_State *L, const char* typeDescription, void* initRef) {
       return;
   }
 
+  char simpleType = get_encoding_type(typeDescription);
   void* ud = lua_newuserdata(L, size);
-  if (initRef) memcpy(ud, initRef, size);
-  else memset(ud, 0, size);
+  if ( ( flags & luaoc_var_weak && simpleType == _C_ID) ) {
+      objc_storeWeak(ud, *(id*)initRef);
+  } else {
+      if (initRef) memcpy(ud, initRef, size);
+      else memset(ud, 0, size);
+  }
 
   luaL_getmetatable(L, LUAOC_VAR_METATABLE_NAME);
   lua_setmetatable(L, -2);
@@ -45,10 +88,57 @@ void luaoc_push_var(lua_State *L, const char* typeDescription, void* initRef) {
       lua_rawsetfield(L, -2, "__name");
     }
 
+    lua_pushinteger(L, flags);
+    lua_rawsetfield(L, -2, "__flags");
+
+    lua_pushinteger(L, simpleType);
+    lua_rawsetfield(L, -2, "__type");
+
     lua_setuservalue(L, -2);
   }
 
+
+
   free(structName); // : ud
+}
+
+void luaoc_get_var(lua_State *L, int index) {
+    void* ud = luaL_checkudata(L, index, LUAOC_VAR_METATABLE_NAME);
+
+    LUA_PUSH_STACK(L);
+
+    lua_getuservalue(L, index);
+    lua_rawgetfield(L, -1, "__encoding");
+    luaoc_push_obj(L, lua_tostring(L, -1), ud);
+
+    LUA_POP_STACK(L, 1);
+}
+
+void luaoc_set_var(lua_State *L, int index) {
+    void* ud = luaL_checkudata(L, index, LUAOC_VAR_METATABLE_NAME);
+
+    int top = lua_gettop(L);
+
+    lua_getuservalue(L, index);
+    lua_rawgetfield(L, -1, "__encoding");
+
+    size_t outSize;
+    void* v = luaoc_copy_toobjc(L, -3, lua_tostring(L, -1), &outSize);
+
+    lua_rawgetfield(L, -2, "__flags");
+    LUA_INTEGER flags = lua_tointeger(L, -1);
+    if ( ( flags & luaoc_var_weak ) &&
+         lua_rawgetfield(L, -3, "__type") == LUA_TNUMBER &&
+         lua_tointeger(L, -1) == _C_ID )
+    {
+        objc_storeWeak(ud, *(id*)v);
+    } else {
+        memcpy(ud, v, outSize);
+    }
+
+    free(v);
+
+    lua_settop(L, top - 1); // pop value at top
 }
 
 static const luaL_Reg varFuncs[] = {
@@ -57,10 +147,10 @@ static const luaL_Reg varFuncs[] = {
 
 static int create_var(lua_State *L){
   const char* typeDescription = luaL_checkstring(L, 2);
-  if (lua_isnoneornil(L, 3)) luaoc_push_var(L, typeDescription, NULL);
+  if (lua_isnoneornil(L, 3)) luaoc_push_var(L, typeDescription, NULL, 0);
   else {
     void* v = luaoc_copy_toobjc(L, 3, typeDescription, NULL);
-    luaoc_push_var(L, typeDescription, v);
+    luaoc_push_var(L, typeDescription, v, 0);
     free(v);
   }
   return 1;
@@ -71,17 +161,30 @@ static const luaL_Reg varMetaFuncs[] = {
   {NULL, NULL},
 };
 
+static int __gc(lua_State *L){
+    lua_getuservalue(L, 1);
+    if (lua_rawgetfield(L, -1, "__retainCount") == LUA_TNUMBER &&
+            lua_tointeger(L, -1) > 0)
+    {
+        // call lua retain on var type. should release it
+        [*(id*)lua_touserdata(L, 1) release];
+    }
+    if (lua_rawgetfield(L, -2, "__flags") == LUA_TNUMBER &&
+        (lua_tointeger(L, -1) & luaoc_var_weak) &&
+        lua_rawlen(L, 1) == sizeof(id))
+    {
+        objc_storeWeak(lua_touserdata(L, 1), nil); // clear weak var when dealloc
+    }
+    return 0;
+}
+
 static int __index(lua_State *L) {
   void* ud = luaL_checkudata(L, 1, LUAOC_VAR_METATABLE_NAME);
 
   lua_getuservalue(L,1);
   lua_pushvalue(L, 2);
-  if (lua_rawget(L, -2) == LUA_TNIL && lua_type(L,2) == LUA_TSTRING){
-    const char *key = lua_tostring(L,2);
-    if (strcmp(key, "v") == 0) {
-      lua_rawgetfield(L, -2, "__encoding");
-      luaoc_push_obj(L, lua_tostring(L, -1), ud);
-    }
+  if (lua_rawget(L, -2) == LUA_TNIL){
+
   }
 
   return 1;
@@ -90,23 +193,9 @@ static int __index(lua_State *L) {
 static int __newindex(lua_State *L) {
   void* ud = luaL_checkudata(L, 1, LUAOC_VAR_METATABLE_NAME);
 
-  const char* key = lua_tostring(L, 2);
-  if (strcmp(key, "v") == 0) {
-    lua_getuservalue(L,1);
-    lua_rawgetfield(L, -1, "__encoding");
-    size_t outSize;
-    void* v = luaoc_copy_toobjc(L, 3, lua_tostring(L, -1), &outSize);
-    if (outSize <= lua_rawlen(L, 1)) {
-      memcpy(ud, v, outSize);
-    } else {
-      DLOG("assign to wrong data!");
-    }
-    free(v);
-  } else { // set in uservalue
-    lua_getuservalue(L, 1);
-    lua_insert(L, 2);
-    lua_rawset(L, 2);                         // udv[key] = value
-  }
+  lua_getuservalue(L, 1);
+  lua_insert(L, 2);
+  lua_rawset(L, 2);                         // udv[key] = value
 
   return 0;
 }
@@ -114,6 +203,7 @@ static int __newindex(lua_State *L) {
 static const luaL_Reg metaFuncs[] = {
   {"__index",    __index},
   {"__newindex", __newindex},
+  {"__gc",       __gc},
   {NULL,         NULL},
 };
 
