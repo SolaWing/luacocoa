@@ -10,6 +10,7 @@
 #import "luaoc_helper.h"
 #import "lauxlib.h"
 #import "luaoc_struct.h"
+#import "luaoc_class.h"
 
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>
@@ -184,7 +185,53 @@ static int __index(lua_State *L) {
   lua_getuservalue(L,1);
   lua_pushvalue(L, 2);
   if (lua_rawget(L, -2) == LUA_TNIL){
+      lua_rawgetfield(L, -2, "__type");
+      char type = lua_tointeger(L, -1);
+      if ((type == _C_ID || type == _C_CLASS) && lua_type(L, 2) == LUA_TSTRING
+          && *(id*)ud != nil)
+      {
+          const char* key = lua_tostring(L, 2);
+          SEL sel = luaoc_find_SEL_byname(*(id*)ud, key);
+          if (sel){
+              luaoc_push_msg_send(L, sel);
+          }
+          if (lua_isnil(L, -1)){ // still nil index class to try find a value
+              // when not a oc msg, try to find lua value in cls
+              if (type == _C_ID) {
+                  index_value_from_class(L, [*(id*)ud class], 2);
+              } else {
+                  index_value_from_class(L, [*(Class*)ud superclass], 2);
+              }
+          }
+      }
+      else if (type == _C_STRUCT_B) { // struct type
+          const char* encoding;
+          int attrOffset;
+          if ( lua_isinteger(L, 2) ) {
+              LUA_INTEGER index = lua_tointeger(L, 2); // begin from 1
+              lua_rawgetfield(L, -3, "__encoding");
+              encoding = lua_tostring(L, -1);
 
+              attrOffset = luaoc_struct_offset_by_index(
+                      encoding, (int)index-1, &encoding);
+              if (attrOffset < 0) {
+                  LUAOC_ERROR("invalid struct index or encoding");
+              } else {
+                  luaoc_push_obj(L, encoding, lua_touserdata(L, 1) + attrOffset);
+              }
+          } else { // index by keyname
+              lua_rawgetfield(L, -3, "__name");     // uv[__name]
+              lua_pushvalue(L, 2);
+
+              attrOffset = luaoc_struct_offset_by_key(L, &encoding);
+              if (attrOffset < 0) {
+                  lua_pushnil(L);
+              } else {
+                  luaoc_push_obj(L, encoding, lua_touserdata(L, 1) + attrOffset);
+              }
+          }
+          
+      }
   }
 
   return 1;
@@ -194,6 +241,37 @@ static int __newindex(lua_State *L) {
   void* ud = luaL_checkudata(L, 1, LUAOC_VAR_METATABLE_NAME);
 
   lua_getuservalue(L, 1);
+  lua_rawgetfield(L, -1, "__type");
+  char type = lua_tointeger(L, -1);
+  if (type == _C_STRUCT_B) {
+      const char * encoding;
+      int attrOffset;
+      if ( lua_isinteger(L, 2) ) {
+          LUA_INTEGER index = lua_tointeger(L, 2); // begin from 1
+          lua_rawgetfield(L, -2, "__encoding");
+          encoding = lua_tostring(L, -1);
+
+          attrOffset =
+              luaoc_struct_offset_by_index(encoding, (int)index-1, &encoding);
+          if (attrOffset < 0) {
+              LUAOC_ERROR("invalid struct index or encoding");
+          }
+      } else {
+          lua_rawgetfield(L, -2, "__name");     // uv[__name]
+          lua_pushvalue(L, 2);
+
+          attrOffset = luaoc_struct_offset_by_key(L, &encoding);
+      }
+      if (attrOffset >= 0) {
+          size_t outSize;
+          void* v = luaoc_copy_toobjc(L, 3, encoding, &outSize);
+          memcpy(lua_touserdata(L,1)+attrOffset, v, outSize);
+          free(v);
+          return 0;
+      }
+  }
+
+  lua_settop(L, 4); // ud key val uv
   lua_insert(L, 2);
   lua_rawset(L, 2);                         // udv[key] = value
 

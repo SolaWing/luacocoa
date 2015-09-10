@@ -648,6 +648,9 @@
   XCTAssertEqual(1, p.x);
   XCTAssertEqual(1, p.y);
 
+  RUN_LUA_SAFE_CODE(return a[1].y);
+  XCTAssertEqual(1, lua_tonumber(L, -1));
+
   lua_settop(L, 0);
 
   /** REG NEW CUSTOM STRUCT, it's a block with given  */

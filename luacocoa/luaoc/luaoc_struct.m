@@ -96,50 +96,93 @@ void* luaoc_getstruct(lua_State *L, int index) {
   return luaL_testudata(L, index, LUAOC_STRUCT_METATABLE_NAME);
 }
 
+int luaoc_struct_offset_by_index(const char* encoding, int index, const char** outEncoding) {
+    // here not check struct encoding has {} pair
+    encoding = strchr(encoding, '=');
+    if (unlikely(!encoding)) return -2;
+    ++encoding;
+
+    if (index == 0) {
+        if (outEncoding) *outEncoding = encoding;
+        return 0; // offset 0 don't need to compute
+    }
+
+
+    size_t attrOffset = 0;
+    NSUInteger align;
+    NSUInteger typesize;
+    const char* nextEncoding;
+    while (*encoding) {
+        nextEncoding = NSGetSizeAndAlignment(encoding, &typesize, &align);
+
+        luaoc_align_offset(&attrOffset, align);
+
+        if (index > 0) {
+            attrOffset += typesize;
+            encoding = nextEncoding;
+            --index;
+        } else {
+            if (outEncoding) *outEncoding = encoding;
+            return (int)attrOffset;
+        }
+    }
+    DLOG("get struct offset overflow!");
+    return -1; // overflow!
+}
+
+int luaoc_struct_offset_by_key(lua_State *L, const char** outEncoding) {
+    int top = lua_gettop(L);
+    luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
+    lua_pushvalue(L, -3);
+    if (lua_rawget(L, -2) == LUA_TNIL) { // named_struct[name]
+        DLOG("index unreg struct");
+        lua_settop(L, top -2);
+        return -2;
+    }
+
+    lua_pushvalue(L, -3); // push key
+    if (lua_rawget(L, -2) == LUA_TUSERDATA) {
+        struct_attr_info* info = lua_touserdata(L, -1);
+        lua_settop(L, top-2);
+        if (outEncoding) {
+            *outEncoding = info->encoding;
+        }
+        return info->offset;
+    }
+    DLOG("invalid struct key");
+    lua_settop(L, top-2);
+    return -1;
+}
+
 static int __index(lua_State *L){
   luaL_checktype(L, 1, LUA_TUSERDATA);
 
   lua_getuservalue(L, 1);       // uv
   lua_pushvalue(L, 2);
   if (lua_rawget(L, -2) == LUA_TNIL) { // uv nil
+    const char* encoding;
+    int attrOffset;
     if ( lua_isinteger(L, 2) ) {
-      LUA_INTEGER index = lua_tointeger(L, 2);
+      LUA_INTEGER index = lua_tointeger(L, 2); // begin from 1
       lua_rawgetfield(L, -2, "__encoding");
-      const char* encoding = lua_tostring(L, -1);
-      encoding = strchr(encoding, '=');
-      LUAOC_ASSERT(encoding);
-      ++encoding;
+      encoding = lua_tostring(L, -1);
 
-      size_t attrOffset = 0;
-      void* structRef = lua_touserdata(L, 1);
-      NSUInteger align;
-      NSUInteger typesize;
-      while(index > 1) {
-          encoding = NSGetSizeAndAlignment(encoding, &typesize, &align);
-
-          luaoc_align_offset(&attrOffset, align);
-
-          attrOffset += typesize;
-
-          --index;
+      attrOffset = luaoc_struct_offset_by_index(
+              encoding, (int)index-1, &encoding);
+      if (attrOffset < 0) {
+          LUAOC_ERROR("invalid struct index or encoding");
+      } else {
+          luaoc_push_obj(L, encoding, lua_touserdata(L, 1) + attrOffset);
       }
-      NSGetSizeAndAlignment(encoding, NULL, &align);
-      luaoc_align_offset(&attrOffset, align);
-
-      luaoc_push_obj(L, encoding, &structRef[attrOffset]);
     } else { // index by keyname
-      luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
-      lua_rawgetfield(L, -3, "__name");     // uv[__name]
-      if (lua_rawget(L, -2) == LUA_TNIL){   // named_struct[ uv[__name] ]
-        DLOG("index undefined struct");
-        return 1;
-      }
-
+      lua_rawgetfield(L, -2, "__name");     // uv[__name]
       lua_pushvalue(L, 2);
-      if (lua_rawget(L, -2) == LUA_TUSERDATA) {
-        struct_attr_info* info = lua_touserdata(L, -1);
-        void* attrPointer = lua_touserdata(L, 1) + info->offset;
-        luaoc_push_obj(L, info->encoding, attrPointer);
+
+      attrOffset = luaoc_struct_offset_by_key(L, &encoding);
+      if (attrOffset < 0) {
+          lua_pushnil(L);
+      } else {
+          luaoc_push_obj(L, encoding, lua_touserdata(L, 1) + attrOffset);
       }
     }
   }
@@ -150,61 +193,37 @@ static int __index(lua_State *L){
 static int __newindex(lua_State *L){
   luaL_checktype(L, 1, LUA_TUSERDATA);
   lua_getuservalue(L, 1);
-  do{
-    if ( lua_isinteger(L, 2) ) {
-      LUA_INTEGER index = lua_tointeger(L, 2);
+
+  const char * encoding;
+  int attrOffset;
+  if ( lua_isinteger(L, 2) ) {
+      LUA_INTEGER index = lua_tointeger(L, 2); // begin from 1
       lua_rawgetfield(L, -1, "__encoding");
-      const char* encoding = lua_tostring(L, -1);
-      encoding = strchr(encoding, '=');
-      LUAOC_ASSERT(encoding);
-      ++encoding;
+      encoding = lua_tostring(L, -1);
 
-      void* structRef = lua_touserdata(L,1);
-      size_t offset = 0;
-      NSUInteger align;
-      NSUInteger typesize;
-      while(index > 1) {
-          encoding = NSGetSizeAndAlignment(encoding, &typesize, &align);
-
-          luaoc_align_offset(&offset, align);
-
-          offset += typesize;
-
-          --index;
+      attrOffset =
+          luaoc_struct_offset_by_index(encoding, (int)index-1, &encoding);
+      if (attrOffset < 0) {
+          LUAOC_ERROR("invalid struct index or encoding");
       }
-      NSGetSizeAndAlignment(encoding, NULL, &align);
-      luaoc_align_offset(&offset, align);
+  } else {
+      lua_rawgetfield(L, -1, "__name");     // uv[__name]
+      lua_pushvalue(L, 2);
 
+      attrOffset = luaoc_struct_offset_by_key(L, &encoding);
+  }
+  if (attrOffset >= 0) {
       size_t outSize;
       void* v = luaoc_copy_toobjc(L, 3, encoding, &outSize);
-      memcpy( &structRef[offset], v, outSize );
+      memcpy(lua_touserdata(L,1)+attrOffset, v, outSize);
       free(v);
       return 0;
-    } else {
-      luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
-      lua_rawgetfield(L, -2, "__name");
-      if (lua_rawget(L, -2) == LUA_TNIL){
-        DLOG("newindex unreg struct");
-        break;
-      }
-      lua_pushvalue(L, 2);
-      if (lua_rawget(L, -2) == LUA_TUSERDATA) {
-        struct_attr_info* info = lua_touserdata(L, -1);
-        void* attrPointer = lua_touserdata(L, 1) + info->offset;
-        size_t outSize;
-        void* v = luaoc_copy_toobjc(L, 3, info->encoding, &outSize);
-        memcpy(attrPointer, v, outSize);
-        free(v);
-        return 0;
-      }
-    }
-  } while(0);
+  }
 
   // otherwise, set key in uservalue
-  lua_getuservalue(L, 1);
-  lua_pushvalue(L,2);
-  lua_pushvalue(L,3);
-  lua_rawset(L, -3);
+  lua_settop(L, 4); // ud key val uv
+  lua_insert(L, 2);
+  lua_rawset(L, 2);                         // udv[key] = value
 
   return 0;
 }
@@ -257,6 +276,7 @@ static int reg_struct(lua_State *L){
       lua_geti(L, i, 2); // type encoding
       lua_geti(L, i, 1); // name
       struct_attr_info* sai = lua_newuserdata(L, sizeof(struct_attr_info));
+
       size_t encodingLen;
       sai->encoding = luaL_checklstring(L, -3, &encodingLen);
 
