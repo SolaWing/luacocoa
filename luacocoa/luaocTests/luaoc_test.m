@@ -276,7 +276,8 @@
   // empty table will convert to nil obj
   //
   { // auto convert table to NSDictionary
-    RUN_LUA_SAFE_CODE( return {a=1,b=2,c=3, d={1,2,3,{33,44}}} );
+    RUN_LUA_SAFE_CODE( return {a=1,b=2,c=3, d={1,2,3,{33,44}},
+            e=oc.NSRange{3,5}, f=oc.var('@',{3}), g=oc.var('i', 22) } );
     ref = luaoc_copy_toobjc(L, -1, "@", &outSize);
 
     XCTAssertEqual([(*(id*)ref) [@"a"]     intValue], 1);
@@ -286,12 +287,15 @@
     XCTAssertEqual([(*(id*)ref) [@"d"][1]  intValue], 2);
     XCTAssertEqual([(*(id*)ref) [@"d"][2]  intValue], 3);
     XCTAssertEqual([(*(id*)ref) [@"d"][3][1] intValue], 44);
+    XCTAssertEqualObjects( (*(id*)ref)[@"e"], [NSValue valueWithRange:NSMakeRange(3,5)]);
+    XCTAssertTrue( [@[@3] isEqualToArray:(*(id*)ref)[@"f"]] );
+    XCTAssertEqual([(*(id*)ref) [@"g"]     intValue], 22);
 
     lua_pop(L, 1); free(ref);
   }
 
   { // auto convert table to NSArray
-    RUN_LUA_SAFE_CODE( return {10,11,12, oc.class.NSArray, {1,2}, {a=3}} );
+    RUN_LUA_SAFE_CODE( return {10,11,12, oc.class.NSArray, {1,2}, {a=3}, {}, 'abc'} );
     ref = luaoc_copy_toobjc(L, -1, "@", &outSize);
 
     // when auto convert array , begin from 0. in lua, begin from 1
@@ -302,6 +306,8 @@
     XCTAssertEqual( [(*(id*)ref) [4][1]    intValue], 2);
     XCTAssertEqual( [(*(id*)ref) [5][@"a"] intValue], 3);
     XCTAssertEqual( (*(id*)ref)  [3]                , [NSArray class]);
+    XCTAssertEqual( (*(id*)ref)  [6]       , [NSNull null]);
+    XCTAssertEqualObjects( (*(id*)ref)[7], @"abc" );
 
     lua_pop(L, 1); free(ref);
   }
@@ -314,7 +320,7 @@
   }
 
   { // auto convert table to struct
-    RUN_LUA_SAFE_CODE( return {{30, 40}, {50, 60}} );
+    RUN_LUA_SAFE_CODE( return {{30, 40}, oc.var(oc.encode.CGPoint, {50,60})} );
     ref = luaoc_copy_toobjc(L, -1, @encode(CGRect), &outSize);
     CGRect rect = {30,40,50,60};
     XCTAssertTrue( memcmp(ref, &rect, sizeof(CGRect)) == 0 );

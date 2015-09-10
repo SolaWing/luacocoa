@@ -299,14 +299,14 @@ id luaoc_convert_toid(lua_State *L, int index) {
 
         lua_pushnil(L);  /* first key */
         while (lua_next(L, -2)) {
-          id *key = (id*)luaoc_copy_toobjc(L, -2, "@", nil);
-          id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
-          if (*key && *object) // ignore NULL kv
-            [value setObject:*object forKey:*key];
+            id key = luaoc_convert_toid(L, -2);
+            id object = luaoc_convert_toid(L, -1);
+            if (key && object) // ignore NULL kv
+            {
+                [value setObject:object forKey:key];
+            }
 
-          lua_pop(L, 1); // Pop off the value
-          free(key);
-          free(object);
+            lua_pop(L, 1); // Pop off the value
         }
       } else {
         value = [NSMutableArray array];
@@ -314,13 +314,13 @@ id luaoc_convert_toid(lua_State *L, int index) {
         size_t len = lua_rawlen(L, -1);
         for (size_t i = 1; i <= len; ++i) {
           lua_rawgeti(L, -1, i);
-          id *object = (id*)luaoc_copy_toobjc(L, -1, "@", nil);
-          if (*object) {
-              [value addObject:*object];
+          id object = luaoc_convert_toid(L, -1);
+          if (object) {
+              [value addObject:object];
           } else {
               [value addObject:[NSNull null]];
           }
-          free(object); lua_pop(L,1);
+          lua_pop(L,1);
         }
       }
 
