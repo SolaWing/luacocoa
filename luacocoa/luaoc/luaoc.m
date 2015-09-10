@@ -99,6 +99,7 @@ static void push_struct_tolua(lua_State *L, void* structRef, const char* encodin
             default: { luaoc_push_obj(L, type, &structRef[offset]); }
         }
         lua_rawseti(L, -2, ++i);
+        offset+=size;
     }
 }
 
@@ -114,11 +115,13 @@ static int tolua(lua_State *L) {
                 LUA_INTEGER tt = lua_tointeger(L, -1); lua_pop(L, 1);
                 switch( tt ){
                     case luaoc_super_type:
+                    instance_type:
                     case luaoc_instance_type: {
                         id val = *(id*)lua_touserdata(L, i);
                         push_instance_tolua(L, val);
                         break;
                     }
+                    struct_type:
                     case luaoc_struct_type: {
                         void* structRef = lua_touserdata(L, i);
                         lua_getfield(L, i, "__encoding");
@@ -126,6 +129,20 @@ static int tolua(lua_State *L) {
                         lua_pop(L,1);
 
                         push_struct_tolua(L, structRef, encoding);
+                        break;
+                    }
+                    case luaoc_var_type: {
+                        lua_getfield(L, i, "__type");
+                        char type = lua_tointeger(L, -1);
+                        lua_pop(L, 1);
+                        switch( type ){
+                            case _C_ID:         goto instance_type;
+                            case _C_STRUCT_B:   goto struct_type;
+                            default: {
+                                luaoc_get_var(L, i); // get_value from var
+                                break;
+                            }
+                        }
                         break;
                     }
                     // don't convert for other type
@@ -231,10 +248,12 @@ static const luaL_Reg luaoc_funcs[] = {
 
 static int __index(lua_State *L) {
     // index class
-    lua_rawgetfield(L, 1, "class");
-    lua_pushvalue(L, 2);
-    if ( lua_gettable(L, -2) != LUA_TNIL ) return 1;
-    lua_pop(L, 2);
+    const char* name = luaL_checkstring(L, 2);
+    Class cls = objc_getClass(name);
+    if (cls) {
+        luaoc_push_class(L, cls);
+        return 1;
+    }
 
     // index struct
     lua_rawgetfield(L, 1, "struct");
@@ -242,6 +261,7 @@ static int __index(lua_State *L) {
     if ( lua_gettable(L, -2) != LUA_TNIL ) return 1;
     lua_pop(L, 2);
 
+    DLOG("unknown name %s, did you spell correct?", name);
     lua_pushnil(L);
     return 1;
 }

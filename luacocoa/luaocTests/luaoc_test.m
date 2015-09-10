@@ -186,6 +186,29 @@
   TEST_PUSH_STRUCT (CGRect, ((CGRect){2,3,4,5}))
   TEST_PUSH_STRUCT (CGSize, ((CGSize){2,3}))
   TEST_PUSH_STRUCT (CGPoint, ((CGPoint){.x=0, .y=0}))
+
+  // test tolua func
+  lua_settop(L, 0);
+  RUN_LUA_SAFE_CODE( return oc.tolua( oc.var('@', 'abc'), oc.var('@', 1),
+              oc.var('@', {1}), oc.var('@', {a=2}), oc.var('@'), oc.var(oc.encode.CGPoint),
+              oc.CGSize(32,23), oc.CGRect({11,22}, {33,44})) )
+  XCTAssertTrue(strcmp(lua_tostring(L,1), "abc") == 0);
+  XCTAssertEqual(lua_tointeger(L, 2), 1);
+  XCTAssertTrue(lua_type(L,3) == LUA_TTABLE && (lua_rawgeti(L, 3, 1), lua_tointeger(L, -1) == 1));
+  XCTAssertTrue(lua_type(L,4) == LUA_TTABLE && (lua_rawgetfield(L, 4, "a"), lua_tointeger(L, -1) == 2));
+  XCTAssertTrue(lua_isnil(L,5));
+  XCTAssertTrue(lua_type(L,6) == LUA_TTABLE &&
+          (lua_rawgeti(L, 6, 1), lua_tonumber(L, -1) == 0) &&
+          (lua_rawgeti(L, 6, 2), lua_tonumber(L, -1) == 0) );
+  XCTAssertTrue(lua_type(L,7) == LUA_TTABLE &&
+          (lua_rawgeti(L, 7, 1), lua_tonumber(L, -1) == 32) &&
+          (lua_rawgeti(L, 7, 2), lua_tonumber(L, -1) == 23) );
+  XCTAssertTrue(lua_type(L,8) == LUA_TTABLE &&
+          (lua_rawgeti(L, 8, 1), lua_rawgeti(L, -1, 1), lua_tonumber(L, -1) == 11) &&
+                                (lua_rawgeti(L, -2, 2), lua_tonumber(L, -1) == 22) &&
+          (lua_rawgeti(L, 8, 2), lua_rawgeti(L, -1, 1), lua_tonumber(L, -1) == 33) &&
+                                (lua_rawgeti(L, -2, 2), lua_tonumber(L, -1) == 44));
+
 }
 
 - (void)testFromLuaObj {
