@@ -353,6 +353,45 @@
     lua_settop(L, 0); free(ref);
   }
 
+  { // auto convert to ptr
+      RUN_LUA_SAFE_CODE( return oc.NSObject );
+      ref = luaoc_copy_toobjc(L, -1, @encode(void*), &outSize);
+      XCTAssertEqual(*(Class*)ref, [NSObject class]);
+      lua_settop(L, 0); free(ref);
+
+      RUN_LUA_SAFE_CODE( return oc.aTestClass );
+      ref = luaoc_copy_toobjc(L, -1, @encode(void*), &outSize);
+      XCTAssertEqual([*(id*)ref class], [aTestClass class]);
+      lua_settop(L, 0); free(ref);
+
+      RUN_LUA_SAFE_CODE( return oc.var("#", "NSArray") ); // NSArray autoconvert to class
+      ref = luaoc_copy_toobjc(L, -1, @encode(void*), &outSize);
+      XCTAssertEqual(**(Class**)ref, [NSArray class]);
+      lua_settop(L, 0); free(ref);
+
+      {
+          RUN_LUA_SAFE_CODE( a = oc.var("@", 1) return a );
+          ref = luaoc_copy_toobjc(L, -1, @encode(void*), &outSize);
+          XCTAssertEqual([**(id**)ref intValue], 1);
+          **(id**)ref = NULL;
+
+          RUN_LUA_SAFE_CODE( return oc.getvar(a) );
+          XCTAssertTrue( lua_isnil(L, -1) ); // value already set NULL;
+          **(id**)ref = [NSArray class];
+
+          RUN_LUA_SAFE_CODE( return oc.getvar(a) ); // value be set to [NSArray class];
+          XCTAssertEqual( luaoc_toinstance(L, -1), [NSArray class]);
+
+          lua_settop(L, 0); free(ref);
+      }
+
+      // autoconvert string to ptr
+      lua_pushstring(L, "hello");
+      ref = luaoc_copy_toobjc(L, -1, @encode(void*), &outSize);
+      XCTAssertEqual(0, strcmp("hello", *(const char**)ref));
+      lua_settop(L, 0); free(ref);
+  }
+
 }
 
 - (void)testClass {

@@ -12,7 +12,6 @@
 		216AEB6A1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
 		216AEB6B1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
 		216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */ = {isa = PBXBuildFile; fileRef = 216B4A361B690A180060DCA5 /* luaoc_struct.m */; };
-		216CE9A01B76516D006CA509 /* ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAF1B74F81D00F132B1 /* ffi.dylib */; };
 		216CE9A11B765438006CA509 /* ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAF1B74F81D00F132B1 /* ffi.dylib */; };
 		216CE9AB1B76551E006CA509 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9AA1B76551E006CA509 /* main.m */; };
 		216CE9AE1B76551E006CA509 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9AD1B76551E006CA509 /* AppDelegate.m */; };
@@ -436,7 +435,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				216CE9A01B76516D006CA509 /* ffi.dylib in Frameworks */,
 				21A36E4A1B71A4A10094CF55 /* liblua_osx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

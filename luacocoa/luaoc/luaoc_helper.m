@@ -240,8 +240,9 @@ void* luaoc_convert_toptr(lua_State *L, int index, const char* encoding) {
             return lua_touserdata(L, index);
         case LUA_TUSERDATA: {
             if (luaL_getmetafield(L, index, "__type") != LUA_TNIL) {
+                LUA_INTEGER type = lua_tointeger(L, -1);
                 lua_pop(L, 1);
-                switch( lua_tointeger(L, -1) ){
+                switch( type ){
                     case luaoc_class_type:
                     case luaoc_instance_type:
                     case luaoc_super_type:
