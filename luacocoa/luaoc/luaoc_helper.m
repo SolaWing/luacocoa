@@ -234,11 +234,57 @@ int luaoc_msg_send(lua_State* L){
   return 0;
 }
 
+void* luaoc_convert_toptr(lua_State *L, int index, const char* encoding) {
+    switch( lua_type(L, index) ){
+        case LUA_TLIGHTUSERDATA:
+            return lua_touserdata(L, index);
+        case LUA_TUSERDATA: {
+            if (luaL_getmetafield(L, index, "__type") != LUA_TNIL) {
+                lua_pop(L, 1);
+                switch( lua_tointeger(L, -1) ){
+                    case luaoc_class_type:
+                    case luaoc_instance_type:
+                    case luaoc_super_type:
+                    {
+                        // these types value shouldn't be changed.
+                        // so treat it as a force cast
+                        return *(void**)lua_touserdata(L, index);
+                    }
+                    case luaoc_struct_type:
+                    case luaoc_var_type:
+                    default:
+                    {
+                        // these type memory should be safe against change.
+                        // so pass address directly, like pass by ref
+                        return lua_touserdata(L, index);
+                    }
+                }
+            } else {
+                DLOG("unknown userdata type, shouldn't happen!");
+            }
+            return NULL;
+        }
+        case LUA_TSTRING: {
+            // force cast to return a const char ptr.
+            // this string will be free when gc. so not guarantee it always exist.
+            return (void*)lua_tostring(L, index);
+        }
+        case LUA_TBOOLEAN:
+        case LUA_TNUMBER:
+            DLOG("bool or number can't convert to pointer type!!");
+        case LUA_TNONE:
+        case LUA_TNIL:
+        default: {
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
 id luaoc_convert_toid(lua_State *L, int index) {
   switch (lua_type(L, index)){
     case LUA_TLIGHTUSERDATA:
-        // NOTE assume the ptr is convert from id
-        // different with convert id to ptr, where pass by ref as id*
+        // assume the ptr is convert from id
         return (id)lua_touserdata(L, index);
     case LUA_TUSERDATA: {
       id value = NULL;
@@ -488,29 +534,31 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
         return value;
       }
       case _C_PTR: {
-         // FIXME: when convert to ptr, pass the userdata addr, just like pass by ref
-         // var type is designed for this purpose, it's store value is safe to change.
-         // other type change inner value may unsafe
-         // (mainly id type, may break retain count).
         *outSize = sizeof(void*); value = calloc(sizeof(void*), 1);
-        switch( lua_type(L, index) ){
-          case LUA_TLIGHTUSERDATA:
-          case LUA_TUSERDATA: {
-            *(void**)value = lua_touserdata(L, index);
-            return value;
-          }
-          case LUA_TSTRING: {
-              value = (void*)lua_tostring(L, index);
-              return value;
-          }
-          case LUA_TNONE:
-          case LUA_TNIL:
-          default: {
-            return value;
-          }
-        }
+        *(void**)value = luaoc_convert_toptr(L, index, typeDescription+i);
+        return value;
       }
-      case _C_CLASS: // not support auto convert from string to class
+      case _C_CLASS:{
+          *outSize = sizeof(Class); value = calloc(sizeof(Class), 1);
+          switch( lua_type(L, index) ){
+              case LUA_TLIGHTUSERDATA: {
+                  *(Class*)value = lua_touserdata(L, index);
+                  return value;
+              }
+              case LUA_TUSERDATA:{
+                  *(Class*)value = *(Class*)lua_touserdata(L, index);
+                  return value;
+              }
+              case LUA_TSTRING:{
+                  *(Class*)value = objc_getClass(lua_tostring(L, index));
+                  return value;
+              }
+              default: {
+                  return value;
+              }
+          }
+          return value;
+      }
       case _C_ID: {
         *outSize = sizeof(id); value = calloc(sizeof(id), 1);
         *(id*)value = luaoc_convert_toid(L, index);
@@ -586,7 +634,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       PUSH_POINTER(_C_CLASS, Class, luaoc_push_class)
       PUSH_POINTER(_C_PTR, void*, lua_pushlightuserdata) // FIXME: pointer deref and address function
       PUSH_POINTER(_C_CHARPTR, char*, lua_pushstring)
-        
+
       case _C_SEL:
         if (*(SEL*)buffer == NULL) lua_pushnil(L);
         else lua_pushstring(L, sel_getName(*(SEL*)buffer));
