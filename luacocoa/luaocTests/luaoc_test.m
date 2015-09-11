@@ -62,6 +62,9 @@
 @implementation aTestClass
 
 - (void)dealloc {
+    // autorelease deallocing obj will cause crash. the same as lua gc and
+    // release obj
+    // [[self retain] autorelease];
     [super dealloc];
 }
 
@@ -778,4 +781,42 @@
     objc_storeWeak((id*)&block, nil);
 }
 
+- (void)testVar {
+    lua_State *L = gLua_main_state;
+    RUN_LUA_SAFE_CODE( a = oc.var(oc.encode.char) return oc.getvar(a) );
+    XCTAssertEqual( lua_tointeger(L, -1), 0 );
+    RUN_LUA_SAFE_CODE( return oc.getvar( oc.setvar( a, 33.3 )) );
+    XCTAssertEqual( lua_tointeger(L, -1), 33 );
+
+    // weak var
+    id obj = [aTestClass new];
+    luaoc_push_instance(L, obj);
+    lua_setglobal(L, "obj");
+    RUN_LUA_SAFE_CODE( a = oc.weakvar(obj) return a );
+    XCTAssertEqual( ( *( id* )lua_touserdata( L, -1 )), obj );
+    RUN_LUA_SAFE_CODE( return a:class() );      // call msg like instance
+    XCTAssertEqualObjects( luaoc_toclass(L, -1), [aTestClass class] );
+    [obj release];
+    // release when store obj dealloc
+    XCTAssertEqual( ( *( id* )lua_touserdata( L, -2 )), nil );
+
+    // obj already dealloc. call on the weak val return nil
+    RUN_LUA_SAFE_CODE( return a:class() );
+    XCTAssertTrue( lua_isnil(L, -1) );
+
+    // struct var
+    RUN_LUA_SAFE_CODE( a = oc.var(oc.encode.CGPoint, {22,33}) return oc.getvar(a) );
+    void* v = luaoc_getstruct(L, -1);
+    XCTAssertNotNil(v);
+    XCTAssertTrue(memcmp(v, &((CGPoint){22,33}), sizeof(CGPoint)) == 0);
+    // index struct var like struct userdata
+    RUN_LUA_SAFE_CODE( a.x = 11; a.y = 12 return oc.getvar(a) );
+    v = luaoc_getstruct(L, -1);
+    XCTAssertNotNil(v);
+    XCTAssertTrue(memcmp(v, &((CGPoint){11,12}), sizeof(CGPoint)) == 0);
+    RUN_LUA_SAFE_CODE( a[1] = 5; a[2] = 6 return oc.getvar(a) );
+    v = luaoc_getstruct(L, -1);
+    XCTAssertNotNil(v);
+    XCTAssertTrue(memcmp(v, &((CGPoint){5,6}), sizeof(CGPoint)) == 0);
+}
 @end

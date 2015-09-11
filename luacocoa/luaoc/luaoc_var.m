@@ -146,6 +146,10 @@ static const luaL_Reg varFuncs[] = {
   {NULL, NULL},
 };
 
+/** create a var type userdata
+ *  @param 2: typeDescription, use the encoding to alloc memory and decide type
+ *  @param 3: init value. will do autoconvert when compatible. can none or nil.
+ */
 static int create_var(lua_State *L){
   const char* typeDescription = luaL_checkstring(L, 2);
   if (lua_isnoneornil(L, 3)) luaoc_push_var(L, typeDescription, NULL, 0);
@@ -161,6 +165,12 @@ static const luaL_Reg varMetaFuncs[] = {
   {"__call", create_var},
   {NULL, NULL},
 };
+
+static int empty_call(lua_State *L){
+    DLOG("you call on a NULL value. may weak val has be dealloced");
+    lua_pushnil(L);
+    return 1;
+}
 
 static int __gc(lua_State *L){
     lua_getuservalue(L, 1);
@@ -187,20 +197,27 @@ static int __index(lua_State *L) {
   if (lua_rawget(L, -2) == LUA_TNIL){
       lua_rawgetfield(L, -2, "__type");
       char type = lua_tointeger(L, -1);
-      if ((type == _C_ID || type == _C_CLASS) && lua_type(L, 2) == LUA_TSTRING
-          && *(id*)ud != nil)
-      {
-          const char* key = lua_tostring(L, 2);
-          SEL sel = luaoc_find_SEL_byname(*(id*)ud, key);
-          if (sel){
-              luaoc_push_msg_send(L, sel);
-          }
-          if (lua_isnil(L, -1)){ // still nil index class to try find a value
-              // when not a oc msg, try to find lua value in cls
-              if (type == _C_ID) {
-                  index_value_from_class(L, [*(id*)ud class], 2);
-              } else {
-                  index_value_from_class(L, [*(Class*)ud superclass], 2);
+      if ((type == _C_ID || type == _C_CLASS)) {
+          lua_pop(L, 1); // pop type, left nil on top
+          if (lua_type(L, 2) == LUA_TSTRING) {
+              if (*(id*)ud != nil) {
+                  const char* key = lua_tostring(L, 2);
+                  SEL sel = luaoc_find_SEL_byname(*(id*)ud, key);
+                  if (sel){
+                      luaoc_push_msg_send(L, sel);
+                  }
+                  // still nil index class to try find a value
+                  if (lua_isnil(L, -1)){
+                      // when not a oc msg, try to find lua value in cls
+                      if (type == _C_ID) {
+                          index_value_from_class(L, [*(id*)ud class], 2);
+                      } else {
+                          index_value_from_class(L, [*(Class*)ud superclass], 2);
+                      }
+                  }
+              }
+              else { // return a empty_call to eat func call. this avoid error
+                  lua_pushcfunction(L, empty_call);
               }
           }
       }
@@ -230,7 +247,6 @@ static int __index(lua_State *L) {
                   luaoc_push_obj(L, encoding, lua_touserdata(L, 1) + attrOffset);
               }
           }
-          
       }
   }
 
@@ -300,6 +316,7 @@ int luaopen_luaoc_var(lua_State *L) {
 
   return 1;
 }
+
 
 #pragma mark - encoding
 static int encoding_of_name(lua_State *L){

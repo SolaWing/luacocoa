@@ -69,6 +69,9 @@ SEL luaoc_find_SEL_byname(id target, const char* luaName) {
 static int _msg_send(lua_State* L, SEL selector) {
   // call intenally, the stack should have and only have receiver and args
   id target = *(id*)lua_touserdata(L, 1);
+  if (unlikely(!target)) { // send msg to empty target
+      lua_pushnil(L); return 1;
+  }
   // for vararg, the signature only treat it as first arg
   NSMethodSignature* sign = [target methodSignatureForSelector: selector];
   LUAOC_ASSERT_MSG(sign, "'%s' has no method '%s'",
@@ -495,6 +498,10 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
           case LUA_TUSERDATA: {
             *(void**)value = lua_touserdata(L, index);
             return value;
+          }
+          case LUA_TSTRING: {
+              value = (void*)lua_tostring(L, index);
+              return value;
           }
           case LUA_TNONE:
           case LUA_TNIL:
