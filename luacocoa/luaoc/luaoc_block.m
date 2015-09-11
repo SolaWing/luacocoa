@@ -62,7 +62,7 @@ static void luaoc_block_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) 
 
   struct OCBlockStruct* block = *(void**)args[0];
   LUAFunction* luafunc = block->upvalue;
-  lua_State *L = gLua_main_state;
+  lua_State *const L = gLua_main_state;
   int top = lua_gettop(L);
 
   if (!luafunc || !luafunc.encoding ||
@@ -150,6 +150,12 @@ static IMP imp_for_encoding(NSString* encodingString) {
 @end
 
 
+// NOTE default @@, if actually not @@, but other compatible encoding.
+// like vv or v@, invoke func may pass garbage value to lua.
+// this garbage can't be use, even in push function.
+// otherwise, may crash.
+//
+// recommend pass encoding specifically
 #define DEF_ENCODING "@@"
 id luaoc_convert_copyto_block(lua_State* L) {
     luaL_checktype(L, -2, LUA_TFUNCTION);
@@ -158,12 +164,6 @@ id luaoc_convert_copyto_block(lua_State* L) {
     if (encoding) {
         func.encoding = [NSString stringWithUTF8String:encoding];
     } else {
-        // NOTE default @@, if actually not @@, but other compatible encoding.
-        // like vv or v@, invoke func may pass garbage value to lua.
-        // this garbage can't be use, even in push function.
-        // otherwise, may crash.
-        //
-        // recommend pass encoding specifically
         func.encoding = @DEF_ENCODING;
     }
     lua_pop(L, 1);
@@ -189,15 +189,18 @@ id luaoc_convert_copyto_block(lua_State* L) {
 }
 
 int luaoc_call_block(lua_State *L) {
-    struct OCBlockStruct* block = lua_touserdata(L, 1);
+    // first should be a block instance. or will crash
+    struct OCBlockStruct* block = *(void**)lua_touserdata(L, 1);
     LUAOC_ASSERT(block);
+
+    // TODO: check if a lua block and call directly
 
     const char* encoding = lua_tostring(L, 2);
     if (NULL == encoding) encoding = DEF_ENCODING;
 
     int status;
-    void* rvalue;
-    void** avalue;
+    void* rvalue = NULL;
+    void** avalue = NULL;
 
     const char* encodingIt;
     NSUInteger retSize = luaoc_get_one_typesize(encoding, &encodingIt, NULL);
@@ -211,17 +214,18 @@ int luaoc_call_block(lua_State *L) {
     // insert block hid arg to encoding;
     size_t size = strlen(encoding);
     char* trueEncoding = alloca( size + 3 );
-    memcpy(trueEncoding, encoding, encodingIt-encoding);
-    memcpy(trueEncoding, "^v", 2);
-    memcpy(trueEncoding, encodingIt, size-(encodingIt-encoding));
+    size_t i = encodingIt - encoding;
+    memcpy(trueEncoding, encoding, i);
+    memcpy(trueEncoding + i, "^v", 2);
+    memcpy(trueEncoding + i+2, encodingIt, size-i);
     trueEncoding[size+3] = '\0';        // NULL terminated
 
     NSUInteger argNumber = luaoc_get_type_number(encodingIt) + 1;
     avalue = alloca(sizeof(void*) * (argNumber) );
 
     *avalue = &block;       // first arg is the block.
-    for (int i = 1; i < argNumber; ++i) {
-        avalue[i] = luaoc_copy_toobjc(L, i+2, encodingIt, NULL);
+    for (i = 1; i < argNumber; ++i) {
+        avalue[i] = luaoc_copy_toobjc(L, (int)i+2, encodingIt, NULL);
         luaoc_get_one_typesize(encodingIt, &encodingIt, NULL);
     }
 

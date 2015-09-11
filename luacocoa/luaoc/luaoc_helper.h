@@ -23,8 +23,8 @@ enum luaoc_userdata_type {
 #define PP_STR(...) #__VA_ARGS__
 #define PP_EXPAND_STR(...) PP_STR(__VA_ARGS__)
 
-#define LUAOC_ERROR(...) {                                        \
-  luaL_error(L, __FILE__ PP_EXPAND_STR(__LINE__) __VA_ARGS__);    \
+#define LUAOC_ERROR(...) {                                          \
+  luaL_error(L, __FILE__ PP_EXPAND_STR(__LINE__) ": " __VA_ARGS__);  \
   assert(false);}                                                   // mark for analyzer, no continue;
 
 #define LUAOC_ARGERROR(index, msg) {luaL_argerror(L, index, msg); assert(false);}

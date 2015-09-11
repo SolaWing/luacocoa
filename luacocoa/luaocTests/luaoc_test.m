@@ -89,9 +89,6 @@
 @end
 
 @implementation luaoc_test
-
-
-
 - (void)setUp {
     [super setUp];
     // Put setup code here. This method is called before the invocation of each test method in the class.
@@ -104,6 +101,7 @@
     luaoc_close();
 }
 
+#pragma mark - test begin
 - (void)testPushobj {
   lua_State *L = gLua_main_state;
   /** push obj */
@@ -857,5 +855,74 @@
     v = luaoc_getstruct(L, -1);
     XCTAssertNotNil(v);
     XCTAssertTrue(memcmp(v, &((CGPoint){5,6}), sizeof(CGPoint)) == 0);
+}
+
+- (void)testInvoke {
+    lua_State *const L = gLua_main_state;
+
+    lua_settop(L, 0);
+    id block = ^{NSLog(@"call empty block");};
+    luaoc_push_instance(L, block);
+//    luaoc_push_instance(L, ^{NSLog(@"call empty block");});
+    luaoc_call_block(L);            // use default @@ encoding, return garbage value
+
+    lua_settop(L, 1);
+    lua_pushstring(L, "v");         // recall with explicit encoding
+    luaoc_call_block(L);
+    XCTAssertTrue( lua_isnil(L, -1) );          // return nil for void invoke
+
+    lua_settop(L, 1);
+    lua_pushstring(L, "!!!");       // pass invalid encoding cause lua error
+    lua_pushcfunction(L, luaoc_call_block);
+    lua_insert(L, 1);
+    XCTAssertTrue( lua_pcall(L, lua_gettop(L) -1, 0, 0) != 0 );
+
+    lua_settop(L, 0);
+    lua_pushcfunction(L, luaoc_call_block);
+    luaoc_push_instance(L, block);
+    lua_pushstring(L, "{CGRect=}");       // pass invalid encoding cause lua error
+    XCTAssertTrue( lua_pcall(L, lua_gettop(L) -1, 0, 0) != 0 );
+
+    lua_settop(L, 0);
+    luaoc_push_instance(L, ^{
+        NSLog(@"call return obj block"); return [NSNull null];
+    });
+    luaoc_call_block(L);
+    XCTAssertEqual( luaoc_toinstance(L, -1), [NSNull null] );
+
+    lua_settop(L, 0);
+    luaoc_push_instance(L, ^(id obj){
+        NSLog(@"call pass obj and return obj block"); return [obj description];
+    });
+    lua_pushnil(L); // nil default to @@ encoding
+    luaoc_push_instance(L, @"abc");
+    luaoc_call_block(L);
+    XCTAssertEqual( luaoc_toinstance(L, -1), [@"abc" description] );
+
+    lua_settop(L, 0);
+    luaoc_push_instance(L, ^CGRect(CGFloat x, CGFloat y, float width, double height){
+        NSLog(@"Call rect create block"); return CGRectMake(x,y,width,height);
+    });
+    RUN_LUA_SAFE_CODE( return oc.encode("CGRect", "CGFloat", "CGFloat", "float", "double") );
+    lua_pushnumber(L, 22);
+    lua_pushnumber(L, 23);
+    lua_pushnumber(L, 24);
+    lua_pushnumber(L, 25);
+    luaoc_call_block(L);
+    XCTAssertTrue( CGRectEqualToRect( *(CGRect*)luaoc_getstruct(L, -1), (CGRect){22,23,24,25} ) );
+
+    lua_settop(L, 0);
+    luaoc_push_instance(L, ^bool(NSInteger x){ NSLog(@"call if >0"); return x > 0; });
+    RUN_LUA_SAFE_CODE( return oc.encode("bool", "NSInteger") );
+    lua_pushinteger(L, 25);
+    luaoc_call_block(L);
+    XCTAssertTrue( lua_isboolean(L, -1) && lua_toboolean(L, -1) );
+
+    lua_settop(L, 2);
+    lua_pushinteger(L, -2);
+    luaoc_call_block(L);
+    XCTAssertTrue( lua_isboolean(L, -1) && !lua_toboolean(L, -1) );
+
+    lua_settop(L, 0);
 }
 @end

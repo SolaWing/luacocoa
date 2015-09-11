@@ -631,7 +631,8 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       PUSH_INTEGER(_C_ULNG_LNG, unsigned long long)
       PUSH_NUMBER(_C_FLT , float)
       PUSH_NUMBER(_C_DBL , double)
-      PUSH_POINTER(_C_ID, id, luaoc_push_instance)  // FIXME: if need to bind lua types?
+      // FIXME: if need to bind lua types? need to consider @? stack block type?
+      PUSH_POINTER(_C_ID, id, luaoc_push_instance)
       PUSH_POINTER(_C_CLASS, Class, luaoc_push_class)
       PUSH_POINTER(_C_PTR, void*, lua_pushlightuserdata) // FIXME: pointer deref and address function
       PUSH_POINTER(_C_CHARPTR, char*, lua_pushstring)

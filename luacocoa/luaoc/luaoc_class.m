@@ -53,7 +53,7 @@ static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
 
   id self = *(id*)args[0];
   SEL _cmd = *(SEL*)args[1];
-  lua_State *L = gLua_main_state;
+  lua_State *const L = gLua_main_state;
 
   LUA_PUSH_STACK(L);
 
@@ -446,7 +446,7 @@ static void luaclass_dealloc(id self, SEL _cmd) {
     // call lua side dealloc. ensure execute on main thread
     dispatch_block_t luaDealloc = ^{
         Class cls = [self class];
-        lua_State* L = gLua_main_state;
+        lua_State*const L = gLua_main_state;
         luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME);
         lua_rawgetfield(L, -1, "loaded");
         int top = lua_gettop(L);

@@ -94,7 +94,7 @@ id hackFuncDFI2ID(struct _blocktype*block, double a, float b, int c){
 
 
 
-- (void)testBlock {
+- (void)atestBlock {
 
     NSString* encoding = @"v@@";
     /* block 结构:
@@ -153,7 +153,10 @@ id hackFuncDFI2ID(struct _blocktype*block, double a, float b, int c){
     XCTAssertEqual([(id)hackBlock1 retainCount], 1);
 
     id copyBlock;
-//  equal...
+
+    copyBlock = [block7 copy];
+    XCTAssertNotEqual(copyBlock, (id)block7);
+//  retain a stack block still return self. not work
 //    copyBlock = [block7 retain];
 //    XCTAssertNotEqual(copyBlock, (id)block7);
 //    XCTAssertEqual([copyBlock retainCount], 1);
