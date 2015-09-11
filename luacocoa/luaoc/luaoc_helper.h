@@ -110,6 +110,9 @@ void  luaoc_push_obj(lua_State *L, const char *typeDescription, void* objRef);
  */
 NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, char** copyTypeName);
 
+/** get type count from typeDescription */
+NSUInteger luaoc_get_type_number(const char* typeDescription);
+
 /** similar to lua_pcall, but with a default error dealler */
 int luaoc_pcall(lua_State *L, int nargs, int nresults);
 

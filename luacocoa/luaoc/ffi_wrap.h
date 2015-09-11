@@ -22,4 +22,15 @@ IMP create_imp_for_encoding(const char* encoding,
 
 void free_FFI_closure(ffi_closure* closure);
 
+/** call a c function use objc encoding pattern
+ *
+ * @param encoding: objc method encoding
+ * @param fn:       calling c function
+ * @param rvalue:   return value, should be large to hold return value and
+ *                  at least equal to sizeof(void*)
+ * @param avalue:   argments. a array of ptr, point to the arg.
+ * @return          0:success -1:encoding error -2:ffi error
+ */
+int objc_ffi_call(const char* encoding, void(*fn)(void), void* rvalue, void** avalue);
+
 void ffi_initialize();

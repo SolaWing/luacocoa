@@ -24,6 +24,22 @@ struct OCBlockStruct {
     LUAFunction* upvalue;
 };
 
+/** add ^v to encoding after ret type.
+ *
+ *
+ * @param buffer: out buffer, should larger than strlen(encoding) + 3
+ * @param encoding: passin encoding.
+ * @param size: strlen(encoding)
+ */
+static inline void get_block_actual_encoding(char* buffer, const char* encoding, size_t size) {
+    size_t offset = NSGetSizeAndAlignment(encoding, NULL, NULL) - encoding;
+
+    memcpy(buffer, encoding, offset);
+    memcpy(buffer + offset, "^v", 2);
+    memcpy(buffer + (offset+2), encoding+offset, size-offset);
+    buffer[size+3] = '\0'; // NULL terminated
+}
+
 // in 32bit iphone_simulator, my libffi can't compile. so disable it.
 #if TARGET_IPHONE_SIMULATOR && !defined(__LP64__)
 #define NO_USE_FFI
@@ -87,14 +103,9 @@ static IMP imp_for_encoding(NSString* encodingString) {
 
     // block func have block self as first parameter, so add it
     const char* encoding = encodingString.UTF8String;
-    size_t size = strlen(encoding) + 3;
-    char* trueEncoding = alloca(size);
-    size_t offset = NSGetSizeAndAlignment(encoding, NULL, NULL) - encoding;
-
-    memcpy(trueEncoding, encoding, offset);
-    memcpy(trueEncoding + offset, "^v", 2);
-    // contains NULL terminated
-    memcpy(trueEncoding + (offset+2), encoding+offset, size-offset-2);
+    size_t size = strlen(encoding);
+    char* trueEncoding = alloca(size + 3);
+    get_block_actual_encoding(trueEncoding, encoding, size);
 
     IMP imp = create_imp_for_encoding(trueEncoding, luaoc_block_from_oc, NULL);
     if (imp) { // cache IMP func
@@ -139,6 +150,7 @@ static IMP imp_for_encoding(NSString* encodingString) {
 @end
 
 
+#define DEF_ENCODING "@@"
 id luaoc_convert_copyto_block(lua_State* L) {
     luaL_checktype(L, -2, LUA_TFUNCTION);
     LUAFunction* func = [LUAFunction new];
@@ -152,7 +164,7 @@ id luaoc_convert_copyto_block(lua_State* L) {
         // otherwise, may crash.
         //
         // recommend pass encoding specifically
-        func.encoding = @"@@";
+        func.encoding = @DEF_ENCODING;
     }
     lua_pop(L, 1);
     [func setLuaFuncInState:L];
@@ -174,6 +186,69 @@ id luaoc_convert_copyto_block(lua_State* L) {
 
     [func release];
     return block; // MRC should return a heap block
+}
+
+int luaoc_call_block(lua_State *L) {
+    struct OCBlockStruct* block = lua_touserdata(L, 1);
+    LUAOC_ASSERT(block);
+
+    const char* encoding = lua_tostring(L, 2);
+    if (NULL == encoding) encoding = DEF_ENCODING;
+
+    int status;
+    void* rvalue;
+    void** avalue;
+
+    const char* encodingIt;
+    NSUInteger retSize = luaoc_get_one_typesize(encoding, &encodingIt, NULL);
+    LUAOC_ASSERT( retSize != NSNotFound );
+    if (retSize > 0) {
+        // ffi call ensure ret buffer at least pointer size
+        if (retSize < sizeof(void*)) retSize = sizeof(void*);
+        rvalue = alloca(retSize);
+    }
+
+    // insert block hid arg to encoding;
+    size_t size = strlen(encoding);
+    char* trueEncoding = alloca( size + 3 );
+    memcpy(trueEncoding, encoding, encodingIt-encoding);
+    memcpy(trueEncoding, "^v", 2);
+    memcpy(trueEncoding, encodingIt, size-(encodingIt-encoding));
+    trueEncoding[size+3] = '\0';        // NULL terminated
+
+    NSUInteger argNumber = luaoc_get_type_number(encodingIt) + 1;
+    avalue = alloca(sizeof(void*) * (argNumber) );
+
+    *avalue = &block;       // first arg is the block.
+    for (int i = 1; i < argNumber; ++i) {
+        avalue[i] = luaoc_copy_toobjc(L, i+2, encodingIt, NULL);
+        luaoc_get_one_typesize(encodingIt, &encodingIt, NULL);
+    }
+
+    NSException* err = nil;
+    @try {
+        status = objc_ffi_call(trueEncoding, FFI_FN(block->invoke), rvalue, avalue);
+    }
+    @catch (NSException* exception) {
+        err = exception;
+    }
+
+    for (int i = 1; i < argNumber; ++i) {
+        free(avalue[i]);
+    }
+
+    LUAOC_ASSERT_MSG(status == 0, "Error invoking block with encoding '%s'. error code: %d",
+            encoding, status);
+    LUAOC_ASSERT_MSG(!err, "Error invoking block with encoding '%s'. reason is:\n%s",
+            encoding, [[err reason] UTF8String]);
+
+    if (retSize > 0){
+        luaoc_push_obj(L, trueEncoding, rvalue); // first type is ret type
+    } else{
+        lua_pushnil(L);
+    }
+
+    return 1;
 }
 
 /** LUA_TFUNCTION, return created block

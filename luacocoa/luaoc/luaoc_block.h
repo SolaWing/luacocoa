@@ -27,4 +27,12 @@
  */
 id luaoc_convert_copyto_block(lua_State* L);
 
+/** invoke and call a block object
+ *
+ * @param 1: block object
+ * @param 2: encoding
+ * @param ...: block args
+ */
+int luaoc_call_block(lua_State *L);
+
 int luaopen_luaoc_block(lua_State *L);

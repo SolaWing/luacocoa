@@ -740,6 +740,18 @@ NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stop
   return size;
 }
 
+NSUInteger luaoc_get_type_number(const char* typeDescription) {
+  NSUInteger typeNumber = 0;
+  const char* stopPos = typeDescription;
+  while (*stopPos) {
+    // skip one type, encoding like v16@0:8, which have offset in encoding,
+    // may not end with \0, so need to judge it
+    if (luaoc_get_one_typesize(stopPos, &stopPos, NULL) != NSNotFound) {
+        ++typeNumber;
+    }
+  }
+  return typeNumber;
+}
 int luaoc_pcall(lua_State *L, int nargs, int nresults) {
     return lua_pcall(L, nargs, nresults, 0);
 }

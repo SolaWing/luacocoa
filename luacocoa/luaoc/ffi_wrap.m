@@ -100,16 +100,9 @@ IMP create_imp_for_encoding(const char* encoding,
         ffi_closure** outClosure)
 {
   // get type count in encoding
-  int typeNumber = 0;
-  const char* stopPos = encoding;
-  while (*stopPos) {
-    // skip one type, encoding like v16@0:8, which have offset in encoding,
-    // may not end with \0, so need to judge it
-    if (luaoc_get_one_typesize(stopPos, &stopPos, NULL) != NSNotFound)
-      ++typeNumber;
-  }
+  int typeNumber = (int)luaoc_get_type_number(encoding);
 
-  stopPos = encoding;
+  const char* stopPos = encoding;
   ffi_type* ret_type = ffi_type_for_one_encoding(stopPos, &stopPos);
   if (NULL == ret_type) {
       DLOG("can't find ret type for encoding %s", encoding);
@@ -158,6 +151,41 @@ void free_FFI_closure(ffi_closure* closure) {
         }
         ffi_closure_free(closure);
     }
+}
+
+// TODO: may need ffi_cif cache
+int objc_ffi_call(const char* encoding, void(*fn)(void), void* rvalue, void** avalue) {
+  // get type count in encoding
+  int typeNumber = (int)luaoc_get_type_number(encoding);
+
+  const char* stopPos = encoding;
+  ffi_type* ret_type = ffi_type_for_one_encoding(stopPos, &stopPos);
+  if (NULL == ret_type) {
+      DLOG("can't find ret type for encoding %s", encoding);
+      return -1; // ERROR occur;
+  }
+
+  ffi_type** args = NULL;
+  if (typeNumber > 1) {             // fill arg types
+    args = alloca(sizeof(ffi_type*) * typeNumber - 1); // minus return type
+    ffi_type** args_it = args;
+    do{
+      if (!( *(args_it++) = ffi_type_for_one_encoding(stopPos, &stopPos) )){
+          DLOG("%s can't find args encoding", encoding);
+          return -1;
+      }
+    }while (args_it - args < typeNumber - 1);
+  }
+
+  ffi_cif* cif = alloca(sizeof(ffi_cif));
+  if (ffi_prep_cif(cif, FFI_DEFAULT_ABI, typeNumber-1, ret_type, args) == FFI_OK)
+  {
+      ffi_call(cif, fn, rvalue, avalue);
+  } else {
+      return -2;
+  }
+
+  return 0;
 }
 
 void ffi_initialize() {

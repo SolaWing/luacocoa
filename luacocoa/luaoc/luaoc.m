@@ -243,6 +243,7 @@ static const luaL_Reg luaoc_funcs[] = {
     {"weakvar",     weakvar},
     {"getvar",      getvar},
     {"setvar",      setvar},
+    {"invoke",      luaoc_call_block},
     {NULL,          NULL  },
 };
 
