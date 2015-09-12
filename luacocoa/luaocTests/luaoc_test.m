@@ -841,6 +841,29 @@
     RUN_LUA_SAFE_CODE( return a:class() );
     XCTAssertTrue( lua_isnil(L, -1) );
 
+    // change var in weak var type. new weak var can zero when dealloc
+    obj = [aTestClass new];
+    luaoc_push_instance(L, obj);
+    lua_setglobal(L, "obj");
+    RUN_LUA_SAFE_CODE( oc.setvar(a, obj) return a );
+    XCTAssertEqual( ( *(id*)lua_touserdata(L, -1) ), obj );
+    [obj release];
+    XCTAssertEqual( ( *(id*)lua_touserdata(L, -1) ), nil );
+
+    // change var store a retain obj, autorelease the retained obj
+    obj = [aTestClass new];
+    luaoc_push_instance(L, obj);
+    lua_setglobal(L, "obj");
+    RUN_LUA_SAFE_CODE( oc.setvar(a, obj) oc.retain(a));
+    XCTAssertEqual([obj retainCount], 2); // new own one, var own one.
+    RUN_LUA_SAFE_CODE( oc.setvar(a, 'hello') return a );
+    XCTAssertEqual([obj retainCount], 1); // var set to new value, autorelease old var if retain
+    [obj release];
+    
+    // var change to other val. old var dealloc not clear it. still equal to new value
+    XCTAssertEqualObjects( ( *(id*)lua_touserdata(L, -1) ), @"hello" );
+
+
     // struct var
     RUN_LUA_SAFE_CODE( a = oc.var(oc.encode.CGPoint, {22,33}) return oc.getvar(a) );
     void* v = luaoc_getstruct(L, -1);

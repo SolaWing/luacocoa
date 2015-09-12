@@ -118,28 +118,41 @@ void luaoc_get_var(lua_State *L, int index) {
 void luaoc_set_var(lua_State *L, int index) {
     void* ud = luaL_checkudata(L, index, LUAOC_VAR_METATABLE_NAME);
 
-    int top = lua_gettop(L);
-
     lua_getuservalue(L, index);
-    lua_rawgetfield(L, -1, "__encoding");
+    const int top = lua_gettop(L);
+
+    lua_rawgetfield(L, top, "__encoding");
 
     size_t outSize;
     void* v = luaoc_copy_toobjc(L, -3, lua_tostring(L, -1), &outSize);
 
-    lua_rawgetfield(L, -2, "__flags");
-    LUA_INTEGER flags = lua_tointeger(L, -1);
-    if ( ( flags & luaoc_var_weak ) &&
-         lua_rawgetfield(L, -3, "__type") == LUA_TNUMBER &&
-         lua_tointeger(L, -1) == _C_ID )
+    if (lua_rawgetfield(L, top, "__type") == LUA_TNUMBER &&
+        lua_tointeger(L, -1) == _C_ID)
     {
-        objc_storeWeak(ud, *(id*)v);
-    } else {
+        if (lua_rawgetfield(L, top, "__retainCount") == LUA_TNUMBER &&
+            lua_tointeger(L, -1) > 0)
+        { // has retain, need to release before change to new value. here may need to check if id type
+            [*(id*)ud release];
+            lua_pushnil(L);
+            lua_rawsetfield(L, top, "__retainCount");
+        }
+
+        if (lua_rawgetfield(L, top, "__flags") == LUA_TNUMBER &&
+            ( lua_tointeger(L, -1) & luaoc_var_weak ))
+        {
+            objc_storeWeak(ud, *(id*)v);
+        } else {
+            memcpy(ud, v, outSize);
+        }
+    }
+    else
+    {
         memcpy(ud, v, outSize);
     }
 
     free(v);
 
-    lua_settop(L, top - 1); // pop value at top
+    lua_settop(L, top - 2); // restore stack and pop top setted value
 }
 
 static const luaL_Reg varFuncs[] = {

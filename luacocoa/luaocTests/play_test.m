@@ -97,7 +97,7 @@ id hackFuncDFI2ID(struct _blocktype*block, double a, float b, int c){
 - (void)empty {}
 
 
-- (void)testSpeed {
+- (void)atestSpeed {
 #define TEST_FFI_BLOCK 0
 #define TEST_COUNT 1000000
 #define MSG_USE_FFI 1
