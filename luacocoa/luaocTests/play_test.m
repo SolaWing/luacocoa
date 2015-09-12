@@ -10,6 +10,8 @@
 #import "luaoc.h"
 #import "luaoc_class.h"
 #import "lauxlib.h"
+#import "luaoc_instance.h"
+#import "luaoc_block.h"
 
 #import <objc/runtime.h>
 #import <CoreGraphics/CoreGraphics.h>
@@ -92,7 +94,71 @@ id hackFuncDFI2ID(struct _blocktype*block, double a, float b, int c){
     luaoc_close();
 }
 
+- (void)empty {}
 
+
+- (void)testSpeed {
+#define TEST_FFI_BLOCK 0
+#define TEST_COUNT 1000000
+#define MSG_USE_FFI 1
+    clock_t t, e;
+    clock_t time[TEST_COUNT];
+    if (TEST_FFI_BLOCK){ // 1,000,000
+        // simulator:   0.709273s OSX: 0.667649s
+        // osx profile:     clock 0.8, luaoc_call_block 0.166
+        dispatch_block_t block = ^{}; // empty block;
+        lua_settop(gLua_main_state, 0);
+        luaoc_push_instance(gLua_main_state, block);
+        lua_pushstring(gLua_main_state, "v");
+
+        for (int i = 0; i < TEST_COUNT; ++i) {
+            t = clock();
+
+            lua_settop(gLua_main_state,2);
+            luaoc_call_block(gLua_main_state);
+
+            e = clock();
+            time[i] = e - t;
+        }
+    } else { // 1,000,000
+        // simulator:   1.959232s OSX:2.009165s
+        // osx profile:     clock 0.8, _msg_send 1.526
+        //                  methodSignatureForSelector 0.77
+        //                  invocationWithMethodSignature 0.439
+        //                  invoke 0.229
+        // osx profile:     ffi _msg_send 0.254 clock 0.835
+        lua_settop(gLua_main_state, 0);
+        luaoc_push_instance(gLua_main_state, self);
+
+        Method selfMethod = class_getInstanceMethod(object_getClass(self), @selector(empty));
+        for (int i = 0; i < TEST_COUNT; ++i) {
+            t = clock();
+
+            lua_settop(gLua_main_state,1);
+#if MSG_USE_FFI
+extern int _msg_send(lua_State *L, Method method);
+            _msg_send(gLua_main_state, selfMethod);
+#else
+extern int _msg_send(lua_State* L, SEL selector) ;
+            _msg_send(gLua_main_state, @selector(empty));
+#endif
+
+            e = clock();
+            time[i] = e - t;
+        }
+    }
+    clock_t total = 0, avg, deviation=0;
+    for (int i = 0; i < TEST_COUNT; ++i) {
+        total += time[i];
+        deviation += time[i] * time[i];
+    }
+    avg = total / TEST_COUNT;
+    deviation = sqrt(deviation / TEST_COUNT);
+
+    NSLog(@"total %lfs, avg %lfs, standard deviation %lfs",
+            (double)total / CLOCKS_PER_SEC, (double)avg / CLOCKS_PER_SEC,
+            (double)deviation / CLOCKS_PER_SEC );
+}
 
 - (void)atestBlock {
 

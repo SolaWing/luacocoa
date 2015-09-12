@@ -66,7 +66,97 @@ SEL luaoc_find_SEL_byname(id target, const char* luaName) {
   return NULL;
 }
 
-static int _msg_send(lua_State* L, SEL selector) {
+#ifndef NO_USE_FFI
+#import "ffi.h"
+#import "ffi_wrap.h"
+
+// ffi invoke ridiculous fast than NSInvocation!!
+int _msg_send(lua_State* L, Method method) {
+  id target = *(id*)lua_touserdata(L, 1);
+  if (unlikely(!target)) { // send msg to empty target
+      lua_pushnil(L); return 1;
+  }
+
+  LUAOC_ASSERT_MSG(method, "'%s' no method pass in", object_getClassName(target) );
+
+  SEL selector = method_getName(method);
+  const char* encoding = method_getTypeEncoding(method);
+  LUAOC_ASSERT_MSG(encoding, "'%s' has no method '%s'",
+        object_getClassName(target), sel_getName( selector ));
+
+  int status;
+  void* rvalue = NULL;
+  void** avalue;
+
+  const char* encodingIt;
+  NSUInteger retSize = luaoc_get_one_typesize(encoding, &encodingIt, NULL);
+  LUAOC_ASSERT( retSize != NSNotFound );
+  if (retSize > 0) {
+      // ffi call ensure ret buffer at least pointer size
+      if (retSize < sizeof(void*)) retSize = sizeof(void*);
+      rvalue = alloca(retSize);
+  }
+
+  NSUInteger argNumber = method_getNumberOfArguments(method);
+  avalue = alloca(sizeof(void*) * (argNumber) );
+
+  *avalue = &target;            // first is self, second is SEL
+  *(avalue+1) = &selector;
+
+  // skip first two arguements
+  luaoc_get_one_typesize(encodingIt, &encodingIt, NULL);
+  luaoc_get_one_typesize(encodingIt, &encodingIt, NULL);
+
+  for (int i = 2; i < argNumber; ++i) {
+      avalue[i] = luaoc_copy_toobjc(L, (int)i, encodingIt, NULL);
+      luaoc_get_one_typesize(encodingIt, &encodingIt, NULL);
+  }
+
+  NSException* err = nil;
+  @try {
+      status = objc_ffi_call(encoding, method_getImplementation(method), rvalue, avalue);
+  }
+  @catch (NSException* exception) {
+      err = exception;
+  }
+
+  for (int i = 2; i < argNumber; ++i) {
+      free(avalue[i]);
+  }
+
+  LUAOC_ASSERT_MSG(!err, "Error invoking '%s''s method '%s'. reason is:\n%s",
+          object_getClassName(target),
+          sel_getName(selector),
+          [[err reason] UTF8String]);
+  LUAOC_ASSERT_MSG(status == 0, "Error send msg with encoding '%s'. error code: %d",
+                   encoding, status);
+
+
+  if (retSize > 0){
+    luaoc_push_obj(L, encoding, rvalue);
+    if ( *encoding == _C_ID && *(id*)rvalue != NULL) {
+      const char * selName = sel_getName(selector);
+      int n;
+      if ( ((n = 4, strncmp(selName, "init", 4) == 0) ||
+                    strncmp(selName, "copy", 4) == 0  ||
+            (n = 3, strncmp(selName, "new",  3) == 0) ||
+            (n = 11, strncmp(selName, "mutableCopy", n) == 0)) &&
+          !islower(selName[n]) ) {
+        // according to oc owner rule, this object is owned by caller. so lua
+        // own it. return is a +1 obj, so lua will autorelease it
+        LUAOC_TAKE_OWNERSHIP(L, -1);
+        // DLOG("%s release %p: %lld", selName, *(id*)buf, (UInt64)[*(id*)buf retainCount]);
+      }
+    }
+  } else{
+    lua_pushnil(L);
+  }
+
+  return 1;
+}
+
+#else
+int _msg_send(lua_State* L, SEL selector) {
   // call intenally, the stack should have and only have receiver and args
   id target = *(id*)lua_touserdata(L, 1);
   if (unlikely(!target)) { // send msg to empty target
@@ -139,10 +229,16 @@ static int protect_super_call(lua_State* L) {
   return _msg_send(L, selector);
 }
 
+#endif
+
+
 int luaoc_msg_send(lua_State* L){
   id* ud = (id*)lua_touserdata(L, 1);
 
   if ( unlikely( !ud )) { LUAOC_ARGERROR( 1, "msg receiver must be objc object!" ); }
+  if ( unlikely( !*ud ) ) { // send msg to nil target
+      lua_pushnil(L); return 1;
+  }
 
   LUAOC_ASSERT_MSG( luaL_getmetafield(L, 1, "__type") == LUA_TNUMBER,
           "can't found metaTable!");
@@ -190,10 +286,19 @@ int luaoc_msg_send(lua_State* L){
 
     int retCount = 0;
 
+#ifndef NO_USE_FFI
+    Method superMethod = class_getInstanceMethod(*(ud+1), selector);
+    LUAOC_ASSERT_MSG(superMethod, "unknown selector %s send to super %s",
+            sel_getName(selector), class_getName(*(ud+1)) );
+
+    retCount = _msg_send(L, superMethod);
+#else
     Method selfMethod = class_getInstanceMethod([*ud class], selector);
     LUAOC_ASSERT_MSG(selfMethod, "unknown selector %s", sel_getName(selector));
 
     Method superMethod = class_getInstanceMethod(*(ud+1), selector);
+    // HACK: NSInvocation can't send to super, so exchange IMP
+    //
     // for same lua override func, Method may not equal. IMP may equal
     // so only exchange IMP when IMP not equal
     IMP selfMethodIMP, superMethodIMP;
@@ -222,12 +327,20 @@ int luaoc_msg_send(lua_State* L){
     {
       retCount = _msg_send(L, selector);
     }
+#endif
 
     RESTORE_SUPER_INFO(retCount);
     return retCount;
   } else if (tt == luaoc_class_type || tt == luaoc_instance_type ||
              tt == luaoc_var_type) { // var type should be the id or class container
+#ifndef NO_USE_FFI
+    // object_getClass can get meta class of Class type
+    Method selfMethod = class_getInstanceMethod(object_getClass(*ud), selector);
+    LUAOC_ASSERT_MSG(selfMethod, "unknown selector %s", sel_getName(selector));
+    return _msg_send(L, selfMethod);
+#else
     return _msg_send(L, selector);
+#endif
   } else {
     LUAOC_ERROR( "unsupported msg receiver type");
   }
@@ -631,7 +744,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       PUSH_INTEGER(_C_ULNG_LNG, unsigned long long)
       PUSH_NUMBER(_C_FLT , float)
       PUSH_NUMBER(_C_DBL , double)
-      // FIXME: if need to bind lua types? need to consider @? stack block type?
+      // FIXME: need to consider @? stack block type? which can't be retain and autorelease
       PUSH_POINTER(_C_ID, id, luaoc_push_instance)
       PUSH_POINTER(_C_CLASS, Class, luaoc_push_class)
       PUSH_POINTER(_C_PTR, void*, lua_pushlightuserdata) // FIXME: pointer deref and address function
@@ -667,7 +780,7 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
 }
 
 NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stopPos, char** copyTypeName) {
-
+  // FIXME stopPos may need to jump over after number like @16@0:8 in method encoding
   #define CASE_SIZE(encoding, type) case encoding: ++(*stopPos); return sizeof(type);
 
   if (NULL == stopPos){
@@ -699,7 +812,7 @@ NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stop
         // every 8 bit consider one byte
         return ((int)strtol( ++(*stopPos), (char**)stopPos, 10 )+7)/8;
       case _C_VOID: ++(*stopPos); return 0;
-      case _C_UNDEF: ++(*stopPos); return 0; // ^? function pointer, @? block, FIXME but @? is one type, there may treat two type
+      case _C_UNDEF: DLOG("this shouldn't enter!"); ++(*stopPos); return 0; // ^? function pointer, @? block
       case _C_CLASS:
       case _C_ID:
       case _C_PTR:

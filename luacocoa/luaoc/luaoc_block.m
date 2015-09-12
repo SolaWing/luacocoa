@@ -200,7 +200,7 @@ int luaoc_call_block(lua_State *L) {
 
     int status;
     void* rvalue = NULL;
-    void** avalue = NULL;
+    void** avalue;
 
     const char* encodingIt;
     NSUInteger retSize = luaoc_get_one_typesize(encoding, &encodingIt, NULL);
@@ -241,10 +241,11 @@ int luaoc_call_block(lua_State *L) {
         free(avalue[i]);
     }
 
-    LUAOC_ASSERT_MSG(status == 0, "Error invoking block with encoding '%s'. error code: %d",
-            encoding, status);
     LUAOC_ASSERT_MSG(!err, "Error invoking block with encoding '%s'. reason is:\n%s",
             encoding, [[err reason] UTF8String]);
+    // when exception, status is garbage value
+    LUAOC_ASSERT_MSG(status == 0, "Error invoking block with encoding '%s'. error code: %d",
+            encoding, status);
 
     if (retSize > 0){
         luaoc_push_obj(L, trueEncoding, rvalue); // first type is ret type

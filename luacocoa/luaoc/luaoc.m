@@ -33,7 +33,8 @@ lua_State* luaoc_setup(){
 
   lua_settop(L, 0);
 
-  // TODO: create a dedicated queue, to prevent lua code run at other thread
+  // TODO: create a dedicated queue, to prevent lua code run at other thread.
+  // currently only use main thread
 
   return L;
 }
