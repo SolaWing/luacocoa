@@ -103,7 +103,7 @@ int _msg_send(lua_State* L, Method method) {
   *avalue = &target;            // first is self, second is SEL
   *(avalue+1) = &selector;
 
-  // skip first two arguements
+  // skip first two arguements. must be self and _cmd. already set
   luaoc_get_one_typesize(encodingIt, &encodingIt, NULL);
   luaoc_get_one_typesize(encodingIt, &encodingIt, NULL);
 
@@ -405,13 +405,16 @@ id luaoc_convert_toid(lua_State *L, int index) {
       if (luaL_getmetafield(L, index, "__type") != LUA_TNIL){
         LUA_INTEGER tt = lua_tointeger(L, -1); lua_pop(L, 1);
 
-        if (tt == luaoc_struct_type){ // auto encapsulate struct to NSValue
+        if (tt == luaoc_struct_type)
+        { // auto encapsulate struct to NSValue
           void* bytes = lua_touserdata(L,index);
           lua_getfield(L, index, "__encoding");
           value = [NSValue valueWithBytes:bytes
                                  objCType:lua_tostring(L, -1)];
           lua_pop(L, 1); // pop __encoding
-        } else if (tt == luaoc_var_type) { // use var type's value
+        }
+        else if (tt == luaoc_var_type)
+        { // use var type's value
           lua_getfield(L, index, "__encoding");
           if (strcmp(lua_tostring(L, -1), (char[]){_C_ID,0}) == 0){
             // var type store id. don't need to convert to id
@@ -425,7 +428,9 @@ id luaoc_convert_toid(lua_State *L, int index) {
             value = luaoc_convert_toid(L, -1);
             lua_pop(L, 1);
           }
-        } else {
+        }
+        else
+        {
           value = *(id*)lua_touserdata(L, index);
         }
       } else {
@@ -457,7 +462,7 @@ id luaoc_convert_toid(lua_State *L, int index) {
       }
 
       id value = NULL;
-      if (dictionary) {
+      if (dictionary) {     // dictionary
         value = [NSMutableDictionary dictionary];
 
         lua_pushnil(L);  /* first key */
@@ -471,7 +476,7 @@ id luaoc_convert_toid(lua_State *L, int index) {
 
             lua_pop(L, 1); // Pop off the value
         }
-      } else {
+      } else {          // array
         value = [NSMutableArray array];
 
         size_t len = lua_rawlen(L, -1);
@@ -509,7 +514,10 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
   switch (lua_type(L, index)) {
     case LUA_TLIGHTUSERDATA: // assume pointer is point to a struct
       *outSize = luaoc_get_one_typesize(typeencoding, NULL, NULL);
-      return lua_touserdata(L, index);
+      LUAOC_ASSERT(*outSize > 0);
+      value = calloc(1, *outSize);
+      memcpy(value, lua_touserdata(L, index), *outSize);
+      return value;
     case LUA_TUSERDATA: {
       if (luaL_getmetafield(L, index, "__type") != LUA_TNIL) {
         LUA_INTEGER tt = lua_tointeger(L, -1); lua_pop(L, 1);
@@ -596,9 +604,11 @@ void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, si
   void* value = NULL;
   if (outSize == NULL) outSize = (size_t*)alloca(sizeof(size_t));     // prevent NULL condition in deal
 
-  if (lua_isnoneornil(L, index)) { // if nil, return a pointer ref to NULL pointer, it also can treat as number 0
-    *outSize = sizeof(void*); value = calloc(sizeof(void*), 1);
-    return value;
+  if (lua_isnoneornil(L, index)) { // if nil, return a default 0 fill value
+      *outSize = luaoc_get_one_typesize(typeDescription, NULL, NULL);
+      LUAOC_ASSERT(*outSize > 0);
+      value = calloc(*outSize, 1);
+      return value;
   }
 
   *outSize = 0;
@@ -748,9 +758,9 @@ void luaoc_push_obj(lua_State *L, const char *typeDescription, void* buffer) {
       PUSH_POINTER(_C_ID, id, luaoc_push_instance)
       PUSH_POINTER(_C_CLASS, Class, luaoc_push_class)
       PUSH_POINTER(_C_PTR, void*, lua_pushlightuserdata) // FIXME: pointer deref and address function
-      PUSH_POINTER(_C_CHARPTR, char*, lua_pushstring)
+      PUSH_POINTER(_C_CHARPTR, char*, lua_pushstring) // FIXME: if the pass in char* is a buf to fill?
 
-      case _C_SEL:
+      case _C_SEL: // autoconvert to string
         if (*(SEL*)buffer == NULL) lua_pushnil(L);
         else lua_pushstring(L, sel_getName(*(SEL*)buffer));
         return;
@@ -807,7 +817,6 @@ NSUInteger luaoc_get_one_typesize(const char *typeDescription, const char** stop
       CASE_SIZE(_C_FLT     , float)
       CASE_SIZE(_C_DBL     , double)
       CASE_SIZE(_C_BOOL    , bool)
-      // FIXME: may need to deal error
       case _C_BFLD:
         // every 8 bit consider one byte
         return ((int)strtol( ++(*stopPos), (char**)stopPos, 10 )+7)/8;
@@ -866,6 +875,7 @@ NSUInteger luaoc_get_type_number(const char* typeDescription) {
   }
   return typeNumber;
 }
+
 int luaoc_pcall(lua_State *L, int nargs, int nresults) {
     return lua_pcall(L, nargs, nresults, 0);
 }
