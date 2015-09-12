@@ -8,7 +8,6 @@
 
 #import <Foundation/Foundation.h>
 #import "lua.h"
-#import "luaoc_helper.h"
 
 #define LUAOC_INSTANCE_METATABLE_NAME "oc.instance"
 #define LUAOC_SUPER_METATABLE_NAME "oc.super"

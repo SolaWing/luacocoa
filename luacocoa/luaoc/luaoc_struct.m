@@ -8,17 +8,17 @@
 
 #import "luaoc_struct.h"
 #import "lauxlib.h"
-#import "luaoc_helper.h"
 
 #import <stdlib.h>
 #import <string.h>
-
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
     #import <UIKit/UIKit.h>
 #else
 #endif
+
+#import "luaoc_helper.h"
 
 /// table use to find offset by name {struct_name = {name = offset, ...}, ...}
 #define NAMED_STRUCT_TABLE_NAME "named_struct"

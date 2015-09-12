@@ -10,7 +10,7 @@
 #import "luaoc_helper.h"
 #import "luaoc.h"
 #import "lauxlib.h"
-#import "ffi_wrap.h"
+
 #import "luaoc_instance.h"
 
 #define LUAFunctionRegistryName "oc.funcMap" // table hold blockpointer to lua func
@@ -48,6 +48,7 @@ static inline void get_block_actual_encoding(char* buffer, const char* encoding,
 //#define NO_USE_FFI
 #ifndef NO_USE_FFI
 #import "ffi.h"
+#import "ffi_wrap.h"
 static NSMutableDictionary* luaBlockFuncDict; // encoding => blockFunc
 
 static void luaoc_block_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {

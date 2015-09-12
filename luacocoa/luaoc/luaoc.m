@@ -7,15 +7,16 @@
 //
 
 #import "luaoc.h"
-#import "luaoc_class.h"
 #import "lualib.h"
 #import "lauxlib.h"
+#import <objc/runtime.h>
+
+#import "luaoc_class.h"
 #import "luaoc_instance.h"
 #import "luaoc_struct.h"
 #import "luaoc_var.h"
 #import "luaoc_helper.h"
 #import "luaoc_block.h"
-#import <objc/runtime.h>
 
 #ifndef NO_USE_FFI
 #import "ffi_wrap.h"

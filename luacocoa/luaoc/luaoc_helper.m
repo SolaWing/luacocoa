@@ -7,16 +7,16 @@
 //
 
 #import "luaoc_helper.h"
+
+#import "lauxlib.h"
+#import <objc/runtime.h>
+#import <Foundation/Foundation.h>
+
 #import "luaoc_class.h"
 #import "luaoc_instance.h"
 #import "luaoc_struct.h"
 #import "luaoc_block.h"
 #import "luaoc_var.h"
-
-#import "lauxlib.h"
-
-#import <objc/runtime.h>
-#import <Foundation/Foundation.h>
 
 char* convert_copyto_selName(const char* luaName, bool isAppendColonIfNone) {
   NSCParameterAssert(luaName);

@@ -10,7 +10,7 @@
 #import "ffi.h"
 
 /** create and return a IMP pointer
- * 
+ *
  * @param encoding: IMP encoding
  * @param function: ffi_call function
  * @param outClosure: out closure, can pass NULL. if not cache IMP, you should
