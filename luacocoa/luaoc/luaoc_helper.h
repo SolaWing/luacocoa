@@ -76,22 +76,38 @@ static inline int lua_rawgetfield(lua_State *L, int index, const char *k){
 
 #pragma mark - api method
 
-/** convert give luaName, return a alloc sel name, you should free it */
+/** convert give lua msg name, which use '_' insteadof ':'.
+ *  return a alloc sel name, you should free it */
 char* convert_copyto_selName(const char* luaName, bool isAppendColonIfNone);
 
-/** convert luaName to selName, put in buffer. buffer's space should bigger than strlen(luaName) + 2 */
+/** convert lua msg name to selName, put in buffer.
+ *  buffer's space should bigger than strlen(luaName) + 2 */
 void convert_to_selName( char* buffer, const char* luaName, bool isAppendColonIfNone);
 
 /** find sel by name, if sel not found, and selName not end with :, add : and retry */
 SEL luaoc_find_SEL_byname(id target, const char* luaName);
 
-/** first arg is receiver, second is method args. and this method should have a upvalue as method name */
+/** LUA_TFUNCTION, first arg is receiver, second is method args.
+ *  and this method should have a upvalue as method name
+ *  you should use `luaoc_push_msg_send` insteadof push this function directly*/
 int luaoc_msg_send(lua_State* L);
 
 static inline void luaoc_push_msg_send(lua_State* L, SEL sel) {
   lua_pushlightuserdata(L, sel);
   lua_pushcclosure(L, luaoc_msg_send, 1);
 }
+
+/** LUA_TFUNCTION, try convert userdata type to primitive lua type.
+ *  support multi value and return multi value
+ *
+ *  for example:
+ *      NSString        => lua string
+ *      NSNumber        => lua number
+ *      NSArray         => array table, recursively
+ *      NSDictionary    => dict table, recursively
+ *      Struct          => array table, recursively
+ */
+int luaoc_tolua(lua_State *L);
 
 /** convert given index lua value to objc value, return alloc address, you must free the return pointer */
 void* luaoc_copy_toobjc(lua_State *L, int index, const char *typeDescription, size_t *outSize);
@@ -132,3 +148,7 @@ void luaoc_dump_stack(lua_State* L);
   #endif
 #endif
 
+// in 32bit iphone_simulator, my libffi can't compile. so disable it.
+#if TARGET_IPHONE_SIMULATOR && !defined(__LP64__)
+#define NO_USE_FFI
+#endif

@@ -39,6 +39,7 @@ void* luaoc_getstruct(lua_State *L, int index);
 
 /** get struct byte offset by index, begin from 0. when error, return <0 */
 int luaoc_struct_offset_by_index(const char* structEncoding, int index, const char** outEncoding);
+
 /** get struct by index reg struct info.
  * @param top - 1: struct name
  * @param top : key
@@ -47,5 +48,6 @@ int luaoc_struct_offset_by_index(const char* structEncoding, int index, const ch
 int luaoc_struct_offset_by_key(lua_State *L, const char** outEncoding);
 
 
-/** LUAFUNC, first arg is name, return encoding of named_struct. or nil otherwise */
+/** LUA_TFUNCTION, first arg is struct name.
+ *  return encoding of named_struct. or nil otherwise */
 int luaoc_encoding_of_named_struct(lua_State *L);

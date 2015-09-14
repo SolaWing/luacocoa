@@ -9,6 +9,9 @@
 #import <Foundation/Foundation.h>
 #import "lua.h"
 
+
+int luaopen_luaoc_block(lua_State *L);
+
 @interface LUAFunction : NSObject
 
 @property (nonatomic, copy) NSString* encoding;
@@ -27,6 +30,9 @@
  */
 id luaoc_convert_copyto_block(lua_State* L);
 
+
+#pragma mark - LUA_TFUNCTION
+
 /** invoke and call a block object
  *
  * @param 1: block object
@@ -34,5 +40,3 @@ id luaoc_convert_copyto_block(lua_State* L);
  * @param ...: block args
  */
 int luaoc_call_block(lua_State *L);
-
-int luaopen_luaoc_block(lua_State *L);

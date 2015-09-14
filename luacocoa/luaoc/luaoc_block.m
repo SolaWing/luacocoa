@@ -15,6 +15,13 @@
 
 #define LUAFunctionRegistryName "oc.funcMap" // table hold blockpointer to lua func
 
+/** LUA_TFUNCTION, return created block
+ *
+ * @param 1 : function
+ * @param 2 : encoding string, or nil to use default encoding
+ */
+static int luaoc_block(lua_State *L);
+
 struct OCBlockStruct {
     void* isa;
     int flags;
@@ -25,7 +32,6 @@ struct OCBlockStruct {
 };
 
 /** add ^v to encoding after ret type.
- *
  *
  * @param buffer: out buffer, should larger than strlen(encoding) + 3
  * @param encoding: passin encoding.
@@ -40,10 +46,6 @@ static inline void get_block_actual_encoding(char* buffer, const char* encoding,
     buffer[size+3] = '\0'; // NULL terminated
 }
 
-// in 32bit iphone_simulator, my libffi can't compile. so disable it.
-#if TARGET_IPHONE_SIMULATOR && !defined(__LP64__)
-#define NO_USE_FFI
-#endif
 
 //#define NO_USE_FFI
 #ifndef NO_USE_FFI
@@ -257,11 +259,6 @@ int luaoc_call_block(lua_State *L) {
     return 1;
 }
 
-/** LUA_TFUNCTION, return created block
- *
- * @param 1 : function
- * @param 2 : encoding string, or nil to use default encoding
- */
 static int luaoc_block(lua_State *L) {
     // only keep 2 value at lua stack, as paramter pass to luaoc_convert_to_block
     lua_settop(L, 2);

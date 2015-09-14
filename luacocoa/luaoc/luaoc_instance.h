@@ -29,7 +29,10 @@ id luaoc_toinstance(lua_State *L, int index);
  */
 LUA_INTEGER luaoc_change_lua_retain_count(lua_State *L, int index, LUA_INTEGER change);
 
-// add retainCount for release in gc, lua will retain instance only once
+/** add 1 retainCount by lua, compare to objc retain, the retainCount add by
+ * this method will autorelease when gc.
+ *
+ * NOTE: if retain a dealloc obj, autorelease in gc may crash. */
 #define LUAOC_RETAIN(L, index)                                          \
 {                                                                       \
     id* ud = (id*)lua_touserdata(L, index);                             \
@@ -38,7 +41,7 @@ LUA_INTEGER luaoc_change_lua_retain_count(lua_State *L, int index, LUA_INTEGER c
     }                                                                   \
 }
 
-// minus retainCount
+/** release obj immediately, transfer out ownership */
 #define LUAOC_RELEASE(L, index)                                         \
 {                                                                       \
     id* ud = (id*)lua_touserdata(L, index);                             \
@@ -47,8 +50,7 @@ LUA_INTEGER luaoc_change_lua_retain_count(lua_State *L, int index, LUA_INTEGER c
     }                                                                   \
 }
 
-// add retainCount for release in gc,
-// pass in should be a +1 obj. so the +1 owned by lua
+/** take ownership of a +1 obj. */
 #define LUAOC_TAKE_OWNERSHIP(L, index)                                  \
 {                                                                       \
     id* ud = (id*)lua_touserdata(L, index);                             \
@@ -56,3 +58,17 @@ LUA_INTEGER luaoc_change_lua_retain_count(lua_State *L, int index, LUA_INTEGER c
         [*ud release]; /* release when not first retain */              \
     }                                                                   \
 }
+
+#pragma mark - LUA_TFUNCTION
+
+/** lua retain obj, return self */
+int luaoc_retain(lua_State *L);
+int luaoc_release(lua_State *L);
+
+/** get instance super.
+ *
+ * @param 1: instance or super userdata.
+ * @param 2: class userdata or class name. or nil to use param 1's class
+ * @return   super userdata, or nil when not get or fail
+ * */
+int luaoc_super(lua_State *L);

@@ -22,6 +22,7 @@ IMP create_imp_for_encoding(const char* encoding,
 
 void free_FFI_closure(ffi_closure* closure);
 
+
 /** call a c function use objc encoding pattern
  *
  * @param encoding: objc method encoding

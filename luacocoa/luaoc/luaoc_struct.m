@@ -154,6 +154,15 @@ int luaoc_struct_offset_by_key(lua_State *L, const char** outEncoding) {
     return -1;
 }
 
+int luaoc_encoding_of_named_struct(lua_State *L) {
+  luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
+  lua_pushvalue(L, 1); // structName
+  if (lua_rawget(L, -2) != LUA_TNIL){
+    lua_rawgetfield(L, -1, "__encoding");
+  }
+  return 1;
+}
+
 static int __index(lua_State *L){
   luaL_checktype(L, 1, LUA_TUSERDATA);
 
@@ -233,22 +242,6 @@ static int __len(lua_State *L){
   return 1;
 }
 
-static const luaL_Reg metaMethods[] = {
-  {"__index", __index},
-  {"__newindex", __newindex},
-  {"__len", __len},
-  {NULL, NULL},
-};
-
-int luaoc_encoding_of_named_struct(lua_State *L) {
-  luaL_getmetatable(L, NAMED_STRUCT_TABLE_NAME);
-  lua_pushvalue(L, 1); // structName
-  if (lua_rawget(L, -2) != LUA_TNIL){
-    lua_rawgetfield(L, -1, "__encoding");
-  }
-  return 1;
-}
-
 /** first is name, after is {name, type} pair ... */
 static int reg_struct(lua_State *L){
   size_t structNameLen;
@@ -306,7 +299,7 @@ static int reg_struct(lua_State *L){
  *  init value.
  *  if call with more than 1 arg, it will pack to a table array, deal just like
  *  1 arg
- * 
+ *
  *  @param upvalue 1: named_struct type
  */
 static int create_struct(lua_State *L){
@@ -349,12 +342,6 @@ static int index_struct_by_name(lua_State *L){
   }
   return 1;
 }
-
-static const luaL_Reg structFunctions[] = {
-  {"reg", reg_struct},
-  {"__index", index_struct_by_name},
-  {NULL, NULL},
-};
 
 /** reg named struct into table at stack top */
 static void reg_default_struct(lua_State *L){
@@ -442,6 +429,19 @@ static void reg_default_struct(lua_State *L){
 
   LUA_POP_STACK(L,0);
 }
+
+static const luaL_Reg metaMethods[] = {
+  {"__index", __index},
+  {"__newindex", __newindex},
+  {"__len", __len},
+  {NULL, NULL},
+};
+
+static const luaL_Reg structFunctions[] = {
+  {"reg", reg_struct},
+  {"__index", index_struct_by_name},
+  {NULL, NULL},
+};
 
 int luaopen_luaoc_struct(lua_State *L) {
   luaL_newlib(L, structFunctions);

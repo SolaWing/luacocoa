@@ -30,11 +30,6 @@ static void luaoc_push_lua_func(lua_State *L, Class cls, SEL sel, bool isClassMe
 /** cls.methodType[name] = func. func at the stack top. cls at the clsIndex. */
 static void luaoc_set_lua_func(lua_State *L, int clsIndex, const char* name, bool isClassMethod);
 
-// in 32bit iphone_simulator, my libffi can't compile. so disable it.
-#if TARGET_IPHONE_SIMULATOR && !defined(__LP64__)
-#define NO_USE_FFI
-#endif
-
 //#define NO_USE_FFI
 #ifndef NO_USE_FFI
 #pragma mark - FFI MSG
@@ -385,7 +380,7 @@ static IMP imp_for_encoding(const char* encoding) {
 }
 
 #endif
-#pragma mark - class luac convert
+#pragma mark - class luaoc convert
 void luaoc_push_class(lua_State *L, Class cls) {
   if (NULL == cls) {
     lua_pushnil(L);
@@ -438,6 +433,11 @@ static int index_class_by_name(lua_State *L){
   return 1;
 }
 
+/** lua inherited class dealloc method.
+ *  use this can avoid having to call super dealloc
+ *
+ *  lua code can add dealloc lua function to class index value.
+ *  instead of overwritting oc dealloc method */
 static void luaclass_dealloc(id self, SEL _cmd) {
 
     // [super dealloc], this method is the rootLuaClass dealloc method.
@@ -504,9 +504,10 @@ static int add_protocol(lua_State *L){
 
 /** define a new class.
  *
- * @param 1: class name
- * @param 2: super class or super class name. default to NSObject
- * @param 3...: zero or more protocol names
+ * @param 1: self (class_table)
+ * @param 2: class name
+ * @param 3: super class or super class name. default to NSObject
+ * @param 4...: zero or more protocol names
  * @return new class userdata
  */
 static int new_class(lua_State *L){
@@ -528,7 +529,6 @@ static int new_class(lua_State *L){
     if ( unlikely( !superClass )) LUAOC_ARGERROR( 3, "can't convert to class" );
 
     cls = objc_allocateClassPair(superClass, className, 0);
-
 
     IMP superDealloc = class_getMethodImplementation(superClass, @selector(dealloc));
     if (superDealloc != (IMP)luaclass_dealloc) {
@@ -623,8 +623,7 @@ static const char* find_override_method_encoding(Class cls, SEL selector, bool i
 }
 
 /** just overwrite it, in imp, search for the cls luafunc with luaName
- *  OC old imp save in selector prefix with OC
- */
+ *  OC old imp save in selector prefix with OC */
 static bool override(Class cls, const char* selName, bool isClassMethod, const char* addEncoding) {
   NSCParameterAssert(cls);
   NSCParameterAssert(selName);
@@ -635,7 +634,7 @@ static bool override(Class cls, const char* selName, bool isClassMethod, const c
 
   if (NULL == encoding) {
       if (addEncoding) {
-          encoding = addEncoding;
+          encoding = addEncoding; // new method, use given encoding
       } else {
           return false;
       }

@@ -29,6 +29,8 @@
 
 #define LUAOC_VAR_METATABLE_NAME "oc.var"
 
+int luaopen_luaoc_var(lua_State *L);
+
 enum luaoc_var_flags {
     luaoc_var_weak = 1 << 0,
 };
@@ -42,6 +44,17 @@ void luaoc_get_var(lua_State *L, int index);
 /** set value from var at index, pop the set value at top */
 void luaoc_set_var(lua_State *L, int index);
 
-int luaopen_luaoc_var(lua_State *L);
+#pragma mark - LUA_TFUNCTION
 
-int luaopen_luaoc_encoding(lua_State *L);
+/** convert multiple value to weakvar type, do the convert to id if needed */
+int luaoc_weakvar(lua_State *L);
+
+/** get multiple values from multiple var type value. */
+int luaoc_getvar(lua_State *L);
+
+/** set new values to var type value.
+ *
+ * @param 1: var type value.
+ * @param 2: new value, can do auto convert to var store type.
+ */
+int luaoc_setvar(lua_State *L);

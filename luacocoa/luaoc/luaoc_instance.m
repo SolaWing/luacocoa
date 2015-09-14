@@ -130,6 +130,35 @@ LUA_INTEGER luaoc_change_lua_retain_count(lua_State *L, int index, LUA_INTEGER c
     return count;
 }
 
+int luaoc_retain(lua_State *L){
+    LUAOC_RETAIN(L, 1);
+    lua_pushvalue(L, 1);
+
+    return 1; // return pass in obj
+}
+
+int luaoc_release(lua_State *L){
+    LUAOC_RELEASE(L, 1);
+    return 0;
+}
+
+int luaoc_super(lua_State *L) {
+    Class cls = NULL;
+    switch( lua_type(L, 2) ) {
+        case LUA_TUSERDATA: {
+            cls = luaL_testudata(L, 2, LUAOC_CLASS_METATABLE_NAME);
+            break;
+        }
+        case LUA_TSTRING: {
+            cls = objc_getClass(lua_tostring(L, 2));
+            break;
+        }
+        default: { break; }
+    }
+    luaoc_push_super(L, 1, cls);
+    return 1;
+}
+
 #pragma mark - Meta Funcs
 static int __index(lua_State *L){
   id* ud = (id*)lua_touserdata(L, 1);
@@ -188,10 +217,6 @@ static int __gc(lua_State *L){
 }
 
 // TODO: other meta funcs
-static int __add(lua_State *L){
-  return 1;
-}
-
 static const luaL_Reg metaFunctions[] = {
   {"__index", __index},
   {"__newindex", __newindex},
@@ -214,6 +239,7 @@ int luaopen_luaoc_instance(lua_State* L) {
 
   lua_pushcfunction(L, __gc);
   lua_rawsetfield(L, -2, "__gc");
+
   lua_pushstring(L, "__type");
   lua_pushinteger(L, luaoc_instance_type);
   lua_rawset(L, -3);                        // meta.type = "id"
