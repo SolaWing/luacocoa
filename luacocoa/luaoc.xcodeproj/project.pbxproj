@@ -8,15 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		21576BB21B74F83900F132B1 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAD1B74F81D00F132B1 /* libffi.a */; };
-		216AEB691B9DD87C00F2E93D /* luaoc_block.h in Headers */ = {isa = PBXBuildFile; fileRef = 216AEB671B9DD87C00F2E93D /* luaoc_block.h */; };
+		216AEB691B9DD87C00F2E93D /* luaoc_block.h in Headers */ = {isa = PBXBuildFile; fileRef = 216AEB671B9DD87C00F2E93D /* luaoc_block.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		216AEB6A1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
 		216AEB6B1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
 		216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */ = {isa = PBXBuildFile; fileRef = 216B4A361B690A180060DCA5 /* luaoc_struct.m */; };
 		216CE9A11B765438006CA509 /* ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAF1B74F81D00F132B1 /* ffi.dylib */; };
 		216CE9AB1B76551E006CA509 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9AA1B76551E006CA509 /* main.m */; };
 		216CE9AE1B76551E006CA509 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9AD1B76551E006CA509 /* AppDelegate.m */; };
-		216CE9B11B76551E006CA509 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9B01B76551E006CA509 /* ViewController.m */; };
-		216CE9B41B76551E006CA509 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 216CE9B21B76551E006CA509 /* Main.storyboard */; };
 		216CE9B61B76551E006CA509 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 216CE9B51B76551E006CA509 /* Images.xcassets */; };
 		216CE9B91B76551E006CA509 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 216CE9B71B76551E006CA509 /* LaunchScreen.xib */; };
 		216CE9CE1B765545006CA509 /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
@@ -24,9 +22,10 @@
 		216CE9D01B765572006CA509 /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
 		216CE9D11B765A23006CA509 /* liblua.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0D091B671202006FB83F /* liblua.a */; };
 		216CE9D31B765A89006CA509 /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
-		2193CF741BA65A710007D206 /* luaoc_encode.h in Headers */ = {isa = PBXBuildFile; fileRef = 2193CF721BA65A710007D206 /* luaoc_encode.h */; };
+		2193CF741BA65A710007D206 /* luaoc_encode.h in Headers */ = {isa = PBXBuildFile; fileRef = 2193CF721BA65A710007D206 /* luaoc_encode.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		2193CF751BA65A710007D206 /* luaoc_encode.m in Sources */ = {isa = PBXBuildFile; fileRef = 2193CF731BA65A710007D206 /* luaoc_encode.m */; };
 		2193CF761BA65A710007D206 /* luaoc_encode.m in Sources */ = {isa = PBXBuildFile; fileRef = 2193CF731BA65A710007D206 /* luaoc_encode.m */; };
+		2193CF781BA69ED50007D206 /* scripts in Resources */ = {isa = PBXBuildFile; fileRef = 2193CF771BA69ED50007D206 /* scripts */; };
 		2197367E1B6D011400B6846D /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
 		21A36DE01B71A2B80094CF55 /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D2F1B67128F006FB83F /* lapi.c */; };
 		21A36DE11B71A2B80094CF55 /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D311B67128F006FB83F /* lauxlib.c */; };
@@ -176,7 +175,7 @@
 		21AE0DB91B6754CF006FB83F /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
 		21B60B0D1B6F0AEA00C1FC19 /* luaoc_var.m in Sources */ = {isa = PBXBuildFile; fileRef = 21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */; };
 		21BFB3BB1B67686D00D45278 /* luaoc_instance.m in Sources */ = {isa = PBXBuildFile; fileRef = 21BFB3BA1B67686D00D45278 /* luaoc_instance.m */; };
-		21D817AD1B9EB42D009AD9AB /* ffi_wrap.h in Headers */ = {isa = PBXBuildFile; fileRef = 21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */; };
+		21D817AD1B9EB42D009AD9AB /* ffi_wrap.h in Headers */ = {isa = PBXBuildFile; fileRef = 21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		21D817AE1B9EB42D009AD9AB /* ffi_wrap.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */; };
 		21D817AF1B9EB42D009AD9AB /* ffi_wrap.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */; };
 /* End PBXBuildFile section */
@@ -313,15 +312,13 @@
 		216CE9AA1B76551E006CA509 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		216CE9AC1B76551E006CA509 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		216CE9AD1B76551E006CA509 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		216CE9AF1B76551E006CA509 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
-		216CE9B01B76551E006CA509 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
-		216CE9B31B76551E006CA509 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		216CE9B51B76551E006CA509 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		216CE9B81B76551E006CA509 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
 		216CE9BE1B76551E006CA509 /* exampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = exampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		216CE9C31B76551E006CA509 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		2193CF721BA65A710007D206 /* luaoc_encode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_encode.h; sourceTree = "<group>"; };
 		2193CF731BA65A710007D206 /* luaoc_encode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_encode.m; sourceTree = "<group>"; };
+		2193CF771BA69ED50007D206 /* scripts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = scripts; sourceTree = "<group>"; };
 		2197367D1B6D011400B6846D /* luaoc_test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_test.m; sourceTree = "<group>"; };
 		21A36DDC1B71A2A20094CF55 /* liblua_osx.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua_osx.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		21A36E1D1B71A3640094CF55 /* libreadline.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libreadline.dylib; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk/usr/lib/libreadline.dylib; sourceTree = DEVELOPER_DIR; };
@@ -492,11 +489,9 @@
 		216CE9A71B76551E006CA509 /* example */ = {
 			isa = PBXGroup;
 			children = (
+				2193CF771BA69ED50007D206 /* scripts */,
 				216CE9AC1B76551E006CA509 /* AppDelegate.h */,
 				216CE9AD1B76551E006CA509 /* AppDelegate.m */,
-				216CE9AF1B76551E006CA509 /* ViewController.h */,
-				216CE9B01B76551E006CA509 /* ViewController.m */,
-				216CE9B21B76551E006CA509 /* Main.storyboard */,
 				216CE9B51B76551E006CA509 /* Images.xcassets */,
 				216CE9B71B76551E006CA509 /* LaunchScreen.xib */,
 				216CE9A81B76551E006CA509 /* Supporting Files */,
@@ -1033,9 +1028,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				216CE9B41B76551E006CA509 /* Main.storyboard in Resources */,
 				216CE9B91B76551E006CA509 /* LaunchScreen.xib in Resources */,
 				216CE9B61B76551E006CA509 /* Images.xcassets in Resources */,
+				2193CF781BA69ED50007D206 /* scripts in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1067,7 +1062,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				216CE9B11B76551E006CA509 /* ViewController.m in Sources */,
 				216CE9AE1B76551E006CA509 /* AppDelegate.m in Sources */,
 				216CE9AB1B76551E006CA509 /* main.m in Sources */,
 			);
@@ -1262,14 +1256,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		216CE9B21B76551E006CA509 /* Main.storyboard */ = {
-			isa = PBXVariantGroup;
-			children = (
-				216CE9B31B76551E006CA509 /* Base */,
-			);
-			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
 		216CE9B71B76551E006CA509 /* LaunchScreen.xib */ = {
 			isa = PBXVariantGroup;
 			children = (

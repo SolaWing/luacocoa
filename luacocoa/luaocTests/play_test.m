@@ -29,6 +29,13 @@ void print_register_class(){
 
 @interface class_test : XCTestCase
 
+@property (nonatomic) bool boolVar;
+@property (nonatomic) BOOL boolVar2;
+@property (nonatomic, strong) id idType;
+@property (nonatomic, copy) id(^blockType)(id);
+@property (nonatomic, copy) NSString* str;
+@property (nonatomic) NSUInteger intVal;
+
 @end
 
 /** [blockABI](http://clang.llvm.org/docs/Block-ABI-Apple.html)
@@ -94,9 +101,22 @@ id hackFuncDFI2ID(struct _blocktype*block, double a, float b, int c){
     luaoc_close();
 }
 
+- (void)testProperty {
+    Class cls = [NSString class];
+    unsigned int out;
+    objc_property_t* properties = class_copyPropertyList(cls, &out);
+    for (int i = 0; i < out; ++i) {
+        objc_property_t property = properties[i];
+        fprintf(stdout, "%s %s\n", property_getName(property), property_getAttributes(property));
+    }
+    // can't get category property
+    bool a = [[NSString new]isAbsolutePath];
+    objc_property_t property = class_getProperty(cls, "absolutePath");
+    fprintf(stdout, "%s %s\n", property_getName(property), property_getAttributes(property));
+
+}
+
 - (void)empty {}
-
-
 - (void)atestSpeed {
 #define TEST_FFI_BLOCK 0
 #define TEST_COUNT 1000000

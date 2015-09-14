@@ -7,6 +7,8 @@
 //
 
 #import "AppDelegate.h"
+#import "luaoc.h"
+#import "lauxlib.h"
 
 @interface AppDelegate ()
 
@@ -14,9 +16,27 @@
 
 @implementation AppDelegate
 
+- (void)openLuaoc {
+    NSString* scriptsDir = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"scripts"];
+    if ( [[NSFileManager defaultManager] fileExistsAtPath:scriptsDir] ){
+        setenv("LUA_PATH", [[NSString stringWithFormat:@"%@/?.lua;%@/?/init.lua",
+                scriptsDir, scriptsDir] UTF8String], 1);
+        lua_State* L = luaoc_setup();
+        NSString* initScript = [scriptsDir stringByAppendingPathComponent:@"init.lua"];
+        if ( [[NSFileManager defaultManager] fileExistsAtPath:initScript] ){
+            if (luaL_dofile(L, initScript.UTF8String) != 0) {
+                NSLog(@" load init error:%s", lua_tostring(L, -1));
+            }
+        }
+    }
+}
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
     // Override point for customization after application launch.
+    [self openLuaoc];
+
+    [self.window makeKeyAndVisible];
     return YES;
 }
 
