@@ -153,13 +153,18 @@ static IMP imp_for_encoding(NSString* encodingString) {
 @end
 
 
-// NOTE default @@, if actually not @@, but other compatible encoding.
-// like vv or v@, invoke func may pass garbage value to lua.
-// this garbage can't be use, even in push function.
-// otherwise, may crash.
+// NOTE when use @ insteadof v, may get garbage value. if use this value, will crash
+// 
+// for lua created block, oc invoke it as vv, paramter is garbage and return from lua will be convert to NULL
+// for lua invoke block, which actually is vv, paramter will be convert to NULL and return value is garbage
 //
-// recommend pass encoding specifically
+// so if value get from lua, @ is compatible with v as NULL value.
+// but if from oc, it's a garbage value
+// 
+// recommend pass encoding specifically, except for vv
 #define DEF_ENCODING "@@"
+// #define CREATE_DEF_ENCODING "@"
+// #define INVOKE_DEF_ENCODING "v@"
 id luaoc_convert_copyto_block(lua_State* L) {
     luaL_checktype(L, -2, LUA_TFUNCTION);
     LUAFunction* func = [LUAFunction new];

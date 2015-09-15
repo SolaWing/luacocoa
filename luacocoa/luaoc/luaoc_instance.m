@@ -51,7 +51,7 @@ void luaoc_push_instance(lua_State *L, id v){
         lua_pushvalue(L, -1);
         lua_rawsetp(L, -4, v);  // env[p] = uv, : ... ud env nil uv
     }
-    // FIXME block default imp may push garbage value, retain it cause crash
+    // FIXME: block default imp may push garbage value, retain it cause crash
     // lua_pushinteger(L, 1);
     // lua_rawsetfield(L, -2, "__retainCount");
     // [v retain];                                         // retain when create and release in gc
@@ -199,6 +199,32 @@ static int __newindex(lua_State *L){
   return 0;
 }
 
+static int __tostring(lua_State *L) {
+    id* ud = (id*)lua_touserdata(L, 1);
+    if (ud)
+    {
+        lua_pushstring(L, [*ud description].UTF8String);
+    }
+    else
+    {
+        lua_pushnil(L);
+    }
+    return 1;
+}
+
+static int __len(lua_State *L) {
+    id* ud = (id*)lua_touserdata(L,1);
+    LUAOC_ASSERT(ud);
+    if ([*ud respondsToSelector: @selector(count)]){
+        lua_pushinteger(L, [*ud count]);
+    } else if ([*ud respondsToSelector: @selector(length)]) {
+        lua_pushinteger(L, [*ud length]);
+    } else {
+        DLOG("unsupported get length for %s", class_getName([*ud class]));
+        lua_pushnil(L);
+    }
+    return 1;
+}
 static int __gc(lua_State *L){
   id* ud = luaL_testudata(L, 1, LUAOC_INSTANCE_METATABLE_NAME);
   if (ud) {
@@ -254,6 +280,9 @@ static inline void lua_release_id_ptr(void* objPtr) {
 static const luaL_Reg metaFunctions[] = {
   {"__index", __index},
   {"__newindex", __newindex},
+  {"__tostring", __tostring},
+  {"__len", __len},
+  // {"__pairs", __tostring},
   {NULL, NULL}
 };
 
