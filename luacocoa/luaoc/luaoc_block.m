@@ -160,20 +160,25 @@ static IMP imp_for_encoding(NSString* encodingString) {
 //
 // so if value get from lua, @ is compatible with v as NULL value.
 // but if from oc, it's a garbage value
-// 
+//
+//
+//
 // recommend pass encoding specifically, except for vv
-#define DEF_ENCODING "@@"
-// #define CREATE_DEF_ENCODING "@"
-// #define INVOKE_DEF_ENCODING "v@"
 id luaoc_convert_copyto_block(lua_State* L) {
     luaL_checktype(L, -2, LUA_TFUNCTION);
     LUAFunction* func = [LUAFunction new];
     const char* encoding = lua_tostring(L, -1);
-    if (encoding) {
-        func.encoding = [NSString stringWithUTF8String:encoding];
-    } else {
-        func.encoding = @DEF_ENCODING;
+    if (!encoding) {
+        // lua block: default return type is @.
+        // param type is @, count equal to fixed param count
+        lua_Debug ar;
+        lua_pushvalue(L, -2);
+        lua_getinfo(L, ">u", &ar);
+        encoding = alloca( ar.nparams + 2 );
+        memset((char*)encoding, '@', ar.nparams+1);
+        ((char*)encoding)[ar.nparams+1] = '\0';
     }
+    func.encoding = [NSString stringWithUTF8String:encoding];
     lua_pop(L, 1);
     [func setLuaFuncInState:L];
 
@@ -202,9 +207,18 @@ int luaoc_call_block(lua_State *L) {
     LUAOC_ASSERT(block);
 
     // TODO: check if a lua block and call directly
-
+    NSUInteger argNumber;
     const char* encoding = lua_tostring(L, 2);
-    if (NULL == encoding) encoding = DEF_ENCODING;
+    if (NULL == encoding) {
+        // default return void, args type is @, count equal to passin param count
+        argNumber = lua_gettop(L) - 2;
+        if ((NSInteger)argNumber < 0) argNumber = 0;
+
+        encoding = alloca(argNumber+2);
+        *(char*)encoding = 'v';
+        memset((char*)encoding+1, '@', argNumber);
+        ((char*)encoding)[argNumber+1] = '\0';
+    }
 
     int status;
     void* rvalue = NULL;
@@ -228,7 +242,7 @@ int luaoc_call_block(lua_State *L) {
     memcpy(trueEncoding + i+2, encodingIt, size-i);
     trueEncoding[size+2] = '\0';        // NULL terminated
 
-    NSUInteger argNumber = luaoc_get_type_number(encodingIt) + 1;
+    argNumber = luaoc_get_type_number(encodingIt) + 1;
     avalue = alloca(sizeof(void*) * (argNumber) );
 
     *avalue = &block;       // first arg is the block.
@@ -245,7 +259,7 @@ int luaoc_call_block(lua_State *L) {
         err = exception;
     }
 
-    for (int i = 1; i < argNumber; ++i) {
+    for (i = 1; i < argNumber; ++i) {
         free(avalue[i]);
     }
 
@@ -270,7 +284,7 @@ static int luaoc_block(lua_State *L) {
     id block = luaoc_convert_copyto_block(L);
     luaoc_push_obj(L, @encode(id), &block);
     // malloc_block is id type, can use retain and release
-    LUAOC_TAKE_OWNERSHIP(L, -1);
+    [block release];
 
     return 1;
 }

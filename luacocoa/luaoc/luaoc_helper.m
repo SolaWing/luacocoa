@@ -144,7 +144,7 @@ int _msg_send(lua_State* L, Method method) {
           !islower(selName[n]) ) {
         // according to oc owner rule, this object is owned by caller. so lua
         // own it. return is a +1 obj, so lua will autorelease it
-        LUAOC_TAKE_OWNERSHIP(L, -1);
+        [*(id*)rvalue release]; // change to +0
         // DLOG("%s release %p: %lld", selName, *(id*)buf, (UInt64)[*(id*)buf retainCount]);
       }
     }
@@ -212,7 +212,7 @@ int _msg_send(lua_State* L, SEL selector) {
           !islower(selName[n]) ) {
         // according to oc owner rule, this object is owned by caller. so lua
         // own it. return is a +1 obj, so lua will autorelease it
-        LUAOC_TAKE_OWNERSHIP(L, -1);
+        [*(id*)rvalue release]; // change to +0
         // DLOG("%s release %p: %lld", selName, *(id*)buf, (UInt64)[*(id*)buf retainCount]);
       }
     }

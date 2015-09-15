@@ -109,15 +109,15 @@
   XCTAssertEqual([view retainCount], 1);
 
   luaoc_push_obj(L, "@", &view);
-  XCTAssertEqual([view retainCount], 1, "lua shouldn't retain the pushed obj");
+  XCTAssertEqual([view retainCount], 2, "lua retain the pushed obj");
 
-  LUAOC_RETAIN(L, -1);
-  XCTAssertEqual([view retainCount], 2, "lua should retain the obj after call LUAOC_RETAIN");
+  luaoc_push_obj(L, "@", &view);
+  XCTAssertEqual([view retainCount], 2, "lua retain the pushed obj once");
 
   LUAOC_RETAIN(L, -1);
   LUAOC_RELEASE(L, -1);
   LUAOC_RELEASE(L, -1);
-  XCTAssertEqual([view retainCount], 1, "lua should release the obj after call LUAOC_RELEASE");
+  XCTAssertEqual([view retainCount], 1, "lua only has one autoretain, should release the obj after call LUAOC_RELEASE");
 
   LUAOC_TAKE_OWNERSHIP(L, -1);
   XCTAssertEqual([view retainCount], 1, "lua will release the obj in gc after call LUAOC_TAKE_OWNERSHIP");
@@ -128,7 +128,7 @@
 
   [view retain]; LUAOC_TAKE_OWNERSHIP(L, -2);
   [[view retain] autorelease];
-  lua_pop(L, 2);
+  lua_settop(L, 0);
   lua_gc(L, LUA_GCCOLLECT, 0);
   XCTAssertEqual([view retainCount], 1, "after full gc, lua should release retained obj");
 
@@ -774,7 +774,7 @@
 - (void)testBlock {
     lua_State* L = gLua_main_state;
 
-    // test vv
+    // test oc call vv
     RUN_LUA_SAFE_CODE( return oc.block( function() a=33 end ) );
     dispatch_block_t block; objc_storeWeak((id*)&block, luaoc_toinstance(L, -1));
     block();
@@ -789,13 +789,21 @@
 
     lua_settop(L, 0);
     lua_gc(L, LUA_GCCOLLECT, 0);
-    XCTAssertEqual(NULL, block);
+    XCTAssertEqual(NULL, block); // retain, autorelease, release work on malloc_block
 
     // test @@
     RUN_LUA_SAFE_CODE( return oc.block( function(obj) return obj:objectAtIndex(0) end) );
     objc_storeWeak((id*)&block, luaoc_toinstance(L, -1));
     id obj = ((id(^)(id))block)(@[@"123"]);
     XCTAssertEqualObjects(@"123", obj);
+
+    // test @...
+    RUN_LUA_SAFE_CODE( return oc.block( function(a,b,c,d)
+                a,b,c,d = oc.tolua(a,b,c,d) return a+b+c+d
+    end) );
+    objc_storeWeak((id*)&block, luaoc_toinstance(L, -1));
+    obj = ((id(^)(id,id,id,id))block)(@1,@2,@3,@4);
+    XCTAssertEqualObjects(@10, obj);
 
     // test {rect}{rect}df
     RUN_LUA_SAFE_CODE( return oc.block( function(rect, dbl, flt)
@@ -834,11 +842,12 @@
     id obj = [aTestClass new];
     luaoc_push_instance(L, obj);
     lua_setglobal(L, "obj");
-    RUN_LUA_SAFE_CODE( a = oc.weakvar(obj) return a );
+    RUN_LUA_SAFE_CODE( a = oc.weakvar(obj) obj = 0 return a );
     XCTAssertEqual( ( *( id* )lua_touserdata( L, -1 )), obj );
     RUN_LUA_SAFE_CODE( return a:class() );      // call msg like instance
     XCTAssertEqualObjects( luaoc_toclass(L, -1), [aTestClass class] );
     [obj release];
+    lua_gc(L, LUA_GCCOLLECT, 0);
     // release when store obj dealloc
     XCTAssertEqual( ( *( id* )lua_touserdata( L, -2 )), nil );
 
@@ -850,8 +859,9 @@
     obj = [aTestClass new];
     luaoc_push_instance(L, obj);
     lua_setglobal(L, "obj");
-    RUN_LUA_SAFE_CODE( oc.setvar(a, obj) return a );
+    RUN_LUA_SAFE_CODE( oc.setvar(a, obj) obj = 0 return a );
     XCTAssertEqual( ( *(id*)lua_touserdata(L, -1) ), obj );
+    lua_gc(L, LUA_GCCOLLECT, 0);
     [obj release];
     XCTAssertEqual( ( *(id*)lua_touserdata(L, -1) ), nil );
 
@@ -859,10 +869,11 @@
     obj = [aTestClass new];
     luaoc_push_instance(L, obj);
     lua_setglobal(L, "obj");
-    RUN_LUA_SAFE_CODE( oc.setvar(a, obj) oc.retain(a));
+    RUN_LUA_SAFE_CODE( oc.setvar(a, obj) obj = 0 oc.retain(a));
+    lua_gc(L, LUA_GCCOLLECT, 0);
     XCTAssertEqual([obj retainCount], 2); // new own one, var own one.
     RUN_LUA_SAFE_CODE( oc.setvar(a, 'hello') return a );
-    XCTAssertEqual([obj retainCount], 1); // var set to new value, autorelease old var if retain
+    XCTAssertEqual([obj retainCount], 1); // var set to new value, release old var if retain
     [obj release];
     
     // var change to other val. old var dealloc not clear it. still equal to new value
@@ -891,8 +902,7 @@
     lua_settop(L, 0);
     id block = ^{NSLog(@"call empty block");};
     luaoc_push_instance(L, block);
-//    luaoc_push_instance(L, ^{NSLog(@"call empty block");});
-    luaoc_call_block(L);            // use default @@ encoding, return garbage value
+    luaoc_call_block(L);            // use default v... encoding
 
     lua_settop(L, 1);
     lua_pushstring(L, "v");         // recall with explicit encoding
@@ -915,17 +925,42 @@
     luaoc_push_instance(L, ^{
         NSLog(@"call return obj block"); return [NSNull null];
     });
-    luaoc_call_block(L);
+    luaoc_call_block(L); // default lua call return type is void
+    XCTAssertTrue( lua_isnil(L, -1) );
+
+    lua_settop(L, 1);
+    lua_pushstring(L, "@");
+    luaoc_call_block(L); // call with explicit encoding
     XCTAssertEqual( luaoc_toinstance(L, -1), [NSNull null] );
 
     lua_settop(L, 0);
     luaoc_push_instance(L, ^(id obj){
         NSLog(@"call pass obj and return obj block"); return [obj description];
     });
-    lua_pushnil(L); // nil default to @@ encoding
+    lua_pushnil(L); // nil default to v@ encoding
     luaoc_push_instance(L, @"abc");
     luaoc_call_block(L);
-    XCTAssertEqual( luaoc_toinstance(L, -1), [@"abc" description] );
+    XCTAssertTrue( lua_isnil(L, -1) );
+
+    lua_settop(L, 3);
+    lua_pushstring(L, "@@");
+    lua_replace(L, 2); //  call with explicit encoding
+    luaoc_call_block(L);
+    XCTAssertEqual( luaoc_toinstance(L, 4), [@"abc" description] );
+
+    lua_settop(L, 0);
+    luaoc_push_instance(L, ^(id a,id b, id c){
+        NSLog(@"call pass multi obj, %@ %@ %@ %p", a,b,c,L);
+        RUN_LUA_SAFE_CODE( a = 33 );
+    });
+    lua_pushnil(L);
+    luaoc_push_instance(L, @1);
+    luaoc_push_instance(L, @2);
+    luaoc_push_instance(L, @3);
+    luaoc_push_instance(L, @4);
+    luaoc_call_block(L); // 4 params, default to v@@@@, last not use
+    lua_getglobal(L, "a");
+    XCTAssertEqual( lua_tointeger(L, -1), 33 );
 
     lua_settop(L, 0);
     luaoc_push_instance(L, ^CGRect(CGFloat x, CGFloat y, float width, double height){

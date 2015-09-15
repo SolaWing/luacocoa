@@ -51,10 +51,13 @@ void luaoc_push_instance(lua_State *L, id v){
         lua_pushvalue(L, -1);
         lua_rawsetp(L, -4, v);  // env[p] = uv, : ... ud env nil uv
     }
-    // FIXME: block default imp may push garbage value, retain it cause crash
-    // lua_pushinteger(L, 1);
-    // lua_rawsetfield(L, -2, "__retainCount");
-    // [v retain];                                         // retain when create and release in gc
+    // don't retain stack block, release later will crash
+    if ( object_getClass(v) != (Class)&_NSConcreteStackBlock )
+    {
+        lua_pushinteger(L, 1);
+        lua_rawsetfield(L, -2, "__retainCount");
+        [v retain];                                         // retain when create and release in gc
+    }
     lua_setuservalue(L, LUA_START_INDEX(L)+4);          // ; set ud uservalue
 
     lua_settop(L, LUA_START_INDEX(L)+4);                // : meta loaded nil ud
