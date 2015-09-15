@@ -56,7 +56,7 @@ static NSMutableDictionary* luaBlockFuncDict; // encoding => blockFunc
 static void luaoc_block_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
   if (![NSThread isMainThread]) {
       NSLog(@"[WARN] call lua block on non-main thread!!\n"
-             "now dispatch to main thread.");
+             "now dispatch to main thread. may deadlock");
       dispatch_sync( dispatch_get_main_queue(), ^{
           luaoc_block_from_oc(cif, ret, args, ud);
       });

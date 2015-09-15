@@ -210,6 +210,7 @@
           (lua_rawgeti(L, 8, 2), lua_rawgeti(L, -1, 1), lua_tonumber(L, -1) == 33) &&
                                 (lua_rawgeti(L, -2, 2), lua_tonumber(L, -1) == 44));
 
+    lua_settop(L, 0);
 }
 
 - (void)testFromLuaObj {

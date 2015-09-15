@@ -15,7 +15,10 @@
 
 #import "luaoc_instance.h"
 #import "luaoc_class.h"
+#import "luaoc.h"
 
+#define LOADED_INSTANCE_TABLE "oc.loadedObj"
+#define LOADED_INSTANCE_ENV_TABLE "oc.loadedObjENV"
 
 void luaoc_push_instance(lua_State *L, id v){
   if (NULL == v){
@@ -30,16 +33,10 @@ void luaoc_push_instance(lua_State *L, id v){
     return;
   }
 
-  lua_pushstring(L, "loaded");
-  lua_rawget(L, -2);                            // :meta loaded
+  lua_rawgetfield(L, LUA_REGISTRYINDEX, LOADED_INSTANCE_TABLE); // :meta loaded
 
-  // TODO: should check if the obj is in deallocing! don't use it in gc after deallocing
-  // deallocing obj can call lua when :
-  //    lua override deallocing
-  //    lua callback or msg when some obj deallocing
-  //    
-  // loaded table need cleanup immediately. because index pointer may be reuse
-  // by other data.
+  /** userdata table can be collect and release when gc.
+   *  id associate uservalue bind life circle with id */
   if (lua_rawgetp(L, -1, v) == LUA_TNIL){
     // bind new ud
     *(id*)lua_newuserdata(L, sizeof(id)) = v;
@@ -47,16 +44,24 @@ void luaoc_push_instance(lua_State *L, id v){
     lua_pushvalue(L, LUA_START_INDEX(L)+1);
     lua_setmetatable(L, -2);                            // + ud ; set ud meta
 
-    lua_newtable(L);
-    lua_setuservalue(L, -2);                            // ; set ud uservalue a newtable
+    lua_rawgetfield(L, LUA_REGISTRYINDEX, LOADED_INSTANCE_ENV_TABLE);
+    // when lua not need obj, may gc userdata. but instance still alive and can be reuse
+    if (lua_rawgetp(L, -1, v) == LUA_TNIL){
+        lua_newtable(L);
+        lua_pushvalue(L, -1);
+        lua_rawsetp(L, -4, v);  // env[p] = uv, : ... ud env nil uv
+    }
+    // FIXME block default imp may push garbage value, retain it cause crash
+    // lua_pushinteger(L, 1);
+    // lua_rawsetfield(L, -2, "__retainCount");
+    // [v retain];                                         // retain when create and release in gc
+    lua_setuservalue(L, LUA_START_INDEX(L)+4);          // ; set ud uservalue
+
+    lua_settop(L, LUA_START_INDEX(L)+4);                // : meta loaded nil ud
 
     lua_pushvalue(L, -1);                               // copy ud
     lua_rawsetp(L, LUA_START_INDEX(L)+2, v);            // loaded[p] = ud
 
-    // now don't auto retain the obj.
-    // if the retained obj is in deallocing, it's always be free after
-    // deallocing. and thus release in gc cause bad_acesss.
-    // [v retain];                                         // retain when create and release in gc
   }
   LUA_POP_STACK(L, 1);
 }
@@ -202,18 +207,47 @@ static int __gc(lua_State *L){
       if (lua_rawgetfield(L, -1, "__retainCount") == LUA_TNUMBER &&
           lua_tointeger(L, -1) > 0)
       {
-          /** NOTE: when lua retain a deallocing obj. the gc call normally after
-           * freeing the deallocing obj. this will cause bad_acesss.
-           *
-           * the deallocing obj will call lua code by dealloc method or other
-           * callback, msg etc. user should ensure when dealloc return, lua is no
-           * retainCount left */
+          /** NOTE: release a already dealloced obj will crash.
+           *  though set dealloc callback and clear retainCount, but for async,
+           *  also may enter this before clear, and crash */
           [*ud release];
+
+          lua_pushnil(L);
+          lua_rawsetfield(L, -3, "__retainCount");
       }
   }
-  // else is super type
 
   return 0;
+}
+
+static void _lua_release_id_ptr(void* objPtr) {
+    if (!gLua_main_state) return;
+    lua_State*const L = gLua_main_state;
+    int top = lua_gettop(L);
+    lua_rawgetfield(L, LUA_REGISTRYINDEX, LOADED_INSTANCE_ENV_TABLE);
+    if (lua_rawgetp(L, -1, objPtr) != LUA_TNIL) { // has uservalue
+        lua_pushnil(L);
+        lua_rawsetfield(L, -2, "__retainCount"); // clear retainCount
+
+        lua_pushnil(L);                         // env uv nil
+        lua_rawsetp(L, -3, objPtr);             // clear uservalue strong ref
+
+        lua_rawgetfield(L, LUA_REGISTRYINDEX, LOADED_INSTANCE_TABLE);
+        lua_pushnil(L);
+        lua_rawsetp(L, -2, objPtr);             // clear loaded cache userdata
+    }
+    lua_settop(L, top);
+}
+
+static inline void lua_release_id_ptr(void* objPtr) {
+    if ([NSThread isMainThread]) {
+        _lua_release_id_ptr(objPtr);
+    } else {
+        // FIXME sync may deadlock, async value may be used before call
+        dispatch_async(dispatch_get_main_queue(), ^{
+            lua_release_id_ptr(objPtr);
+        });
+    }
 }
 
 // TODO: other meta funcs
@@ -245,18 +279,33 @@ int luaopen_luaoc_instance(lua_State* L) {
   lua_rawset(L, -3);                        // meta.type = "id"
 
   {
-    lua_pushstring(L, "loaded");
-
     lua_newtable(L);
 
     lua_newtable(L);
     lua_pushstring(L, "__mode");              // use weak table, so loaded value can be recycle
     lua_pushstring(L, "v");
-    lua_rawset(L, -3);                        // :meta "loaded" {} {__mode="v"}
+    lua_rawset(L, -3);                        // :meta {} {__mode="v"}
 
-    lua_setmetatable(L, -2);                  // :meta "loaded" {}
+    lua_setmetatable(L, -2);                  // :meta {}
 
-    lua_rawset(L, -3);                        // meta.loaded = {} : meta
+    lua_rawsetfield(L, LUA_REGISTRYINDEX, LOADED_INSTANCE_TABLE); //  :meta
+
+    lua_newtable(L);
+    // env table to hold uservalue of instance, and bind life circle to oc
+    // object circle
+    lua_rawsetfield(L, LUA_REGISTRYINDEX, LOADED_INSTANCE_ENV_TABLE);
+
+    static IMP oldDealloc = NULL;
+    if (!oldDealloc) { // replace NSObject dealloc method so when object dealloc, can get notification
+        // when sync call other thread, dealloc at other thread and redispatch
+        // to main may cause deadlock
+        oldDealloc = class_replaceMethod([NSObject class], @selector(dealloc),
+                imp_implementationWithBlock(^(id self)
+        {
+            ((void(*)(id,SEL))oldDealloc)(self, @selector(dealloc));
+            lua_release_id_ptr(self);
+        }), "v@:");
+    }
   }
 
   lua_pushboolean(L, 1);

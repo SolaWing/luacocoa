@@ -101,7 +101,7 @@ id hackFuncDFI2ID(struct _blocktype*block, double a, float b, int c){
     luaoc_close();
 }
 
-- (void)testProperty {
+- (void)atestProperty {
     Class cls = [NSString class];
     unsigned int out;
     objc_property_t* properties = class_copyPropertyList(cls, &out);
@@ -110,9 +110,9 @@ id hackFuncDFI2ID(struct _blocktype*block, double a, float b, int c){
         fprintf(stdout, "%s %s\n", property_getName(property), property_getAttributes(property));
     }
     // can't get category property
-    bool a = [[NSString new]isAbsolutePath];
-    objc_property_t property = class_getProperty(cls, "absolutePath");
-    fprintf(stdout, "%s %s\n", property_getName(property), property_getAttributes(property));
+//    bool a = [[NSString new]isAbsolutePath];
+//    objc_property_t property = class_getProperty(cls, "absolutePath");
+//    fprintf(stdout, "%s %s\n", property_getName(property), property_getAttributes(property));
 
 }
 

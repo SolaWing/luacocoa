@@ -21,6 +21,7 @@
 #import "luaoc_instance.h"
 
 
+#define LOADED_CLASS_TABLE   "oc.loadedCls"
 #define kClassMethodIndex    "__cmsg"
 #define kInstanceMethodIndex "__imsg"
 
@@ -41,7 +42,7 @@ static NSMutableDictionary* luaFuncDict; // encoding => closureFunc
 static void luaoc_msg_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) {
   if (![NSThread isMainThread]) {
       NSLog(@"[WARN] call lua method on non-main thread!!\n"
-             "now dispatch to main thread.");
+             "now dispatch to main thread. may deadlock");
       dispatch_sync( dispatch_get_main_queue(), ^{
           luaoc_msg_from_oc(cif, ret, args, ud);
       });
@@ -395,8 +396,7 @@ void luaoc_push_class(lua_State *L, Class cls) {
     return;
   }
 
-  lua_pushstring(L, "loaded");
-  lua_rawget(L, -2);                                // : meta loaded
+  lua_rawgetfield(L, LUA_REGISTRYINDEX, LOADED_CLASS_TABLE); // : meta loaded
 
   if (lua_rawgetp(L, -1, cls) == LUA_TNIL){ // no obj, bind new
     *(Class*)(lua_newuserdata(L, sizeof(Class))) = cls;
@@ -449,8 +449,7 @@ static void luaclass_dealloc(id self, SEL _cmd) {
     dispatch_block_t luaDealloc = ^{
         Class cls = [self class];
         lua_State*const L = gLua_main_state;
-        luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME);
-        lua_rawgetfield(L, -1, "loaded");
+        lua_rawgetfield(L, LUA_REGISTRYINDEX, LOADED_CLASS_TABLE);
         int top = lua_gettop(L);
         do {
             if (lua_rawgetp(L, -1, cls) == LUA_TUSERDATA){
@@ -467,7 +466,7 @@ static void luaclass_dealloc(id self, SEL _cmd) {
             cls = [cls superclass];
             lua_settop(L, top);
         }while (cls != superClass);
-        lua_pop(L, 2);
+        lua_pop(L, 1);
     };
     if ([NSThread isMainThread]) luaDealloc();
     else {
@@ -663,8 +662,7 @@ static bool override(Class cls, const char* selName, bool isClassMethod, const c
 static void luaoc_push_lua_func(lua_State *L, Class cls, SEL sel, bool isClassMethod) {
   LUA_PUSH_STACK(L);
 
-  luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME);
-  lua_rawgetfield(L, -1, "loaded");
+  lua_rawgetfield(L, LUA_REGISTRYINDEX, LOADED_CLASS_TABLE);
 
   const char* selName = sel_getName(sel);
   const char* indexName =
@@ -709,8 +707,8 @@ static void luaoc_set_lua_func(lua_State *L, int clsIndex, const char* name, boo
 
 int index_value_from_class(lua_State *L, Class cls, int keyIndex) {
   LUA_PUSH_STACK(L);
-  luaL_getmetatable(L, LUAOC_CLASS_METATABLE_NAME);
-  lua_rawgetfield(L, -1, "loaded");
+
+  lua_rawgetfield(L, LUA_REGISTRYINDEX, LOADED_CLASS_TABLE);
   keyIndex = lua_absindex(L, keyIndex);
   while(cls) {
     if (lua_rawgetp(L, -1, cls) == LUA_TUSERDATA){
@@ -815,9 +813,8 @@ int luaopen_luaoc_class(lua_State *L) {
   lua_rawset(L, -3);                                // classMetaTable.type = "class"
 
   // a new loaded table hold all class pointer to lua repr
-  lua_pushstring(L, "loaded");
   lua_newtable(L);
-  lua_rawset(L, -3);                                // classMetaTable.loaded = {}
+  lua_rawsetfield(L, LUA_REGISTRYINDEX, LOADED_CLASS_TABLE);
 
   lua_pop(L, 1);                                    // : clsTable
 
