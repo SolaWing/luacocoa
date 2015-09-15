@@ -739,10 +739,14 @@
   RUN_LUA_SAFE_STR( "a = oc.struct.s1 {true, 33.3, false} return a" );
   size_t size;
   void* structRef = luaoc_copystruct(L, -1, &size);
-  XCTAssertEqual(size, sizeof(double)*3); // after align size;
-  XCTAssertEqual(33.3, *(double*)&structRef[sizeof(double)]);
+#if __LP64__
+  XCTAssertEqual(size, sizeof(double)*3); // after align size; 0 8 16
+#else
+  XCTAssertEqual(size, sizeof(double)*2); // after align size; 0 4 12
+#endif
+  XCTAssertEqual(33.3, *(double*)&structRef[sizeof(void*)]);
   XCTAssertEqual(true, *(bool*)&structRef[0]);
-  XCTAssertEqual(false, *(bool*)&structRef[sizeof(double)*2]);
+  XCTAssertEqual(false, *(bool*)&structRef[sizeof(double)+sizeof(void*)]);
   free(structRef);
   RUN_LUA_SAFE_CODE( return a.b );
   XCTAssertEqual(33.3, lua_tonumber(L, -1));

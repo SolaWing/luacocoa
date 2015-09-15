@@ -108,7 +108,7 @@ int luaoc_struct_offset_by_index(const char* encoding, int index, const char** o
     }
 
 
-    size_t attrOffset = 0;
+    NSUInteger attrOffset = 0;
     NSUInteger align;
     NSUInteger typesize;
     const char* nextEncoding;
@@ -264,7 +264,7 @@ static int reg_struct(lua_State *L){
   luaL_addchar(&encodingBuf, '{');
   luaL_addlstring(&encodingBuf, structName, structNameLen);
   luaL_addchar(&encodingBuf, '='); {
-    size_t offset = 0;
+    NSUInteger offset = 0;
     for (int i = 2; i <= top; ++i){
       lua_geti(L, i, 2); // type encoding
       lua_geti(L, i, 1); // name

@@ -289,20 +289,25 @@ void asmFunc(){
 struct atestStructB {
     short a;
     double_t b;
-    float c;
+//    float c;
 };
 
 struct atestStruct {
     bool a;
-    struct atestStructB b;
+//    struct atestStructB b;
+    double b;
     bool c;
 };
 
-- (void)atestGetSizeAndAlignment {
+- (void)testGetSizeAndAlignment {
     NSUInteger size, align;
     const char* ret;
+    ret = NSGetSizeAndAlignment(@encode(struct atestStructB), &size, &align);
+    NSLog(@"atestStructB ret:%s size:%lu, align:%lu", ret, (unsigned long)size, (unsigned long)align);
+
     ret = NSGetSizeAndAlignment(@encode(struct atestStruct), &size, &align);
-    NSLog(@"atestStruct ret:%s size:%lu, align:%lu", ret, (unsigned long)size, (unsigned long)align);
+    struct atestStruct a;
+    NSLog(@"atestStruct ret:%s size:%lu, align:%lu boffset:%d coffset:%d", ret, (unsigned long)size, (unsigned long)align, ((void*)(&a.b) - (void*)&a), ((void*)(&a.c) - (void*)&a));
 
     ret = "cislqCISLQfdBv*@#:[4c]{rect={point=ff}{size=ff}}{point=ff}^v^{size=ff}(u=cisl)@?{s=@}";
     while (*ret != '\0') {

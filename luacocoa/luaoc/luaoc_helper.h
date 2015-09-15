@@ -41,6 +41,7 @@ enum luaoc_userdata_type {
 #endif
 
 static inline void luaoc_align_offset(NSUInteger* offset, NSUInteger align){
+    if (align > sizeof(void*)) align = sizeof(void*); // max align is pointer size
     NSUInteger alignOffset = *offset % align;
     if (unlikely(alignOffset > 0)) {*offset += align - alignOffset;}
 }
@@ -148,7 +149,7 @@ void luaoc_dump_stack(lua_State* L);
   #endif
 #endif
 
-// in 32bit iphone_simulator, my libffi can't compile. so disable it.
-#if TARGET_IPHONE_SIMULATOR && !defined(__LP64__)
-#define NO_USE_FFI
-#endif
+// in 32bit iphone_simulator, my libffi lack some unuse symbol, need to comment it. or disable it
+//#if TARGET_IPHONE_SIMULATOR && !defined(__LP64__)
+//#define NO_USE_FFI
+//#endif

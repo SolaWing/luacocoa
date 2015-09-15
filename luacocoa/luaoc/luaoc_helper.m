@@ -440,7 +440,7 @@ id luaoc_convert_toid(lua_State *L, int index) {
         return [NSNumber numberWithBool:lua_toboolean(L, index)];
     case LUA_TNUMBER:
         if (lua_isinteger(L, index)) {
-            return [NSNumber numberWithInteger:lua_tointeger(L, index)];
+            return [NSNumber numberWithLongLong:lua_tointeger(L, index)];
         } else {
             return [NSNumber numberWithDouble:lua_tonumber(L, index)];
         }
@@ -565,7 +565,7 @@ void* luaoc_convert_copytostruct(lua_State *L, int index, const char* typeencodi
       const char* encodingIt = strchr(typeencoding, '=');
       if (encodingIt++ == NULL) return value;
 
-      size_t attrOffset = 0;
+      NSUInteger attrOffset = 0;
 
       index = lua_absindex(L, index);
       int i = 1;

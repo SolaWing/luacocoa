@@ -43,7 +43,7 @@ static inline void get_block_actual_encoding(char* buffer, const char* encoding,
     memcpy(buffer, encoding, offset);
     memcpy(buffer + offset, "^v", 2);
     memcpy(buffer + (offset+2), encoding+offset, size-offset);
-    buffer[size+3] = '\0'; // NULL terminated
+    buffer[size+2] = '\0'; // NULL terminated
 }
 
 
@@ -78,7 +78,7 @@ static void luaoc_block_from_oc(ffi_cif *cif, void* ret, void** args, void* ud) 
 
   const char* encoding = luafunc.encoding.UTF8String;
   const char* args_encoding, *stop_pos;
-  NSUInteger retLen = luaoc_get_one_typesize(encoding, &args_encoding, NULL);
+  size_t retLen = luaoc_get_one_typesize(encoding, &args_encoding, NULL);
   int i = 1;
   while (*args_encoding) {
       if (luaoc_get_one_typesize(args_encoding, &stop_pos, NULL) != NSNotFound) {
@@ -221,7 +221,7 @@ int luaoc_call_block(lua_State *L) {
     memcpy(trueEncoding, encoding, i);
     memcpy(trueEncoding + i, "^v", 2);
     memcpy(trueEncoding + i+2, encodingIt, size-i);
-    trueEncoding[size+3] = '\0';        // NULL terminated
+    trueEncoding[size+2] = '\0';        // NULL terminated
 
     NSUInteger argNumber = luaoc_get_type_number(encodingIt) + 1;
     avalue = alloca(sizeof(void*) * (argNumber) );
