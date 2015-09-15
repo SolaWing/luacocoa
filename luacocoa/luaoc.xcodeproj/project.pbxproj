@@ -1633,7 +1633,6 @@
 					"DEBUG=1",
 					"$(inherited)",
 					LUA_USE_POSIX,
-					LUA_USE_DLOPEN,
 				);
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1644,10 +1643,7 @@
 		21AE0D1C1B671203006FB83F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					LUA_USE_POSIX,
-					LUA_USE_DLOPEN,
-				);
+				GCC_PREPROCESSOR_DEFINITIONS = LUA_USE_POSIX;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
