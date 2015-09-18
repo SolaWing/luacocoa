@@ -1,11 +1,20 @@
 local RootViewController = oc.class("RootViewController", "UIViewController",
     "UITableViewDataSource", "UITableViewDelegate")
 
+-- dealloc add directly to class, so this way don't need to call super
+function RootViewController:dealloc()
+    print "RootViewController dealloc!!"
+end
+
 RootViewController("viewDidLoad", function (self)
     self:navigationItem():setTitle("Demo")
     self:navigationItem():setRightBarButtonItem(
         oc.UIBarButtonItem:alloc():initWithBarButtonSystemItem_target_action(
-            4, self, "clickAddItem:"))
+            4, self, "clickAddItem:"));
+
+    self:navigationItem():setLeftBarButtonItem(
+        oc.UIBarButtonItem:alloc():initWithTitle_style_target_action(
+            "退出", 0, self, "exitApp:"));
 
     self.dataSource = {}
 
@@ -20,6 +29,15 @@ RootViewController("viewDidLoad", function (self)
     self:view():addSubview(tableView)
     self:view():setBackgroundColor( oc.UIColor:cyanColor() )
 end)
+
+RootViewController("exitApp:", function (self, sender)
+    print "click exitApp"
+    oc.UIView:animateWithDuration_animations_completion(0.35, function ()
+        self:view():setAlpha(0)
+    end, oc.block( function (finish)
+        os.exit(0)
+    end, "vB"))
+end, "v@:@")
 
 RootViewController("clickAddItem:", function (self, sender)
     print "click add item"

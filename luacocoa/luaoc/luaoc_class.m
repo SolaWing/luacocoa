@@ -785,7 +785,7 @@ static int __call(lua_State *L) {
     luaoc_set_lua_func(L, 1, name, isClassMethod);
     lua_pushboolean(L, true);
   } else {
-    DLOG("can't override method for name %s", name);
+    DLOG("[WARN] can't override method for name '%s'", name);
     lua_pushboolean(L, false);
   }
 
