@@ -18,6 +18,7 @@
 #import <objc/message.h>
 #import <Foundation/Foundation.h>
 #import <CoreGraphics/CoreGraphics.h>
+#import <CoreData/CoreData.h>
 
 #define PP_IDENTITY(...) __VA_ARGS__
 #define RAW_STR(...) #__VA_ARGS__
@@ -989,4 +990,12 @@
     lua_settop(L, 0);
 }
 
+- (void)testEnum {
+    lua_State *const L = gLua_main_state;
+    RUN_LUA_SAFE_CODE( return oc.enum.NSOperationQueuePriorityNormal );
+    XCTAssertEqual(lua_tointeger(L, -1), NSOperationQueuePriorityNormal);
+
+    RUN_LUA_SAFE_CODE( return oc.enum.NSMainQueueConcurrencyType );
+    XCTAssertEqual(lua_tointeger(L, -1), NSMainQueueConcurrencyType);
+}
 @end
