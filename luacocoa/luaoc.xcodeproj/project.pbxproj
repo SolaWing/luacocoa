@@ -10,25 +10,30 @@
 		210645F51BB6C33F006E5E35 /* luaoc_enum.h in Headers */ = {isa = PBXBuildFile; fileRef = 210645F31BB6C33F006E5E35 /* luaoc_enum.h */; settings = {ASSET_TAGS = (); }; };
 		210645F61BB6C33F006E5E35 /* luaoc_enum.m in Sources */ = {isa = PBXBuildFile; fileRef = 210645F41BB6C33F006E5E35 /* luaoc_enum.m */; settings = {ASSET_TAGS = (); }; };
 		210645F71BB6C33F006E5E35 /* luaoc_enum.m in Sources */ = {isa = PBXBuildFile; fileRef = 210645F41BB6C33F006E5E35 /* luaoc_enum.m */; settings = {ASSET_TAGS = (); }; };
+		2108C7621BD4CE4B0013770D /* luaoc_class.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0DB01B672552006FB83F /* luaoc_class.h */; };
+		2108C7631BD4CE4B0013770D /* luaoc_instance.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21BFB3B91B67686D00D45278 /* luaoc_instance.h */; };
+		2108C7641BD4CE4B0013770D /* luaoc_struct.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 216B4A351B690A180060DCA5 /* luaoc_struct.h */; };
+		2108C7651BD4CE4B0013770D /* luaoc_var.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21B60B0B1B6F0AEA00C1FC19 /* luaoc_var.h */; };
+		2108C7661BD4CE4B0013770D /* luaoc_encode.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2193CF721BA65A710007D206 /* luaoc_encode.h */; };
+		2108C7671BD4CE4B0013770D /* luaoc_enum.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 210645F31BB6C33F006E5E35 /* luaoc_enum.h */; };
+		2108C7681BD4CE4B0013770D /* luaoc_block.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 216AEB671B9DD87C00F2E93D /* luaoc_block.h */; };
+		2108C7691BD4CE4B0013770D /* luaoc_helper.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0DB31B67271F006FB83F /* luaoc_helper.h */; };
+		2108C76A1BD4CE4B0013770D /* ffi_wrap.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */; };
+		213C341B1BD4E867007A7280 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 213C341A1BD4E867007A7280 /* main.m */; };
+		213C341E1BD4E867007A7280 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 213C341D1BD4E867007A7280 /* AppDelegate.m */; };
+		213C34211BD4E867007A7280 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 213C34201BD4E867007A7280 /* ViewController.m */; };
+		213C34241BD4E867007A7280 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 213C34221BD4E867007A7280 /* Main.storyboard */; };
+		213C34261BD4E867007A7280 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 213C34251BD4E867007A7280 /* Assets.xcassets */; };
+		213C34291BD4E867007A7280 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 213C34271BD4E867007A7280 /* LaunchScreen.storyboard */; };
 		21576BB21B74F83900F132B1 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAD1B74F81D00F132B1 /* libffi.a */; };
 		216AEB691B9DD87C00F2E93D /* luaoc_block.h in Headers */ = {isa = PBXBuildFile; fileRef = 216AEB671B9DD87C00F2E93D /* luaoc_block.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		216AEB6A1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
 		216AEB6B1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
 		216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */ = {isa = PBXBuildFile; fileRef = 216B4A361B690A180060DCA5 /* luaoc_struct.m */; };
 		216CE9A11B765438006CA509 /* ffi.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAF1B74F81D00F132B1 /* ffi.dylib */; };
-		216CE9AB1B76551E006CA509 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9AA1B76551E006CA509 /* main.m */; };
-		216CE9AE1B76551E006CA509 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 216CE9AD1B76551E006CA509 /* AppDelegate.m */; };
-		216CE9B61B76551E006CA509 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 216CE9B51B76551E006CA509 /* Images.xcassets */; };
-		216CE9B91B76551E006CA509 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 216CE9B71B76551E006CA509 /* LaunchScreen.xib */; };
-		216CE9CE1B765545006CA509 /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
-		216CE9CF1B765572006CA509 /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
-		216CE9D01B765572006CA509 /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
-		216CE9D11B765A23006CA509 /* liblua.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0D091B671202006FB83F /* liblua.a */; };
-		216CE9D31B765A89006CA509 /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
 		2193CF741BA65A710007D206 /* luaoc_encode.h in Headers */ = {isa = PBXBuildFile; fileRef = 2193CF721BA65A710007D206 /* luaoc_encode.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		2193CF751BA65A710007D206 /* luaoc_encode.m in Sources */ = {isa = PBXBuildFile; fileRef = 2193CF731BA65A710007D206 /* luaoc_encode.m */; };
 		2193CF761BA65A710007D206 /* luaoc_encode.m in Sources */ = {isa = PBXBuildFile; fileRef = 2193CF731BA65A710007D206 /* luaoc_encode.m */; };
-		2193CF781BA69ED50007D206 /* scripts in Resources */ = {isa = PBXBuildFile; fileRef = 2193CF771BA69ED50007D206 /* scripts */; };
 		2197367E1B6D011400B6846D /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
 		21A36DE01B71A2B80094CF55 /* lapi.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D2F1B67128F006FB83F /* lapi.c */; };
 		21A36DE11B71A2B80094CF55 /* lauxlib.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D311B67128F006FB83F /* lauxlib.c */; };
@@ -177,12 +182,24 @@
 		21AE0DB91B6754CF006FB83F /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
 		21B60B0D1B6F0AEA00C1FC19 /* luaoc_var.m in Sources */ = {isa = PBXBuildFile; fileRef = 21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */; };
 		21BFB3BB1B67686D00D45278 /* luaoc_instance.m in Sources */ = {isa = PBXBuildFile; fileRef = 21BFB3BA1B67686D00D45278 /* luaoc_instance.m */; };
+		21D3247C1BD4F077008F0A3C /* testAppTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D3247B1BD4F077008F0A3C /* testAppTests.m */; settings = {ASSET_TAGS = (); }; };
+		21D324B21BD4F34B008F0A3C /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; settings = {ASSET_TAGS = (); }; };
+		21D324B31BD4F360008F0A3C /* liblua.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0D091B671202006FB83F /* liblua.a */; };
+		21D324B41BD4F360008F0A3C /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
+		21D324B51BD4F360008F0A3C /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21576BAD1B74F81D00F132B1 /* libffi.a */; };
 		21D817AD1B9EB42D009AD9AB /* ffi_wrap.h in Headers */ = {isa = PBXBuildFile; fileRef = 21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		21D817AE1B9EB42D009AD9AB /* ffi_wrap.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */; };
 		21D817AF1B9EB42D009AD9AB /* ffi_wrap.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		213C34301BD4E867007A7280 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21AE0CE31B6711D1006FB83F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 213C34161BD4E867007A7280;
+			remoteInfo = testApp;
+		};
 		21576BAC1B74F81D00F132B1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 21576BA71B74F81D00F132B1 /* libffi.xcodeproj */;
@@ -210,20 +227,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = DB13B1901849DF510010F42D;
 			remoteInfo = "libffi-Mac";
-		};
-		216CE9BF1B76551E006CA509 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 21AE0CE31B6711D1006FB83F /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 216CE9A51B76551E006CA509;
-			remoteInfo = example;
-		};
-		216CE9CC1B765533006CA509 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 21AE0CE31B6711D1006FB83F /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 21AE0CEA1B6711D1006FB83F;
-			remoteInfo = luaoc;
 		};
 		21A36E311B71A41F0094CF55 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -253,15 +256,31 @@
 			remoteGlobalIDString = 21AE0D081B671202006FB83F;
 			remoteInfo = lua;
 		};
+		21D324771BD4F033008F0A3C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21AE0CE31B6711D1006FB83F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 21AE0CEA1B6711D1006FB83F;
+			remoteInfo = luaoc;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		21AE0CE91B6711D1006FB83F /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "include/$(PRODUCT_NAME)";
+			dstPath = include;
 			dstSubfolderSpec = 16;
 			files = (
+				2108C7621BD4CE4B0013770D /* luaoc_class.h in CopyFiles */,
+				2108C7631BD4CE4B0013770D /* luaoc_instance.h in CopyFiles */,
+				2108C7641BD4CE4B0013770D /* luaoc_struct.h in CopyFiles */,
+				2108C7651BD4CE4B0013770D /* luaoc_var.h in CopyFiles */,
+				2108C7661BD4CE4B0013770D /* luaoc_encode.h in CopyFiles */,
+				2108C7671BD4CE4B0013770D /* luaoc_enum.h in CopyFiles */,
+				2108C7681BD4CE4B0013770D /* luaoc_block.h in CopyFiles */,
+				2108C7691BD4CE4B0013770D /* luaoc_helper.h in CopyFiles */,
+				2108C76A1BD4CE4B0013770D /* ffi_wrap.h in CopyFiles */,
 				21AE0CEF1B6711D1006FB83F /* luaoc.h in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -306,23 +325,25 @@
 /* Begin PBXFileReference section */
 		210645F31BB6C33F006E5E35 /* luaoc_enum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_enum.h; sourceTree = "<group>"; };
 		210645F41BB6C33F006E5E35 /* luaoc_enum.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_enum.m; sourceTree = "<group>"; };
+		213C34171BD4E867007A7280 /* testApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = testApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		213C341A1BD4E867007A7280 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		213C341C1BD4E867007A7280 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		213C341D1BD4E867007A7280 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		213C341F1BD4E867007A7280 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		213C34201BD4E867007A7280 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		213C34231BD4E867007A7280 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		213C34251BD4E867007A7280 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		213C34281BD4E867007A7280 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		213C342A1BD4E867007A7280 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		213C342F1BD4E867007A7280 /* testAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = testAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		213C34351BD4E867007A7280 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		21576BA71B74F81D00F132B1 /* libffi.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = libffi.xcodeproj; path = libffi/libffi.xcodeproj; sourceTree = "<group>"; };
 		216AEB671B9DD87C00F2E93D /* luaoc_block.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_block.h; sourceTree = "<group>"; };
 		216AEB681B9DD87C00F2E93D /* luaoc_block.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_block.m; sourceTree = "<group>"; };
 		216B4A351B690A180060DCA5 /* luaoc_struct.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_struct.h; sourceTree = "<group>"; };
 		216B4A361B690A180060DCA5 /* luaoc_struct.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_struct.m; sourceTree = "<group>"; };
-		216CE9A61B76551E006CA509 /* example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = example.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		216CE9A91B76551E006CA509 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		216CE9AA1B76551E006CA509 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		216CE9AC1B76551E006CA509 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
-		216CE9AD1B76551E006CA509 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		216CE9B51B76551E006CA509 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
-		216CE9B81B76551E006CA509 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/LaunchScreen.xib; sourceTree = "<group>"; };
-		216CE9BE1B76551E006CA509 /* exampleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = exampleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		216CE9C31B76551E006CA509 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		2193CF721BA65A710007D206 /* luaoc_encode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_encode.h; sourceTree = "<group>"; };
 		2193CF731BA65A710007D206 /* luaoc_encode.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_encode.m; sourceTree = "<group>"; };
-		2193CF771BA69ED50007D206 /* scripts */ = {isa = PBXFileReference; lastKnownFileType = folder; path = scripts; sourceTree = "<group>"; };
 		2197367D1B6D011400B6846D /* luaoc_test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_test.m; sourceTree = "<group>"; };
 		21A36DDC1B71A2A20094CF55 /* liblua_osx.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = liblua_osx.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		21A36E251B71A41F0094CF55 /* libluaoc_osx.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libluaoc_osx.a; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -406,25 +427,26 @@
 		21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_var.m; sourceTree = "<group>"; };
 		21BFB3B91B67686D00D45278 /* luaoc_instance.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = luaoc_instance.h; sourceTree = "<group>"; };
 		21BFB3BA1B67686D00D45278 /* luaoc_instance.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = luaoc_instance.m; sourceTree = "<group>"; };
+		21D3247B1BD4F077008F0A3C /* testAppTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = testAppTests.m; sourceTree = "<group>"; };
 		21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ffi_wrap.h; sourceTree = "<group>"; };
 		21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ffi_wrap.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		216CE9A31B76551E006CA509 /* Frameworks */ = {
+		213C34141BD4E867007A7280 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				216CE9D11B765A23006CA509 /* liblua.a in Frameworks */,
-				216CE9CE1B765545006CA509 /* libluaoc.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		216CE9BB1B76551E006CA509 /* Frameworks */ = {
+		213C342C1BD4E867007A7280 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				216CE9D31B765A89006CA509 /* libluaoc.a in Frameworks */,
+				21D324B31BD4F360008F0A3C /* liblua.a in Frameworks */,
+				21D324B41BD4F360008F0A3C /* libluaoc.a in Frameworks */,
+				21D324B51BD4F360008F0A3C /* libffi.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -479,6 +501,39 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		213C34181BD4E867007A7280 /* testApp */ = {
+			isa = PBXGroup;
+			children = (
+				213C341C1BD4E867007A7280 /* AppDelegate.h */,
+				213C341D1BD4E867007A7280 /* AppDelegate.m */,
+				213C341F1BD4E867007A7280 /* ViewController.h */,
+				213C34201BD4E867007A7280 /* ViewController.m */,
+				213C34221BD4E867007A7280 /* Main.storyboard */,
+				213C34251BD4E867007A7280 /* Assets.xcassets */,
+				213C34271BD4E867007A7280 /* LaunchScreen.storyboard */,
+				213C342A1BD4E867007A7280 /* Info.plist */,
+				213C34191BD4E867007A7280 /* Supporting Files */,
+			);
+			path = testApp;
+			sourceTree = "<group>";
+		};
+		213C34191BD4E867007A7280 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				213C341A1BD4E867007A7280 /* main.m */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		213C34321BD4E867007A7280 /* testAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				21D3247B1BD4F077008F0A3C /* testAppTests.m */,
+				213C34351BD4E867007A7280 /* Info.plist */,
+			);
+			path = testAppTests;
+			sourceTree = "<group>";
+		};
 		21576BA81B74F81D00F132B1 /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -486,51 +541,6 @@
 				21576BAF1B74F81D00F132B1 /* ffi.dylib */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		216CE9A71B76551E006CA509 /* example */ = {
-			isa = PBXGroup;
-			children = (
-				2193CF771BA69ED50007D206 /* scripts */,
-				216CE9AC1B76551E006CA509 /* AppDelegate.h */,
-				216CE9AD1B76551E006CA509 /* AppDelegate.m */,
-				216CE9B51B76551E006CA509 /* Images.xcassets */,
-				216CE9B71B76551E006CA509 /* LaunchScreen.xib */,
-				216CE9A81B76551E006CA509 /* Supporting Files */,
-			);
-			path = example;
-			sourceTree = "<group>";
-		};
-		216CE9A81B76551E006CA509 /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				216CE9A91B76551E006CA509 /* Info.plist */,
-				216CE9AA1B76551E006CA509 /* main.m */,
-			);
-			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		216CE9C11B76551E006CA509 /* exampleTests */ = {
-			isa = PBXGroup;
-			children = (
-				216CE9C21B76551E006CA509 /* Supporting Files */,
-			);
-			path = exampleTests;
-			sourceTree = "<group>";
-		};
-		216CE9C21B76551E006CA509 /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				216CE9C31B76551E006CA509 /* Info.plist */,
-			);
-			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		21A36E1F1B71A3790094CF55 /* link */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = link;
 			sourceTree = "<group>";
 		};
 		21A36E261B71A41F0094CF55 /* luaoc_osx */ = {
@@ -560,15 +570,14 @@
 			isa = PBXGroup;
 			children = (
 				21576BA71B74F81D00F132B1 /* libffi.xcodeproj */,
-				21A36E1F1B71A3790094CF55 /* link */,
 				21AE0CED1B6711D1006FB83F /* luaoc */,
 				21AE0CFA1B6711D1006FB83F /* luaocTests */,
 				21AE0D0A1B671203006FB83F /* lua */,
 				21AE0D171B671203006FB83F /* luaTests */,
 				21A36E261B71A41F0094CF55 /* luaoc_osx */,
 				21A36E331B71A41F0094CF55 /* luaoc_osxTests */,
-				216CE9A71B76551E006CA509 /* example */,
-				216CE9C11B76551E006CA509 /* exampleTests */,
+				213C34181BD4E867007A7280 /* testApp */,
+				213C34321BD4E867007A7280 /* testAppTests */,
 				21AE0CEC1B6711D1006FB83F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -582,8 +591,8 @@
 				21A36DDC1B71A2A20094CF55 /* liblua_osx.a */,
 				21A36E251B71A41F0094CF55 /* libluaoc_osx.a */,
 				21A36E2F1B71A41F0094CF55 /* luaoc_osxTests.xctest */,
-				216CE9A61B76551E006CA509 /* example.app */,
-				216CE9BE1B76551E006CA509 /* exampleTests.xctest */,
+				213C34171BD4E867007A7280 /* testApp.app */,
+				213C342F1BD4E867007A7280 /* testAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -799,40 +808,40 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		216CE9A51B76551E006CA509 /* example */ = {
+		213C34161BD4E867007A7280 /* testApp */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 216CE9C61B76551E006CA509 /* Build configuration list for PBXNativeTarget "example" */;
+			buildConfigurationList = 213C343A1BD4E867007A7280 /* Build configuration list for PBXNativeTarget "testApp" */;
 			buildPhases = (
-				216CE9A21B76551E006CA509 /* Sources */,
-				216CE9A31B76551E006CA509 /* Frameworks */,
-				216CE9A41B76551E006CA509 /* Resources */,
+				213C34131BD4E867007A7280 /* Sources */,
+				213C34141BD4E867007A7280 /* Frameworks */,
+				213C34151BD4E867007A7280 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				216CE9CD1B765533006CA509 /* PBXTargetDependency */,
 			);
-			name = example;
-			productName = example;
-			productReference = 216CE9A61B76551E006CA509 /* example.app */;
+			name = testApp;
+			productName = testApp;
+			productReference = 213C34171BD4E867007A7280 /* testApp.app */;
 			productType = "com.apple.product-type.application";
 		};
-		216CE9BD1B76551E006CA509 /* exampleTests */ = {
+		213C342E1BD4E867007A7280 /* testAppTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 216CE9C91B76551E006CA509 /* Build configuration list for PBXNativeTarget "exampleTests" */;
+			buildConfigurationList = 213C343B1BD4E867007A7280 /* Build configuration list for PBXNativeTarget "testAppTests" */;
 			buildPhases = (
-				216CE9BA1B76551E006CA509 /* Sources */,
-				216CE9BB1B76551E006CA509 /* Frameworks */,
-				216CE9BC1B76551E006CA509 /* Resources */,
+				213C342B1BD4E867007A7280 /* Sources */,
+				213C342C1BD4E867007A7280 /* Frameworks */,
+				213C342D1BD4E867007A7280 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				216CE9C01B76551E006CA509 /* PBXTargetDependency */,
+				21D324781BD4F033008F0A3C /* PBXTargetDependency */,
+				213C34311BD4E867007A7280 /* PBXTargetDependency */,
 			);
-			name = exampleTests;
-			productName = exampleTests;
-			productReference = 216CE9BE1B76551E006CA509 /* exampleTests.xctest */;
+			name = testAppTests;
+			productName = testAppTests;
+			productReference = 213C342F1BD4E867007A7280 /* testAppTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		21A36DDB1B71A2A20094CF55 /* lua_osx */ = {
@@ -952,12 +961,12 @@
 				LastUpgradeCheck = 0640;
 				ORGANIZATIONNAME = sw;
 				TargetAttributes = {
-					216CE9A51B76551E006CA509 = {
-						CreatedOnToolsVersion = 6.4;
+					213C34161BD4E867007A7280 = {
+						CreatedOnToolsVersion = 7.0.1;
 					};
-					216CE9BD1B76551E006CA509 = {
-						CreatedOnToolsVersion = 6.4;
-						TestTargetID = 216CE9A51B76551E006CA509;
+					213C342E1BD4E867007A7280 = {
+						CreatedOnToolsVersion = 7.0.1;
+						TestTargetID = 213C34161BD4E867007A7280;
 					};
 					21A36DDB1B71A2A20094CF55 = {
 						CreatedOnToolsVersion = 6.2;
@@ -1004,8 +1013,8 @@
 				21A36E2E1B71A41F0094CF55 /* luaoc_osxTests */,
 				21AE0D081B671202006FB83F /* lua */,
 				21A36DDB1B71A2A20094CF55 /* lua_osx */,
-				216CE9A51B76551E006CA509 /* example */,
-				216CE9BD1B76551E006CA509 /* exampleTests */,
+				213C34161BD4E867007A7280 /* testApp */,
+				213C342E1BD4E867007A7280 /* testAppTests */,
 			);
 		};
 /* End PBXProject section */
@@ -1028,17 +1037,17 @@
 /* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
-		216CE9A41B76551E006CA509 /* Resources */ = {
+		213C34151BD4E867007A7280 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				216CE9B91B76551E006CA509 /* LaunchScreen.xib in Resources */,
-				216CE9B61B76551E006CA509 /* Images.xcassets in Resources */,
-				2193CF781BA69ED50007D206 /* scripts in Resources */,
+				213C34291BD4E867007A7280 /* LaunchScreen.storyboard in Resources */,
+				213C34261BD4E867007A7280 /* Assets.xcassets in Resources */,
+				213C34241BD4E867007A7280 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		216CE9BC1B76551E006CA509 /* Resources */ = {
+		213C342D1BD4E867007A7280 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1062,21 +1071,22 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		216CE9A21B76551E006CA509 /* Sources */ = {
+		213C34131BD4E867007A7280 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				216CE9AE1B76551E006CA509 /* AppDelegate.m in Sources */,
-				216CE9AB1B76551E006CA509 /* main.m in Sources */,
+				213C34211BD4E867007A7280 /* ViewController.m in Sources */,
+				213C341E1BD4E867007A7280 /* AppDelegate.m in Sources */,
+				213C341B1BD4E867007A7280 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		216CE9BA1B76551E006CA509 /* Sources */ = {
+		213C342B1BD4E867007A7280 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				216CE9CF1B765572006CA509 /* play_test.m in Sources */,
-				216CE9D01B765572006CA509 /* luaoc_test.m in Sources */,
+				21D324B21BD4F34B008F0A3C /* luaoc_test.m in Sources */,
+				21D3247C1BD4F077008F0A3C /* testAppTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1219,6 +1229,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		213C34311BD4E867007A7280 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 213C34161BD4E867007A7280 /* testApp */;
+			targetProxy = 213C34301BD4E867007A7280 /* PBXContainerItemProxy */;
+		};
 		21576BB11B74F83400F132B1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = "libffi-iOS";
@@ -1228,16 +1243,6 @@
 			isa = PBXTargetDependency;
 			name = "libffi-Mac";
 			targetProxy = 216CE99D1B76515B006CA509 /* PBXContainerItemProxy */;
-		};
-		216CE9C01B76551E006CA509 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 216CE9A51B76551E006CA509 /* example */;
-			targetProxy = 216CE9BF1B76551E006CA509 /* PBXContainerItemProxy */;
-		};
-		216CE9CD1B765533006CA509 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 21AE0CEA1B6711D1006FB83F /* luaoc */;
-			targetProxy = 216CE9CC1B765533006CA509 /* PBXContainerItemProxy */;
 		};
 		21A36E321B71A41F0094CF55 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1259,97 +1264,106 @@
 			target = 21AE0D081B671202006FB83F /* lua */;
 			targetProxy = 21AE0DAD1B671692006FB83F /* PBXContainerItemProxy */;
 		};
+		21D324781BD4F033008F0A3C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 21AE0CEA1B6711D1006FB83F /* luaoc */;
+			targetProxy = 21D324771BD4F033008F0A3C /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		216CE9B71B76551E006CA509 /* LaunchScreen.xib */ = {
+		213C34221BD4E867007A7280 /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				216CE9B81B76551E006CA509 /* Base */,
+				213C34231BD4E867007A7280 /* Base */,
 			);
-			name = LaunchScreen.xib;
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		213C34271BD4E867007A7280 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				213C34281BD4E867007A7280 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		216CE9C71B76551E006CA509 /* Debug */ = {
+		213C34361BD4E867007A7280 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_ARC = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				ENABLE_TESTABILITY = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				INFOPLIST_FILE = example/Info.plist;
+				INFOPLIST_FILE = testApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				OTHER_LDFLAGS = "";
+				PRODUCT_BUNDLE_IDENTIFIER = SW.testApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "e3a721d8-f3f3-43b9-8e1c-9e697e06891f";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		216CE9C81B76551E006CA509 /* Release */ = {
+		213C34371BD4E867007A7280 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_NO_COMMON_BLOCKS = YES;
-				INFOPLIST_FILE = example/Info.plist;
+				INFOPLIST_FILE = testApp/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				OTHER_LDFLAGS = "";
+				PRODUCT_BUNDLE_IDENTIFIER = SW.testApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "e3a721d8-f3f3-43b9-8e1c-9e697e06891f";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
-		216CE9CA1B76551E006CA509 /* Debug */ = {
+		213C34381BD4E867007A7280 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_OBJC_ARC = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(SDKROOT)/Developer/Library/Frameworks",
-					"$(inherited)",
-				);
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_TESTABILITY = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
 				);
-				INFOPLIST_FILE = exampleTests/Info.plist;
+				INFOPLIST_FILE = testAppTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = SW.testAppTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "e3a721d8-f3f3-43b9-8e1c-9e697e06891f";
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/example.app/example";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/testApp.app/testApp";
 			};
 			name = Debug;
 		};
-		216CE9CB1B76551E006CA509 /* Release */ = {
+		213C34391BD4E867007A7280 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CLANG_ENABLE_OBJC_ARC = NO;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(SDKROOT)/Developer/Library/Frameworks",
-					"$(inherited)",
-				);
 				GCC_NO_COMMON_BLOCKS = YES;
-				INFOPLIST_FILE = exampleTests/Info.plist;
+				INFOPLIST_FILE = testAppTests/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = SW.testAppTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE = "e3a721d8-f3f3-43b9-8e1c-9e697e06891f";
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/example.app/example";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/testApp.app/testApp";
 			};
 			name = Release;
 		};
@@ -1659,20 +1673,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		216CE9C61B76551E006CA509 /* Build configuration list for PBXNativeTarget "example" */ = {
+		213C343A1BD4E867007A7280 /* Build configuration list for PBXNativeTarget "testApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				216CE9C71B76551E006CA509 /* Debug */,
-				216CE9C81B76551E006CA509 /* Release */,
+				213C34361BD4E867007A7280 /* Debug */,
+				213C34371BD4E867007A7280 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		216CE9C91B76551E006CA509 /* Build configuration list for PBXNativeTarget "exampleTests" */ = {
+		213C343B1BD4E867007A7280 /* Build configuration list for PBXNativeTarget "testAppTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				216CE9CA1B76551E006CA509 /* Debug */,
-				216CE9CB1B76551E006CA509 /* Release */,
+				213C34381BD4E867007A7280 /* Debug */,
+				213C34391BD4E867007A7280 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
