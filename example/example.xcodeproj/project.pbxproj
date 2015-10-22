@@ -14,7 +14,6 @@
 		2108C77D1BD4CFF40013770D /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 2108C77C1BD4CFF40013770D /* AppDelegate.m */; };
 		2133C6D61BD63B87006580C7 /* liblua.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2102DFF61BD4E54500BE9BBF /* liblua.a */; };
 		2133C6D71BD63B87006580C7 /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2102DFF71BD4E54500BE9BBF /* libluaoc.a */; };
-		2133C6DB1BD63B91006580C7 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2133C6DA1BD63B91006580C7 /* libffi.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,7 +29,6 @@
 		2108C77B1BD4CFF40013770D /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		2108C77C1BD4CFF40013770D /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		2108C7891BD4CFF40013770D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		2133C6DA1BD63B91006580C7 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libffi.a; path = "../luacocoa/libffi/build/Debug-iphoneos/libffi.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,7 +36,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2133C6DB1BD63B91006580C7 /* libffi.a in Frameworks */,
 				2133C6D61BD63B87006580C7 /* liblua.a in Frameworks */,
 				2133C6D71BD63B87006580C7 /* libluaoc.a in Frameworks */,
 			);
@@ -67,7 +64,6 @@
 		2108C76C1BD4CFF40013770D = {
 			isa = PBXGroup;
 			children = (
-				2133C6DA1BD63B91006580C7 /* libffi.a */,
 				2102DFF61BD4E54500BE9BBF /* liblua.a */,
 				2102DFF71BD4E54500BE9BBF /* libluaoc.a */,
 				2108C7771BD4CFF40013770D /* example */,

@@ -49,7 +49,7 @@ static inline void get_block_actual_encoding(char* buffer, const char* encoding,
 
 //#define NO_USE_FFI
 #ifndef NO_USE_FFI
-#import "ffi.h"
+//#import "ffi.h"
 #import "ffi_wrap.h"
 static NSMutableDictionary* luaBlockFuncDict; // encoding => blockFunc
 
@@ -153,17 +153,19 @@ static IMP imp_for_encoding(NSString* encodingString) {
 @end
 
 
-// NOTE when use @ insteadof v, may get garbage value. if use this value, will crash
-// 
-// for lua created block, oc invoke it as vv, paramter is garbage and return from lua will be convert to NULL
-// for lua invoke block, which actually is vv, paramter will be convert to NULL and return value is garbage
-//
-// so if value get from lua, @ is compatible with v as NULL value.
-// but if from oc, it's a garbage value
-//
-//
-//
-// recommend pass encoding specifically, except for vv
+/** NOTE when use @ insteadof v, will get garbage value. if use this value, will crash
+ *
+ *  specifically, if value get from lua, @ is compatible with v as NULL value.
+ *  but if from oc, it's a garbage value, and will crash when use
+ *
+ *  the default encoding when create luablock is @@@..., as lua func know how
+ *  many params, and ret value from lua is compatible with NULL;
+ *
+ *  but if invoke oc block from lua, the default encoding is v@@..., as lua know
+ *  pass in how many params, but the return value from oc is garbage
+ *
+ *  recommend pass encoding specifically
+ */
 id luaoc_convert_copyto_block(lua_State* L) {
     luaL_checktype(L, -2, LUA_TFUNCTION);
     LUAFunction* func = [LUAFunction new];
@@ -193,6 +195,7 @@ id luaoc_convert_copyto_block(lua_State* L) {
     dispatch_block_t block = Block_copy(^{
         NSLog(@"use %@ to hold LUAFunction, shouldn't be call", func);
     });
+
 
     struct OCBlockStruct* hackblock = (void*)block;
     hackblock->invoke = (void*)imp;

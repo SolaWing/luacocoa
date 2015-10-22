@@ -67,7 +67,7 @@ SEL luaoc_find_SEL_byname(id target, const char* luaName) {
 }
 
 #ifndef NO_USE_FFI
-#import "ffi.h"
+//#import "ffi.h"
 #import "ffi_wrap.h"
 
 // ffi invoke ridiculous fast than NSInvocation!!

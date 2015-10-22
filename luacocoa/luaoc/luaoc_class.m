@@ -34,7 +34,7 @@ static void luaoc_set_lua_func(lua_State *L, int clsIndex, const char* name, boo
 //#define NO_USE_FFI
 #ifndef NO_USE_FFI
 #pragma mark - FFI MSG
-#import "ffi.h"
+//#import "ffi.h"
 #import "ffi_wrap.h"
 
 // the following two dict used to cache generated closureFunc and ffi_type
