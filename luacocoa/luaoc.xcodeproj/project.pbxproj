@@ -8,8 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		210645F51BB6C33F006E5E35 /* luaoc_enum.h in Headers */ = {isa = PBXBuildFile; fileRef = 210645F31BB6C33F006E5E35 /* luaoc_enum.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		210645F61BB6C33F006E5E35 /* luaoc_enum.m in Sources */ = {isa = PBXBuildFile; fileRef = 210645F41BB6C33F006E5E35 /* luaoc_enum.m */; settings = {ASSET_TAGS = (); }; };
-		210645F71BB6C33F006E5E35 /* luaoc_enum.m in Sources */ = {isa = PBXBuildFile; fileRef = 210645F41BB6C33F006E5E35 /* luaoc_enum.m */; settings = {ASSET_TAGS = (); }; };
+		210645F61BB6C33F006E5E35 /* luaoc_enum.m in Sources */ = {isa = PBXBuildFile; fileRef = 210645F41BB6C33F006E5E35 /* luaoc_enum.m */; };
+		210645F71BB6C33F006E5E35 /* luaoc_enum.m in Sources */ = {isa = PBXBuildFile; fileRef = 210645F41BB6C33F006E5E35 /* luaoc_enum.m */; };
 		2108C7621BD4CE4B0013770D /* luaoc_class.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0DB01B672552006FB83F /* luaoc_class.h */; };
 		2108C7631BD4CE4B0013770D /* luaoc_instance.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21BFB3B91B67686D00D45278 /* luaoc_instance.h */; };
 		2108C7641BD4CE4B0013770D /* luaoc_struct.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 216B4A351B690A180060DCA5 /* luaoc_struct.h */; };
@@ -142,8 +142,6 @@
 		21AE0D881B67128F006FB83F /* ltable.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D5A1B67128F006FB83F /* ltable.c */; };
 		21AE0D891B67128F006FB83F /* ltablib.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D5C1B67128F006FB83F /* ltablib.c */; };
 		21AE0D8A1B67128F006FB83F /* ltm.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D5D1B67128F006FB83F /* ltm.c */; };
-		21AE0D8B1B67128F006FB83F /* lua.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D5F1B67128F006FB83F /* lua.c */; };
-		21AE0D8C1B67128F006FB83F /* luac.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D621B67128F006FB83F /* luac.c */; };
 		21AE0D8D1B67128F006FB83F /* lundump.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D651B67128F006FB83F /* lundump.c */; };
 		21AE0D8E1B67128F006FB83F /* lutf8lib.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D671B67128F006FB83F /* lutf8lib.c */; };
 		21AE0D8F1B67128F006FB83F /* lvm.c in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0D681B67128F006FB83F /* lvm.c */; };
@@ -180,8 +178,8 @@
 		21AE0DB91B6754CF006FB83F /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
 		21B60B0D1B6F0AEA00C1FC19 /* luaoc_var.m in Sources */ = {isa = PBXBuildFile; fileRef = 21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */; };
 		21BFB3BB1B67686D00D45278 /* luaoc_instance.m in Sources */ = {isa = PBXBuildFile; fileRef = 21BFB3BA1B67686D00D45278 /* luaoc_instance.m */; };
-		21D3247C1BD4F077008F0A3C /* testAppTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D3247B1BD4F077008F0A3C /* testAppTests.m */; settings = {ASSET_TAGS = (); }; };
-		21D324B21BD4F34B008F0A3C /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; settings = {ASSET_TAGS = (); }; };
+		21D3247C1BD4F077008F0A3C /* testAppTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D3247B1BD4F077008F0A3C /* testAppTests.m */; };
+		21D324B21BD4F34B008F0A3C /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
 		21D324B31BD4F360008F0A3C /* liblua.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0D091B671202006FB83F /* liblua.a */; };
 		21D324B41BD4F360008F0A3C /* libluaoc.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0CEB1B6711D1006FB83F /* libluaoc.a */; };
 		21D817AD1B9EB42D009AD9AB /* ffi_wrap.h in Headers */ = {isa = PBXBuildFile; fileRef = 21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */; };
@@ -1141,7 +1139,6 @@
 				21AE0D741B67128F006FB83F /* lctype.c in Sources */,
 				21AE0D871B67128F006FB83F /* lstrlib.c in Sources */,
 				21AE0D7A1B67128F006FB83F /* lgc.c in Sources */,
-				21AE0D8B1B67128F006FB83F /* lua.c in Sources */,
 				21AE0D701B67128F006FB83F /* lbaselib.c in Sources */,
 				21AE0D781B67128F006FB83F /* ldump.c in Sources */,
 				21AE0D7D1B67128F006FB83F /* llex.c in Sources */,
@@ -1151,7 +1148,6 @@
 				21AE0D721B67128F006FB83F /* lcode.c in Sources */,
 				21AE0D841B67128F006FB83F /* lparser.c in Sources */,
 				21AE0D711B67128F006FB83F /* lbitlib.c in Sources */,
-				21AE0D8C1B67128F006FB83F /* luac.c in Sources */,
 				21AE0D801B67128F006FB83F /* loadlib.c in Sources */,
 				21AE0D6F1B67128F006FB83F /* lauxlib.c in Sources */,
 				21AE0D7F1B67128F006FB83F /* lmem.c in Sources */,
