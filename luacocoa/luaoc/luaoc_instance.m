@@ -51,7 +51,7 @@ void luaoc_push_instance(lua_State *L, id v){
         lua_pushvalue(L, -1);
         lua_rawsetp(L, -4, v);  // env[p] = uv, : ... ud env nil uv
     }
-    // don't retain stack block, release later will crash
+    // don't retain stack block, release later will crash. may autoconvert to heap?
     if ( object_getClass(v) != (Class)&_NSConcreteStackBlock )
     {
         lua_pushinteger(L, 1);
