@@ -74,8 +74,8 @@ flags = [
 #'-I%s'%src,
 "-I%s/lua/lua-5.3.1/src"%src,
 "-I%s/luaoc"%src,
-"-I%s/libffi/darwin_common/include"%src,
-"-I%s/libffi/darwin_ios/include"%src,
+"-I%s/../libffi/darwin_common/include"%src,
+"-I%s/../libffi/darwin_ios/include"%src,
 
 "-DOBJC_OLD_DISPATCH_PROTOTYPES=0",
 #'-fobjc-arc',

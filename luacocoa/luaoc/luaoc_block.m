@@ -240,9 +240,9 @@ int luaoc_call_block(lua_State *L) {
     size_t size = strlen(encoding);
     char* trueEncoding = alloca( size + 3 );
     size_t i = encodingIt - encoding;
-    memcpy(trueEncoding, encoding, i);
-    memcpy(trueEncoding + i, "^v", 2);
-    memcpy(trueEncoding + i+2, encodingIt, size-i);
+    memcpy(trueEncoding, encoding, i);                  // return type
+    memcpy(trueEncoding + i, "^v", 2);                  // hidden args
+    memcpy(trueEncoding + i+2, encodingIt, size-i);     // left args
     trueEncoding[size+2] = '\0';        // NULL terminated
 
     argNumber = luaoc_get_type_number(encodingIt) + 1;

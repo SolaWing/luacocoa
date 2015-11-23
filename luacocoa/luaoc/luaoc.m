@@ -19,6 +19,7 @@
 #import "luaoc_block.h"
 #import "luaoc_encode.h"
 #import "luaoc_enum.h"
+#import "luaoc_func.h"
 
 #ifndef NO_USE_FFI
 #import "ffi_wrap.h"
@@ -117,6 +118,9 @@ int luaopen_luaoc(lua_State *L){
 
   luaopen_luaoc_enum(L);
   lua_rawsetfield(L, -2, "enum");
+
+  luaopen_luaoc_func(L);
+  lua_rawsetfield(L, -2, "func");
 
   return 1;
 }

@@ -148,8 +148,3 @@ void luaoc_dump_stack(lua_State* L);
     #define DLOG(...)
   #endif
 #endif
-
-// in 32bit iphone_simulator, my libffi lack some unuse symbol, need to comment it. or disable it
-//#if TARGET_IPHONE_SIMULATOR && !defined(__LP64__)
-//#define NO_USE_FFI
-//#endif

@@ -998,4 +998,8 @@
     RUN_LUA_SAFE_CODE( return oc.enum.NSMainQueueConcurrencyType );
     XCTAssertEqual(lua_tointeger(L, -1), NSMainQueueConcurrencyType);
 }
+
+- (void)testFunc {
+
+}
 @end
