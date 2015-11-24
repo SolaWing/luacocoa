@@ -14,6 +14,7 @@
 #import "luaoc_class.h"
 #import "luaoc_struct.h"
 #import "luaoc_block.h"
+#import "luaoc_func.h"
 #import <objc/runtime.h>
 #import <objc/message.h>
 #import <Foundation/Foundation.h>
@@ -27,7 +28,7 @@
 #define RUN_LUA_SAFE_CODE(...) RUN_LUA_SAFE_STR(LUA_CODE(__VA_ARGS__))
 
 // RUN_LUA_SAFE_CODE's code may be convert by macro. so use str to avoid it
-#define RUN_LUA_SAFE_STR(str) if (luaL_dostring(gLua_main_state, str)) \
+#define RUN_LUA_SAFE_STR(str) if (luaL_dostring(gLua_main_state, str) != 0) \
     { printf("%s\n", lua_tostring(gLua_main_state, -1)); lua_pop(gLua_main_state, 1); }
 
 @protocol aTestSuperProtocol <NSObject>
@@ -175,6 +176,7 @@
   TEST_PUSH_NUMBER (_C_DBL      , double             , 43.23432e100)
   TEST_PUSH_VALUE  (luaoc_toinstance, _C_ID     , id         , view)
   TEST_PUSH_VALUE  (luaoc_toinstance, _C_ID     , id         , NULL)
+  TEST_PUSH_VALUE  (luaoc_toinstance, _C_ID     , id         , [NSArray class]) // sometimes class is used as id
   TEST_PUSH_VALUE  (luaoc_toclass   , _C_CLASS  , Class      , [NSArray class])
   TEST_PUSH_VALUE  (luaoc_toclass   , _C_CLASS  , Class      , NULL)
   TEST_PUSH_VALUE  (lua_touserdata  , _C_PTR    , void*      , &view)
@@ -999,7 +1001,41 @@
     XCTAssertEqual(lua_tointeger(L, -1), NSMainQueueConcurrencyType);
 }
 
-- (void)testFunc {
+static void cfunc1() {
+    RUN_LUA_SAFE_CODE( aa = 1234 );
+}
 
+static int cfunc2(int a) {
+    return a + 55;
+}
+
+static id cfuncSelf(id self) {
+    return self;
+}
+
+static CGPoint cfuncStruct(CGPoint p){
+    return (CGPoint){p.x + 3, p.y + 4};
+}
+
+- (void)testFunc {
+    lua_State* L = gLua_main_state;
+    luaoc_reg_cfunc(L, "cfunc1", cfunc1, "v");
+    luaoc_reg_cfunc(L, "cfunc2", cfunc2, "ii");
+    luaoc_reg_cfunc(L, "cfuncSelf", cfuncSelf, "@@");
+
+    const char* encodings[] = {@encode(CGPoint), @encode(CGPoint)};
+    luaoc_reg_cfunc_with_types(L, "cfuncStruct", cfuncStruct, encodings, sizeof(encodings)/sizeof(char*));
+
+    RUN_LUA_SAFE_CODE( oc.func.cfunc1(); return aa );
+    XCTAssertEqual(lua_tointeger(L, -1), 1234);
+
+    RUN_LUA_SAFE_CODE( return oc.func.cfunc2(33) );
+    XCTAssertEqual(lua_tointeger(L, -1), 88);
+
+    RUN_LUA_SAFE_CODE( return oc.func.cfuncSelf(oc.NSArray) );
+    XCTAssertEqual( luaoc_toinstance(L, -1), [NSArray class] );
+
+    RUN_LUA_SAFE_CODE( return oc.func.cfuncStruct( {33.3, 44} ) );
+    XCTAssertTrue(memcmp(luaoc_getstruct(L, -1), &((CGPoint){36.3, 48}), sizeof(CGPoint)) == 0 );
 }
 @end

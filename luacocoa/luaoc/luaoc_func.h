@@ -16,6 +16,6 @@
  * @param encoding: the function encoding according to objc type encoding
  */
 void luaoc_reg_cfunc(lua_State* L, const char* name, void* fp, const char* encoding);
-
+void luaoc_reg_cfunc_with_types(lua_State* L, const char* name, void* fp, const char** encodings, int n);
 
 int luaopen_luaoc_func(lua_State* L);

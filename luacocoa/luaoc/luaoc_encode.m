@@ -14,7 +14,6 @@
 
 #import "luaoc_struct.h"
 
-
 #pragma mark - LUA INTERFACE
 static int encoding_of_name(lua_State *L){
   lua_pushcfunction(L, luaoc_encoding_of_named_struct);

@@ -96,6 +96,18 @@ void luaoc_reg_cfunc(lua_State* L, const char* name, void* fp, const char* encod
     lua_rawsetfield(L, -2, name);
 }
 
+void luaoc_reg_cfunc_with_types(lua_State* L, const char* name, void* fp, const char** encodings, int n) {
+    char buf[255];
+    char* buf_it = buf;
+    for(const char **it=encodings, **ite=encodings+n; it < ite; ++it ) {
+        size_t len = strlen(*it);
+        memcpy(buf_it, *it, len);
+        buf_it+=len;
+    }
+    *buf_it = '\0'; // NULL terminated
+    luaoc_reg_cfunc(L, name, fp, buf);
+}
+
 int luaopen_luaoc_func(lua_State* L) {
     lua_newtable(L);
     lua_pushvalue(L, -1);

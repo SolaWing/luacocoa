@@ -189,6 +189,8 @@
 		21D817AD1B9EB42D009AD9AB /* ffi_wrap.h in Headers */ = {isa = PBXBuildFile; fileRef = 21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */; };
 		21D817AE1B9EB42D009AD9AB /* ffi_wrap.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */; };
 		21D817AF1B9EB42D009AD9AB /* ffi_wrap.m in Sources */ = {isa = PBXBuildFile; fileRef = 21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */; };
+		21FED54B1C04711A000721AB /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21FED54A1C04711A000721AB /* libffi.a */; };
+		21FED54D1C0471EA000721AB /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21FED54C1C0471EA000721AB /* libffi.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -403,6 +405,8 @@
 		21D3247B1BD4F077008F0A3C /* testAppTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = testAppTests.m; sourceTree = "<group>"; };
 		21D817AB1B9EB42D009AD9AB /* ffi_wrap.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ffi_wrap.h; sourceTree = "<group>"; };
 		21D817AC1B9EB42D009AD9AB /* ffi_wrap.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ffi_wrap.m; sourceTree = "<group>"; };
+		21FED54A1C04711A000721AB /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libffi.a; path = "../libffi/build/Debug-iphoneos/libffi.a"; sourceTree = "<group>"; };
+		21FED54C1C0471EA000721AB /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libffi.a; path = "../libffi/build/Debug-iphoneos/libffi.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -419,6 +423,7 @@
 			files = (
 				21D324B31BD4F360008F0A3C /* liblua.a in Frameworks */,
 				21D324B41BD4F360008F0A3C /* libluaoc.a in Frameworks */,
+				21FED54D1C0471EA000721AB /* libffi.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -458,6 +463,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				21FED54B1C04711A000721AB /* libffi.a in Frameworks */,
 				21AE0CF71B6711D1006FB83F /* libluaoc.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -531,6 +537,8 @@
 		21AE0CE21B6711D1006FB83F = {
 			isa = PBXGroup;
 			children = (
+				21FED54C1C0471EA000721AB /* libffi.a */,
+				21FED54A1C04711A000721AB /* libffi.a */,
 				213A270E1BD9EC7A00B1682D /* ffi.dylib */,
 				21AE0CED1B6711D1006FB83F /* luaoc */,
 				21AE0CFA1B6711D1006FB83F /* luaocTests */,
@@ -1450,7 +1458,7 @@
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
-				ONLY_ACTIVE_ARCH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
