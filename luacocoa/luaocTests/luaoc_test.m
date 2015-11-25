@@ -505,6 +505,11 @@
       XCTAssertEqual( 11, ((CGRect*)buf)->size.width);
       XCTAssertEqual( 12, ((CGRect*)buf)->size.height);
       XCTAssertEqualWithAccuracy( 6.6, lua_tonumber(L, -1), 0.001); // int(3.3) * 2.2
+
+      RUN_LUA_SAFE_CODE( oc.class.aTestClass("allIDFunc",
+            function(self, obj) return obj; end) );
+      RUN_LUA_SAFE_CODE( a = oc.class.aTestClass:new(); return a:allIDFunc( oc.class.NSArray ) );
+      XCTAssertEqual( luaoc_toinstance(L, -1), [NSArray class] );
   }
   lua_settop(L, 0);
 
@@ -1038,4 +1043,5 @@ static CGPoint cfuncStruct(CGPoint p){
     RUN_LUA_SAFE_CODE( return oc.func.cfuncStruct( {33.3, 44} ) );
     XCTAssertTrue(memcmp(luaoc_getstruct(L, -1), &((CGPoint){36.3, 48}), sizeof(CGPoint)) == 0 );
 }
+
 @end

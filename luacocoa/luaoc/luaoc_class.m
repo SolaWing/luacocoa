@@ -778,8 +778,21 @@ static int __call(lua_State *L) {
   else if (*name == '-') {isClassMethod = false; ++name;}
   while(isspace(*name)) ++name; // skip prefix space
 
-  if (override(*cls, name, isClassMethod,
-        (lua_type(L, 4) == LUA_TSTRING ? lua_tostring(L, 4) : NULL) ) )
+  char* encoding = (char*)lua_tostring(L, 4);
+  if (!encoding) {
+      // default retType and allParam type is @.
+      lua_Debug ar;
+      lua_pushvalue(L, 3);
+      lua_getinfo(L, ">u", &ar);
+      encoding = alloca( ar.nparams + 3 );
+      memcpy(encoding, "@@:", 3);
+      if (ar.nparams > 1) {
+          memset(encoding + 3, '@', ar.nparams-1);
+      }
+      ((char*)encoding)[ar.nparams+2] = '\0';
+  }
+  
+  if (override(*cls, name, isClassMethod, encoding) )
   {
     lua_pushvalue(L, 3);
     luaoc_set_lua_func(L, 1, name, isClassMethod);

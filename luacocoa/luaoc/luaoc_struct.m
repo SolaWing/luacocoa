@@ -20,7 +20,7 @@
 
 #import "luaoc_helper.h"
 
-/// table use to find offset by name {struct_name = {name = offset, ...}, ...}
+/// table use to find offset by name {struct_name = {__encoding = @encode, attrName = struct_attr_info, ...}, ...}
 #define NAMED_STRUCT_TABLE_NAME "named_struct"
 typedef struct struct_attr_info {
   int offset;

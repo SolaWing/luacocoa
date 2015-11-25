@@ -69,6 +69,10 @@ int luaoc_release(lua_State *L);
  *
  * @param 1: instance or super userdata.
  * @param 2: class userdata or class name. or nil to use param 1's class
+
+             recommend specify it in method which may be override.
+             or you may repeat get super userdata, can't get super's super userdata
+
  * @return   super userdata, or nil when not get or fail
  * */
 int luaoc_super(lua_State *L);
