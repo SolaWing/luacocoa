@@ -912,6 +912,10 @@
     luaoc_push_instance(L, block);
     luaoc_call_block(L);            // use default v... encoding
 
+    lua_settop(L,1);
+    lua_pushvalue(L, 1);
+    lua_call(L, 0, 1);             // block instance can be called
+
     lua_settop(L, 1);
     lua_pushstring(L, "v");         // recall with explicit encoding
     luaoc_call_block(L);
@@ -956,17 +960,30 @@
     luaoc_call_block(L);
     XCTAssertEqual( luaoc_toinstance(L, 4), [@"abc" description] );
 
+    lua_settop(L,1);
+    lua_pushvalue(L, 1);
+    lua_pushstring(L, "bcd");
+    lua_call(L, 1, 1);             // block instance can be called with default encoding
+    XCTAssertTrue( lua_isnil(L, -1) );
+
     lua_settop(L, 0);
-    luaoc_push_instance(L, ^(id a,id b, id c){
+    luaoc_push_instance(L, Block_copy(^(id a,id b, id c){
         NSLog(@"call pass multi obj, %@ %@ %@ %p", a,b,c,L);
         RUN_LUA_SAFE_CODE( a = 33 );
-    });
+    }));
     lua_pushnil(L);
     luaoc_push_instance(L, @1);
     luaoc_push_instance(L, @2);
     luaoc_push_instance(L, @3);
     luaoc_push_instance(L, @4);
     luaoc_call_block(L); // 4 params, default to v@@@@, last not use
+    lua_getglobal(L, "a");
+    XCTAssertEqual( lua_tointeger(L, -1), 33 );
+
+    lua_pushnumber(L, 22);
+    lua_setglobal(L, "a"); // change a's value
+    lua_settop(L, 6); lua_copy(L, 1, 2);
+    lua_call(L, 4, 1);      // call __NSMallocBlock__
     lua_getglobal(L, "a");
     XCTAssertEqual( lua_tointeger(L, -1), 33 );
 

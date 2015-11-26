@@ -17,6 +17,8 @@
 #import "luaoc_class.h"
 #import "luaoc.h"
 
+#import "luaoc_block.h"
+
 #define LOADED_INSTANCE_TABLE "oc.loadedObj"
 #define LOADED_INSTANCE_ENV_TABLE "oc.loadedObjENV"
 
@@ -228,6 +230,22 @@ static int __len(lua_State *L) {
     }
     return 1;
 }
+
+static int __call(lua_State *L) {
+    id* ud = (id*)lua_touserdata(L,1);
+    LUAOC_ASSERT(ud);
+    Class cls = object_getClass(*ud);
+    if ( cls == (Class)&_NSConcreteStackBlock ||
+         cls == (Class)&_NSConcreteGlobalBlock ||
+         strcmp(class_getName(cls), "__NSMallocBlock__") == 0)
+    {
+        lua_pushnil(L); lua_insert(L, 2); // insert nil encoding as param
+        return luaoc_call_block(L);
+    }
+    lua_pushnil(L); // unsupported type, return nil
+    return 1;
+}
+
 static int __gc(lua_State *L){
   id* ud = luaL_testudata(L, 1, LUAOC_INSTANCE_METATABLE_NAME);
   if (ud) {
@@ -285,6 +303,7 @@ static const luaL_Reg metaFunctions[] = {
   {"__newindex", __newindex},
   {"__tostring", __tostring},
   {"__len", __len},
+  {"__call", __call},
   // {"__pairs", __tostring},
   {NULL, NULL}
 };
