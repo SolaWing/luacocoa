@@ -12,6 +12,7 @@
 #import "lauxlib.h"
 
 #import "luaoc_instance.h"
+#import "luaoc_encode.h"
 
 #define LUAFunctionRegistryName "oc.funcMap" // table hold blockpointer to lua func
 
@@ -169,8 +170,8 @@ static IMP imp_for_encoding(NSString* encodingString) {
 id luaoc_convert_copyto_block(lua_State* L) {
     luaL_checktype(L, -2, LUA_TFUNCTION);
     LUAFunction* func = [LUAFunction new];
-    const char* encoding = lua_tostring(L, -1);
-    if (!encoding) {
+    const char* encoding;
+    if ( lua_isnoneornil(L, -1) ) {
         // lua block: default return type is @.
         // param type is @, count equal to fixed param count
         lua_Debug ar;
@@ -179,6 +180,10 @@ id luaoc_convert_copyto_block(lua_State* L) {
         encoding = alloca( ar.nparams + 2 );
         memset((char*)encoding, '@', ar.nparams+1);
         ((char*)encoding)[ar.nparams+1] = '\0';
+    } else {
+        luaoc_push_encoding_for_index(L, -1);
+        lua_replace(L, -2);
+        encoding = lua_tostring(L, -1);
     }
     func.encoding = [NSString stringWithUTF8String:encoding];
     lua_pop(L, 1);
@@ -211,8 +216,8 @@ int luaoc_call_block(lua_State *L) {
 
     // TODO: check if a lua block and call directly
     NSUInteger argNumber;
-    const char* encoding = lua_tostring(L, 2);
-    if (NULL == encoding) {
+    const char* encoding;
+    if ( lua_isnoneornil(L, 2) ) {
         // default return void, args type is @, count equal to passin param count
         argNumber = lua_gettop(L) - 2;
         if ((NSInteger)argNumber < 0) argNumber = 0;
@@ -221,6 +226,10 @@ int luaoc_call_block(lua_State *L) {
         *(char*)encoding = 'v';
         memset((char*)encoding+1, '@', argNumber);
         ((char*)encoding)[argNumber+1] = '\0';
+    } else {
+        luaoc_push_encoding_for_index(L, 2);
+        lua_replace(L, 2);
+        encoding = lua_tostring(L, 2);
     }
 
     int status;

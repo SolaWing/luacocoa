@@ -19,7 +19,7 @@
 #import "luaoc.h"
 
 #import "luaoc_instance.h"
-
+#import "luaoc_encode.h"
 
 #define LOADED_CLASS_TABLE   "oc.loadedCls"
 #define kClassMethodIndex    "__cmsg"
@@ -778,20 +778,25 @@ static int __call(lua_State *L) {
   else if (*name == '-') {isClassMethod = false; ++name;}
   while(isspace(*name)) ++name; // skip prefix space
 
-  char* encoding = (char*)lua_tostring(L, 4);
-  if (!encoding) {
+  const char* encoding;
+
+  if ( lua_isnoneornil(L, 4) ) {
       // default retType and allParam type is @.
       lua_Debug ar;
       lua_pushvalue(L, 3);
       lua_getinfo(L, ">u", &ar);
       encoding = alloca( ar.nparams + 3 );
-      memcpy(encoding, "@@:", 3);
+      memcpy((char*)encoding, "@@:", 3);
       if (ar.nparams > 1) {
-          memset(encoding + 3, '@', ar.nparams-1);
+          memset((char*)encoding + 3, '@', ar.nparams-1);
       }
       ((char*)encoding)[ar.nparams+2] = '\0';
+  } else {
+      luaoc_push_encoding_for_index(L, 4);
+      lua_replace(L, 4);
+      encoding = (char*)lua_tostring(L, 4);
   }
-  
+
   if (override(*cls, name, isClassMethod, encoding) )
   {
     lua_pushvalue(L, 3);

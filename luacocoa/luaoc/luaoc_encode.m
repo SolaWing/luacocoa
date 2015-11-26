@@ -14,6 +14,8 @@
 
 #import "luaoc_struct.h"
 
+#define ENCODING_TABLE "oc.encoding"
+
 #pragma mark - LUA INTERFACE
 static int encoding_of_name(lua_State *L){
   lua_pushcfunction(L, luaoc_encoding_of_named_struct);
@@ -39,6 +41,30 @@ static int encoding_of_types(lua_State *L) {
     return 1;
 }
 
+void luaoc_push_encoding_for_index(lua_State *L, int index) {
+    int type = lua_type(L, index);
+    if (type == LUA_TSTRING) { lua_pushvalue(L, index); return; }
+    if (type == LUA_TTABLE) {
+        luaL_Buffer buf;
+        luaL_buffinit(L, &buf);
+
+        index = lua_absindex(L, index);
+        size_t len = lua_rawlen(L, index);
+
+        lua_rawgetfield(L, LUA_REGISTRYINDEX, ENCODING_TABLE);
+        for (size_t i = 1; i <= len; ++i) {
+          lua_geti(L, index, i);
+          type = lua_gettable(L, -2);
+          LUAOC_ASSERT(type == LUA_TSTRING);
+          luaL_addvalue(&buf);
+        }
+        lua_pop(L,1); // pop ENCODING_TABLE
+        luaL_pushresult(&buf);
+    } else {
+        lua_pushnil(L); return;
+    }
+}
+
 static const luaL_Reg encodingFuncs[] = {
   {"__index", encoding_of_name},
   {"__call",  encoding_of_types},
@@ -49,6 +75,8 @@ int luaopen_luaoc_encoding(lua_State *L) {
   luaL_newlib(L, encodingFuncs);
   lua_pushvalue(L, -1);
   lua_setmetatable(L, -2); // set self as metaTable
+  lua_pushvalue(L, -1);
+  lua_rawsetfield(L, LUA_REGISTRYINDEX, ENCODING_TABLE);
 
 #define SET_ENCODING_OF_TYPE(name, type)                \
   lua_pushstring(L, name);                              \

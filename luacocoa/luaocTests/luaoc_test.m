@@ -497,7 +497,7 @@
       // style. but for compatible, recommand use : to mark param
       RUN_LUA_SAFE_CODE( oc.class.aTestClass("abcd",
                   function(self, rect, f1, f2) aret = f1*f2 rect.x=33 rect.y=44 return rect end,
-                  oc.encode('CGRect', 'id', 'SEL', 'CGRect', 'NSInteger', 'CGFloat')));
+                  {'CGRect', 'id', 'SEL', 'CGRect', 'NSInteger', 'CGFloat'}));
       RUN_LUA_SAFE_CODE( a = oc.aTestClass:new() a = a:abcd({{22,33},{11,12}}, 3.3, 2.2) return a, aret );
       luaoc_tostruct(L, -2, buf);
       XCTAssertEqual( 33, ((CGRect*)buf)->origin.x );
@@ -816,7 +816,7 @@
     // test {rect}{rect}df
     RUN_LUA_SAFE_CODE( return oc.block( function(rect, dbl, flt)
                 rect.width = dbl rect.height=flt return rect
-                end, oc.encode('CGRect','CGRect','double','float') ) )
+                end, {'CGRect','CGRect','double','float'} ) )
     objc_storeWeak((id*)&block, luaoc_toinstance(L, -1));
     CGRect rect = ((CGRect(^)(CGRect,double,float))block)(CGRectMake(1,2,3,4), 20,30);
     XCTAssertTrue(memcmp(&rect, &((CGRect){1,2,20,30}), sizeof(CGRect)) == 0);
@@ -974,7 +974,7 @@
     luaoc_push_instance(L, ^CGRect(CGFloat x, CGFloat y, float width, double height){
         NSLog(@"Call rect create block"); return CGRectMake(x,y,width,height);
     });
-    RUN_LUA_SAFE_CODE( return oc.encode("CGRect", "CGFloat", "CGFloat", "float", "double") );
+    RUN_LUA_SAFE_CODE( return {"CGRect", "CGFloat", "CGFloat", "float", "double"} );
     lua_pushnumber(L, 22);
     lua_pushnumber(L, 23);
     lua_pushnumber(L, 24);
