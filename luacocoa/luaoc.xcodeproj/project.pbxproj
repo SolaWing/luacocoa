@@ -33,6 +33,8 @@
 		216AEB6A1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
 		216AEB6B1B9DD87C00F2E93D /* luaoc_block.m in Sources */ = {isa = PBXBuildFile; fileRef = 216AEB681B9DD87C00F2E93D /* luaoc_block.m */; };
 		216B4A371B690A180060DCA5 /* luaoc_struct.m in Sources */ = {isa = PBXBuildFile; fileRef = 216B4A361B690A180060DCA5 /* luaoc_struct.m */; };
+		216FA0B81CA93DDC00A8BEE1 /* liblua.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0D091B671202006FB83F /* liblua.a */; };
+		216FA0BA1CA93F0A00A8BEE1 /* liblua_osx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21A36DDC1B71A2A20094CF55 /* liblua_osx.a */; };
 		2193CF741BA65A710007D206 /* luaoc_encode.h in Headers */ = {isa = PBXBuildFile; fileRef = 2193CF721BA65A710007D206 /* luaoc_encode.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		2193CF751BA65A710007D206 /* luaoc_encode.m in Sources */ = {isa = PBXBuildFile; fileRef = 2193CF731BA65A710007D206 /* luaoc_encode.m */; };
 		2193CF761BA65A710007D206 /* luaoc_encode.m in Sources */ = {isa = PBXBuildFile; fileRef = 2193CF731BA65A710007D206 /* luaoc_encode.m */; };
@@ -111,7 +113,6 @@
 		21A36E451B71A4680094CF55 /* luaoc_var.m in Sources */ = {isa = PBXBuildFile; fileRef = 21B60B0C1B6F0AEA00C1FC19 /* luaoc_var.m */; };
 		21A36E461B71A4680094CF55 /* luaoc_helper.h in Headers */ = {isa = PBXBuildFile; fileRef = 21AE0DB31B67271F006FB83F /* luaoc_helper.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		21A36E471B71A4680094CF55 /* luaoc_helper.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB41B67271F006FB83F /* luaoc_helper.m */; };
-		21A36E4A1B71A4A10094CF55 /* liblua_osx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21A36DDC1B71A2A20094CF55 /* liblua_osx.a */; };
 		21A36E4B1B71BF4F0094CF55 /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
 		21A36E4C1B71BF4F0094CF55 /* luaoc_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 2197367D1B6D011400B6846D /* luaoc_test.m */; };
 		21AE0CEF1B6711D1006FB83F /* luaoc.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0CEE1B6711D1006FB83F /* luaoc.h */; };
@@ -176,7 +177,6 @@
 		21AE0DA91B6712D6006FB83F /* lundump.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0D661B67128F006FB83F /* lundump.h */; };
 		21AE0DAA1B6712D6006FB83F /* lvm.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0D691B67128F006FB83F /* lvm.h */; };
 		21AE0DAB1B6712D6006FB83F /* lzio.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 21AE0D6B1B67128F006FB83F /* lzio.h */; };
-		21AE0DAC1B67168B006FB83F /* liblua.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 21AE0D091B671202006FB83F /* liblua.a */; };
 		21AE0DB21B672552006FB83F /* luaoc_class.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB11B672552006FB83F /* luaoc_class.m */; };
 		21AE0DB51B67271F006FB83F /* luaoc_helper.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB41B67271F006FB83F /* luaoc_helper.m */; };
 		21AE0DB91B6754CF006FB83F /* play_test.m in Sources */ = {isa = PBXBuildFile; fileRef = 21AE0DB81B6754CF006FB83F /* play_test.m */; };
@@ -438,7 +438,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				21A36E4A1B71A4A10094CF55 /* liblua_osx.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -446,6 +445,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				216FA0BA1CA93F0A00A8BEE1 /* liblua_osx.a in Frameworks */,
 				213A27111BD9ECD900B1682D /* ffi.dylib in Frameworks */,
 				21A36E301B71A41F0094CF55 /* libluaoc_osx.a in Frameworks */,
 			);
@@ -455,7 +455,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				21AE0DAC1B67168B006FB83F /* liblua.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -463,6 +462,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				216FA0B81CA93DDC00A8BEE1 /* liblua.a in Frameworks */,
 				21FED54B1C04711A000721AB /* libffi.a in Frameworks */,
 				21AE0CF71B6711D1006FB83F /* libluaoc.a in Frameworks */,
 			);
@@ -1516,7 +1516,6 @@
 					"$(SRCROOT)/include/ffi",
 				);
 				OTHER_LDFLAGS = "-ObjC";
-				OTHER_LIBTOOLFLAGS = "-lffi";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1532,7 +1531,6 @@
 					"$(SRCROOT)/include/ffi",
 				);
 				OTHER_LDFLAGS = "-ObjC";
-				OTHER_LIBTOOLFLAGS = "-lffi";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1556,6 +1554,7 @@
 					"-framework",
 					XCTest,
 					"-ObjC",
+					"-lffi",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -1575,6 +1574,7 @@
 					"-framework",
 					XCTest,
 					"-ObjC",
+					"-lffi",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
