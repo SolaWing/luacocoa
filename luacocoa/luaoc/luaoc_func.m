@@ -97,7 +97,7 @@ void luaoc_reg_cfunc(lua_State* L, const char* name, void* fp, const char* encod
 }
 
 void luaoc_reg_cfunc_with_types(lua_State* L, const char* name, void* fp, const char** encodings, int n) {
-    char buf[255];
+    char buf[0xffff];
     char* buf_it = buf;
     for(const char **it=encodings, **ite=encodings+n; it < ite; ++it ) {
         size_t len = strlen(*it);
